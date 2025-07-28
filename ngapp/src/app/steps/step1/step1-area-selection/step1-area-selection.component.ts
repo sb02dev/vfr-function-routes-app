@@ -8,17 +8,19 @@ import { Subscription } from 'rxjs';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ImageEditService } from '../../../services/image-edit.service';
+import { HeaderComponent } from "../../../components/header/header/header.component";
 
 @Component({
   selector: 'app-step1-area-selection',
   standalone: true,
     imports: [
-        DecimalPipe,
-        MatButtonModule,
-        MatIconModule,
-        FlexLayoutModule,
-        MatTooltipModule
-    ],
+    DecimalPipe,
+    MatButtonModule,
+    MatIconModule,
+    FlexLayoutModule,
+    MatTooltipModule,
+    HeaderComponent
+],
   templateUrl: './step1-area-selection.component.html',
   styleUrl: './step1-area-selection.component.css'
 })
@@ -119,12 +121,8 @@ export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
         this.bgResize.disconnect();
     }
 
-    stepBack() {
-        this.router.navigateByUrl("/step0");
-    }
-
     stepForward() {
-        this.setAreaOfInterest(true);
+        this.setAreaOfInterest();
     }
 
     private mouseDown(e: MouseEvent) {
@@ -196,10 +194,9 @@ export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
         }
     }
 
-    private setAreaOfInterest(step: boolean = false) {
+    private setAreaOfInterest() {
         this.imgsrv.send({
             type: 'set-area-of-interest',
-            step: step,
             topleft: { x: this.rect[0], y: this.rect[1] },
             bottomright: { x: this.rect[0] + this.rect[2], y: this.rect[1] + this.rect[3] },
         });

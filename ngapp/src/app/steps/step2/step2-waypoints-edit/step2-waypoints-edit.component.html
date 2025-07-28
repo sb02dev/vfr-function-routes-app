@@ -1,24 +1,10 @@
-<section>
-    <div fxLayout="row">
-        <a mat-raised-button (click)="stepBack()">
-            <mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="arrow_back"></mat-icon>
-            Step 1
-        </a>
-        <div fxFlex>
-            <span fxFlex fxLayoutAlign="center center">Create waypoints</span>
-            <mat-icon aria-hidden="false" 
-                      aria-label="Help" fontIcon="help" 
-                      matTooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
-                                  In Edit mode you can move waypoints with the left mouse button and create a new one with the middle button.
-                                  In the table on the right you can edit the waypoint names and reorder them.">
-            </mat-icon>
-        </div>
-        <a mat-raised-button (click)="stepForward()">
-            Step 3
-            <mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="arrow_forward"></mat-icon>
-        </a>
-    </div>
-</section>
+<app-header [step-index]="2"
+            title="Create waypoints"
+            (before-forward)="stepForward()"
+            tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
+                     In Edit mode you can move waypoints with the left mouse button and create a new one with the middle button.
+                     In the table on the right you can edit the waypoint names and reorder them.">
+</app-header>
 <section fxLayout="row" class="page-content">
     <div class="map-controls" fxLayout="column">
         <a mat-icon-button><mat-icon aria-hidden="false" aria-label="Reset view" fontIcon="home"></mat-icon></a>
@@ -44,7 +30,7 @@
             </thead>
             <tbody class="table-cell">
                 <tr *ngFor="let wp of waypoints; index as i">
-                    <td><input type="text" [value]="wp.name" (change)="renameWaypoint(i, $event)"></td>
+                    <td><input placeholder="name" type="text" [value]="wp.name" (change)="renameWaypoint(i, $event)"></td>
                     <td>{{wp.x | number:'1.0-0'}} {{wp.y | number:'1.0-0'}}</td>
                     <td [className]="wp.lonlat_valid?'':'lonlat-invalid'">{{wp.lon | number:'1.2-2'}} {{wp.lat | number:'1.2-2'}}</td>
                     <td>

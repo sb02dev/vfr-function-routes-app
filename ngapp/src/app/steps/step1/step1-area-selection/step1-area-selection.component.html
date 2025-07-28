@@ -1,25 +1,10 @@
-<section>
-    <div fxLayout="row">
-        <a mat-raised-button (click)="stepBack()">
-            <mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="arrow_back"></mat-icon>
-            Step 0
-        </a>
-        <div fxFlex>
-            <span fxFlex fxLayoutAlign="center center">Set area of interest</span>
-            <mat-icon aria-hidden="false" 
-                      aria-label="Help" 
-                      fontIcon="help" 
-                      matTooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
-                                  In Edit mode you can move the corners of the area with the left mouse button.
-                                  In the table on the right you see the latitude-longitude values of the corners.">
-            </mat-icon>
-        </div>
-        <a mat-raised-button (click)="stepForward()">
-            Step 2
-            <mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="arrow_forward"></mat-icon>
-        </a>
-    </div>
-</section>
+<app-header [step-index]="1" 
+            title="Set area of interest"
+            (before-forward)="stepForward()"
+            tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
+                     In Edit mode you can move the corners of the area with the left mouse button.
+                     In the table on the right you see the latitude-longitude values of the corners.">
+</app-header>
 <section fxLayout="row" class="page-content">
     <div class="map-controls" fxLayout="column">
         <a mat-icon-button><mat-icon aria-hidden="false" aria-label="Reset view" fontIcon="home"></mat-icon></a>

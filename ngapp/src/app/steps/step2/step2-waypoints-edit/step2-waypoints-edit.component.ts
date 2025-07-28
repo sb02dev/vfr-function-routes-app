@@ -10,18 +10,20 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { Waypoint } from '../../../models/waypoint';
+import { HeaderComponent } from "../../../components/header/header/header.component";
 
 @Component({
     selector: 'app-step2-waypoints-edit',
     standalone: true,
     imports: [
-        CommonModule,
-        DecimalPipe,
-        MatButtonModule,
-        MatIconModule,
-        FlexLayoutModule,
-        MatTooltipModule
-    ],
+    CommonModule,
+    DecimalPipe,
+    MatButtonModule,
+    MatIconModule,
+    FlexLayoutModule,
+    MatTooltipModule,
+    HeaderComponent
+],
     templateUrl: './step2-waypoints-edit.component.html',
     styleUrl: './step2-waypoints-edit.component.css'
 })
@@ -119,13 +121,6 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
         // stop observers
         this.subs.unsubscribe();
         this.bgResize.disconnect();
-    }
-
-    stepBack() {
-        this.imgsrv.send({
-            type: "step-back",
-        }); // we don't need to wait for the answer
-        this.router.navigateByUrl("/step1");
     }
 
     stepForward() {

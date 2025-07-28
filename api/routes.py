@@ -17,19 +17,14 @@ rootpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 routes = APIRouter()
 
 
-@routes.get("/wtf")
-async def wtf():
-    return {'message': 'It works!'}
-
-
-_routes: dict = {}
+_vfrroutes: dict = {}
 
 @routes.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     session_id = websocket.cookies.get("session_id")
     await websocket.accept()
 
-    rte: VFRFunctionRoute = _routes.get(session_id, None)
+    rte: VFRFunctionRoute = _vfrroutes.get(session_id, None)
     width = 800
     height = 600
 
@@ -53,7 +48,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 case 'step-forward':
                     if rte and rte._state.value<max(v.value for v in VFRRouteState):
-                        rte.set_state(rte._state.value+1)
+                        rte.set_state(VFRRouteState(rte._state.value+1))
 
                 ################################################
                 # Step 0: Initialize a VFRFunctionRoute object #
@@ -73,15 +68,15 @@ async def websocket_endpoint(websocket: WebSocket):
                         outfolder=os.path.join(rootpath, "output"),
                         tracksfolder=os.path.join(rootpath, "data")
                     )
-                    _routes[session_id] = rte
+                    _vfrroutes[session_id] = rte
                 case 'sample':
                     rte = default_route()
-                    _routes[session_id] = rte
+                    _vfrroutes[session_id] = rte
                 case 'load':
                     data = json.loads(msg.get('data'))
                     print(data)
                     rte = default_route()
-                    _routes[session_id] = rte
+                    _vfrroutes[session_id] = rte
 
                 #######################################################
                 # Step 1: mark an 'area of interest' on a low-res map #
@@ -111,17 +106,13 @@ async def websocket_endpoint(websocket: WebSocket):
 
                 case 'set-area-of-interest':
                     if rte:
-                        step = msg.get("step", False)
                         tl = msg.get("topleft")
                         br = msg.get("bottomright")
                         rte.set_area_of_interest(tl.get("x"), tl.get("y"), br.get("x"), br.get("y"))
-                        if step:
-                            rte.set_state(VFRRouteState.AREAOFINTEREST)
                         tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
                         br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
                         await websocket.send_text(json.dumps({
                             "type": "area-of-interest",
-                            "step": step,
                             "top-left": {
                                 "x": tl.x,
                                 "y": tl.y,
