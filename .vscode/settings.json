@@ -1,0 +1,6 @@
+{
+    /*"pylint.args": [
+        "--init-hook",
+        "import sys; sys.path.append('e:/dev/VFRFunctionRoutes/pyvenv/')"
+    ]*/
+}

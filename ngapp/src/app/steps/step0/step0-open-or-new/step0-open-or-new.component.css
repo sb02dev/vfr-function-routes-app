@@ -1,0 +1,12 @@
+.content-area {
+    width: calc(100vw - 0px);
+    height: calc(100vh - 0px);
+}
+
+.hidden {
+    display: none;
+}
+
+.spacing {
+    margin-left: 100px;
+}

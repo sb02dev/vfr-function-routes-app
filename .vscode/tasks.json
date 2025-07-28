@@ -1,0 +1,22 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "type": "npm",
+            "script": "build",
+            "path": "ngapp",
+            "group": "build",
+            "problemMatcher": [],
+            "label": "npm: build - ngapp",
+            "detail": "ng build"
+        },
+        {
+            "type": "npm",
+            "script": "start",
+            "path": "ngapp",
+            "problemMatcher": [],
+            "label": "npm: start - ngapp",
+            "detail": "ng serve"
+        }
+    ]
+}

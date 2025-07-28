@@ -1,0 +1,149 @@
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+    <title>VFR Function Route</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            cursor: crosshair;
+            display: block;
+
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .content-area {
+            position: relative;
+            width: calc(100vw - 20px);
+            height: calc(100vh - 20px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="content-area">
+        <canvas id="bgCanvas"></canvas>
+        <canvas id="overlayCanvas"></canvas>
+    </div>
+    <script>
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlayCanvas');
+        const octx = overlay.getContext('2d');
+
+        const socket = new WebSocket('ws://localhost:8000/api/ws');
+
+        function resizeCanvas() {
+            // Set actual size in memory (for drawing resolution)
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+            overlay.width = overlay.clientWidth;
+            overlay.height = overlay.clientHeight;
+            if (socket.readyState == socket.OPEN) {
+                socket.send(JSON.stringify({ event: 'resize', width: canvas.width, height: canvas.height }));
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas(); // Initial call
+
+
+        let points = [{ x: 200, y: 150 }]; // in pixel coords
+        let selected = null;
+
+        function drawOverlay() {
+            octx.clearRect(0, 0, overlay.width, overlay.height);
+            for (let i = 0; i < points.length; i++) {
+                octx.beginPath();
+                octx.arc(points[i].x, points[i].y, 6, 0, 2 * Math.PI);
+                octx.fillStyle = (i === selected) ? 'red' : 'magenta';
+                octx.fill();
+            }
+        }
+
+
+        let isDragging = false;
+        let dragStart = null;
+        let dragEnd = null;
+
+        socket.onopen = () => {
+            console.log("WebSocket connected");
+            socket.send(JSON.stringify({ event: 'init', width: canvas.width, height: canvas.height }));
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'image') {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                };
+                img.src = 'data:image/png;base64,' + data.payload;
+                drawOverlay();
+            }
+        };
+
+        /*
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragStart = { x: e.offsetX, y: e.offsetY };
+        });
+ 
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            dragEnd = { x: e.offsetX, y: e.offsetY };
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 2]);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(lastImage, 0, 0);
+            const w = dragEnd.x - dragStart.x;
+            const h = dragEnd.y - dragStart.y;
+            ctx.strokeRect(dragStart.x, dragStart.y, w, h);
+        });
+ 
+        canvas.addEventListener('mouseup', (e) => {
+            isDragging = false;
+            dragEnd = { x: e.offsetX, y: e.offsetY };
+            socket.send(JSON.stringify({
+                event: 'drag',
+                from: dragStart,
+                to: dragEnd,
+                width: canvas.width,
+                height: canvas.height
+            }));
+        });
+ 
+        canvas.addEventListener('click', (e) => {
+            socket.send(JSON.stringify({
+                event: 'click',
+                x: e.offsetX,
+                y: e.offsetY,
+                width: canvas.width,
+                height: canvas.height
+            }));
+        });
+ 
+        // Save last image for redraws (e.g., during drag selection)
+        let lastImage = new Image();
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'image') {
+                const img = new Image();
+                img.onload = () => {
+                    lastImage = img;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                };
+                img.src = 'data:image/png;base64,' + data.payload;
+            }
+        };*/
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,69 @@
+<section>
+    <div fxLayout="row">
+        <a mat-raised-button (click)="stepBack()">
+            <mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="arrow_back"></mat-icon>
+            Step 1
+        </a>
+        <div fxFlex>
+            <span fxFlex fxLayoutAlign="center center">Create waypoints</span>
+            <mat-icon aria-hidden="false" 
+                      aria-label="Help" fontIcon="help" 
+                      matTooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
+                                  In Edit mode you can move waypoints with the left mouse button and create a new one with the middle button.
+                                  In the table on the right you can edit the waypoint names and reorder them.">
+            </mat-icon>
+        </div>
+        <a mat-raised-button (click)="stepForward()">
+            Step 3
+            <mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="arrow_forward"></mat-icon>
+        </a>
+    </div>
+</section>
+<section fxLayout="row" class="page-content">
+    <div class="map-controls" fxLayout="column">
+        <a mat-icon-button><mat-icon aria-hidden="false" aria-label="Reset view" fontIcon="home"></mat-icon></a>
+        <a mat-icon-button [class]="selectedTool=='panzoom'?'mat-tonal-button':''" (click)="selectedTool='panzoom'">
+            <mat-icon aria-hidden="false" aria-label="Pan/Zoom" fontIcon="zoom_out_map"></mat-icon>
+        </a>
+        <a mat-icon-button [class]="selectedTool=='edit'?'mat-tonal-button':''" (click)="selectedTool='edit'">
+            <mat-icon aria-hidden="false" aria-label="Edit" fontIcon="edit"></mat-icon>
+        </a>
+    </div>
+    <div class="map-content">
+        <canvas id="bgCanvas" #bgCanvas></canvas>
+        <canvas id="overlayCanvas" #overlayCanvas></canvas>
+    </div>
+    <div class="map-info">
+        <h1>Waypoints</h1>
+        <table>
+            <thead class="table-header-cell">
+                <td>Name</td>
+                <td>XY</td>
+                <td>Lon/Lat</td>
+                <td>Actions</td>
+            </thead>
+            <tbody class="table-cell">
+                <tr *ngFor="let wp of waypoints; index as i">
+                    <td><input type="text" [value]="wp.name" (change)="renameWaypoint(i, $event)"></td>
+                    <td>{{wp.x | number:'1.0-0'}} {{wp.y | number:'1.0-0'}}</td>
+                    <td [className]="wp.lonlat_valid?'':'lonlat-invalid'">{{wp.lon | number:'1.2-2'}} {{wp.lat | number:'1.2-2'}}</td>
+                    <td>
+                        <span class="row-buttons">
+                            <span class="stacked-buttons">
+                                <a (click)="moveWaypoint(i, true)" [className]="i>0?'':'disabled-button'">
+                                    <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up" fontIcon="arrow_drop_up" fontSize="12"></mat-icon>
+                                </a>
+                                <a (click)="moveWaypoint(i, false)" [className]="i<waypoints.length-1?'':'disabled-button'">
+                                    <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up" fontIcon="arrow_drop_down" fontSize="12"></mat-icon>
+                                </a>
+                            </span>
+                            <a (click)="deleteWaypoint(i)">
+                                <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
+                            </a>
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>

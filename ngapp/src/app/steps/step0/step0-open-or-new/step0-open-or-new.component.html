@@ -1,0 +1,32 @@
+<section fxLayoutAlign='center center' fxLayout='row' class="content-area">
+    <div fxLayout="column">
+        <a mat-raised-button (click)="loadRoute()">Load a route</a>
+        <input type="file" id="file-selector" #file_selector accept=".vfr" class="hidden" aria-label="---">
+        &nbsp;
+        <a mat-raised-button (click)="createRoute()">Create a route</a>
+        &nbsp;
+        <a mat-raised-button (click)="loadSample()">Sample route</a>
+    </div>
+    <form [formGroup]="form" fxLayout="column" class="spacing">
+        <h1>Data of new route:</h1>
+        <mat-label>Name of route:</mat-label>
+        <mat-form-field fxFlex="100">
+            <input type="text" matInput placeholder="Name of route" name="rteName" formControlName="rteName" />
+        </mat-form-field>
+        <mat-label>Planned airpeed:</mat-label>
+        <mat-form-field fxFlex="100">
+            <input type="number" matInput placeholder="Planned airspeed" name="speed" formControlName="speed" value="90" />
+        </mat-form-field>
+        <mat-label>Date of flight (UTC):</mat-label>
+        <mat-form-field fxFlex="100">
+            <input type="text" matInput [matDatepicker]="dofPicker" placeholder="Date of flight (UTC)" name="dof" formControlName="dof" />
+            <mat-datepicker-toggle matIconSuffix [for]="dofPicker"></mat-datepicker-toggle>
+            <mat-datepicker #dofPicker ></mat-datepicker>
+        </mat-form-field>
+        <mat-label>Time of flight (UTC):</mat-label>
+        <mat-form-field fxFlex="100">
+            <input type="time" matInput placeholder="Time of flight (UTC)" name="tof" formControlName="tof" />
+        </mat-form-field>
+    </form>
+</section>
+

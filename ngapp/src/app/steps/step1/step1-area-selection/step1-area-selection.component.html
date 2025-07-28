@@ -1,0 +1,59 @@
+<section>
+    <div fxLayout="row">
+        <a mat-raised-button (click)="stepBack()">
+            <mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="arrow_back"></mat-icon>
+            Step 0
+        </a>
+        <div fxFlex>
+            <span fxFlex fxLayoutAlign="center center">Set area of interest</span>
+            <mat-icon aria-hidden="false" 
+                      aria-label="Help" 
+                      fontIcon="help" 
+                      matTooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
+                                  In Edit mode you can move the corners of the area with the left mouse button.
+                                  In the table on the right you see the latitude-longitude values of the corners.">
+            </mat-icon>
+        </div>
+        <a mat-raised-button (click)="stepForward()">
+            Step 2
+            <mat-icon aria-hidden="false" aria-label="Example home icon" fontIcon="arrow_forward"></mat-icon>
+        </a>
+    </div>
+</section>
+<section fxLayout="row" class="page-content">
+    <div class="map-controls" fxLayout="column">
+        <a mat-icon-button><mat-icon aria-hidden="false" aria-label="Reset view" fontIcon="home"></mat-icon></a>
+        <a mat-icon-button [class]="selectedTool=='panzoom'?'mat-tonal-button':''" (click)="selectedTool='panzoom'">
+            <mat-icon aria-hidden="false" aria-label="Pan/Zoom" fontIcon="zoom_out_map"></mat-icon>
+        </a>
+        <a mat-icon-button [class]="selectedTool=='edit'?'mat-tonal-button':''" (click)="selectedTool='edit'">
+            <mat-icon aria-hidden="false" aria-label="Edit" fontIcon="edit"></mat-icon>
+        </a>
+    </div>
+    <div class="map-content">
+        <canvas id="bgCanvas" #bgCanvas ></canvas>
+        <canvas id="overlayCanvas" #overlayCanvas ></canvas>
+    </div>
+    <div class="map-info">
+        <h1>Area Lon/Lat</h1>
+        <table>
+            <thead class="table-header-cell">
+                <td>Point</td>
+                <td>XY</td>
+                <td>Lon/Lat</td>
+            </thead>
+            <tbody class="table-cell">
+                <tr>
+                    <td>Top-Left</td>
+                    <td>{{rect[0] | number:'1.0-0'}} {{rect[1] | number:'1.0-0'}}</td>
+                    <td>{{lonlat[0] | number:'1.2-2'}} {{lonlat[1]  | number:'1.2-2'}}</td>
+                </tr>
+                <tr>
+                    <td>Bottom-Right</td>
+                    <td>{{rect[0] + rect[2] | number:'1.0-0'}} {{rect[1] + rect[3]| number:'1.0-0'}}</td>
+                    <td>{{lonlat[2] | number:'1.2-2'}} {{lonlat[3] | number:'1.2-2'}}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
