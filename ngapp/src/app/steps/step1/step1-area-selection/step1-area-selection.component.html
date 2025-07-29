@@ -5,21 +5,12 @@
                      In Edit mode you can move the corners of the area with the left mouse button.
                      In the table on the right you see the latitude-longitude values of the corners.">
 </app-header>
-<section fxLayout="row" class="page-content">
-    <div class="map-controls" fxLayout="column">
-        <a mat-icon-button><mat-icon aria-hidden="false" aria-label="Reset view" fontIcon="home"></mat-icon></a>
-        <a mat-icon-button [class]="selectedTool=='panzoom'?'mat-tonal-button':''" (click)="selectedTool='panzoom'">
-            <mat-icon aria-hidden="false" aria-label="Pan/Zoom" fontIcon="zoom_out_map"></mat-icon>
-        </a>
-        <a mat-icon-button [class]="selectedTool=='edit'?'mat-tonal-button':''" (click)="selectedTool='edit'">
-            <mat-icon aria-hidden="false" aria-label="Edit" fontIcon="edit"></mat-icon>
-        </a>
-    </div>
-    <div class="map-content">
-        <canvas id="bgCanvas" #bgCanvas ></canvas>
-        <canvas id="overlayCanvas" #overlayCanvas ></canvas>
-    </div>
-    <div class="map-info">
+<app-map-edit
+    (drawOverlay)="drawOverlayTransformed($event)"
+    (enumPoints)="enumPoints($event)"
+    (movePointTo)="movePointTo($event)"
+    (finalizePoints)="setAreaOfInterest()"
+>
         <h1>Area Lon/Lat</h1>
         <table>
             <thead class="table-header-cell">
@@ -40,5 +31,4 @@
                 </tr>
             </tbody>
         </table>
-    </div>
-</section>
+</app-map-edit>
