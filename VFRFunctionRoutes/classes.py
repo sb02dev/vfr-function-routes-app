@@ -1088,7 +1088,7 @@ class VFRFunctionRoute:
         self._basemapimg = PIL.Image.open(io.BytesIO(pdfimage.tobytes("png")))
             
             
-    def create_doc(self):
+    def create_doc(self, save: bool = True) -> io.BytesIO | None:
         """
         Generates a report of the route as a Word document
         Argument: a list of a tuple
@@ -1185,8 +1185,15 @@ class VFRFunctionRoute:
 
 
         # save it
-        docname = os.path.join(self.outfolder, self.name+'.docx')
-        doc.save(docname)
+        if save:
+            docname = os.path.join(self.outfolder, self.name+'.docx')
+            doc.save(docname)
+            return
+        else:
+            buf = io.BytesIO()
+            doc.save(buf)
+            buf.seek(0)
+            return buf
 
 
     def save_plan(self):

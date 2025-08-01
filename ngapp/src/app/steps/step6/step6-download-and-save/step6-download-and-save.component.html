@@ -1,0 +1,18 @@
+<app-header [step-index]="6"
+            title="Download and Save" 
+            tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
+                     In Edit mode you can move constraint points with the left mouse button and create a new one with the middle button.
+                     In the table on the right you can edit the points' x-valaue in function space and edit the function to use for that
+                     leg's route.">
+</app-header>
+<section fxLayoutAlign='center center' fxLayout='row' class="content-area">
+    <div fxLayout="column">
+        <a mat-raised-button (click)="downloadDOCX()">Download DOCX report</a>
+        &nbsp;
+        <a mat-raised-button (click)="downloadPNG()">Download PNG image</a>
+        &nbsp;
+        <a mat-raised-button (click)="downloadGPX()">Download GPX file for SkyDemon</a>
+        &nbsp;
+        <a mat-raised-button (click)="downloadVFR()">Download VFR file (to load here later)</a>
+    </div>
+</section>

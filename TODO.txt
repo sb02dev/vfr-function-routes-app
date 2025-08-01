@@ -19,9 +19,13 @@ v0.1:
 - annotations
   + basic implementation
 - tracks
-- final step: download generated files (doc, gpx, vfr)
+- final step: download generated files (docx, png, gpx, vfr)
+  + download docx, png
+  - download gpx
   - vfr format save-load
+  - change dof before generation
   - save to cloud
 - change to socket.io (for auto reconnect and simpler code)
 - order constraint points by func_x
 - prepare for deploy
+- mobile friendly

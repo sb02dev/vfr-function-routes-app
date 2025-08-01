@@ -224,6 +224,37 @@ async def websocket_endpoint(websocket: WebSocket):
                                           } for leg in rte.legs]
                             }))
 
+                ###################################
+                # Step 5: add tracks to the route #
+                ###################################
+
+                ##################################################################
+                # Step 6: Download and save generated files or save to the cloud #
+                ##################################################################
+                case 'get-docx':
+                    if rte:
+                        buf = rte.create_doc(False)
+                        b64 = base64.b64encode(buf.read()).decode("utf-8")
+                        await websocket.send_text(json.dumps({
+                            "type": "docx",
+                            "data": b64,
+                            "mime": 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            "filename": f"{rte.name}.docx",
+                        }))
+
+                case 'get-png':
+                    if rte:
+                        fig, ax = rte.draw_map()
+                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        plt.close(fig)
+                        await websocket.send_text(json.dumps({
+                            "type": "png",
+                            "data":  image,
+                            "mime": 'image/png',
+                            "filename": f"{rte.name}.png"
+                        }))
+
+
 
 
         except Exception as e:
