@@ -17,6 +17,7 @@ v0.1:
 + mapedit: zoom to all
 + docgen_sample.py works again
 - annotations
+  + basic implementation
 - tracks
 - final step: download generated files (doc, gpx, vfr)
   - vfr format save-load

@@ -5,8 +5,9 @@
                      In the table on the right you can edit the points' x-valaue in function space and edit the function to use for that
                      leg's route.">
 </app-header>
-<app-map-edit><!--
+<app-map-edit
     (drawOverlay)="drawOverlayTransformed($event)" 
+><!--    
     (enumPoints)="enumPoints($event)"
     (movePointTo)="movePointTo($event)" 
     (addPointAt)="addPointAt($event)" 
@@ -18,6 +19,7 @@
         <span>{{legs[leg_index]?legs[leg_index].name:''}} ({{leg_index+1}}/{{legs.length}})</span>
         <a mat-icon-button (click)="changeLeg(1)"><mat-icon aria-hidden="false" aria-label="Next leg" fontIcon="arrow_right"></mat-icon></a>
     </div>
+    <app-math-edit [readOnly]="true"></app-math-edit>
     <table>
         <thead class="table-header-cell">
             <td>Name</td>

@@ -9,6 +9,7 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../../../components/header/header/header.component';
 import { AnnLeg } from '../../../models/annotations'
+import { MathEditComponent } from '../../../components/mathedit/math-edit/math-edit.component';
 
 @Component({
     selector: 'app-step4-annotations-edit',
@@ -18,6 +19,7 @@ import { AnnLeg } from '../../../models/annotations'
         MatIconModule,
         FlexLayoutModule,
         MapEditComponent,
+        MathEditComponent,
         HeaderComponent,
     ],
     templateUrl: './step4-annotations-edit.component.html',
@@ -31,6 +33,7 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
     leg_index: number = 0;
     
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
+    @ViewChild(MathEditComponent) mathedit!: MathEditComponent;
 
     constructor(public router: Router, private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
@@ -39,6 +42,10 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
                 this.legs = msg['annotations'].map((leg: any) => {
                     return {
                         name: leg.name,
+                        function_latex: leg.function_name,
+                        function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name)).compile(),
+                        matrix_func2cropmap: leg.matrix_func2cropmap,
+                        matrix_cropmap2func: leg.matrix_cropmap2func,
                         annotations: leg.annotations.map((ann: any) => {
                             return {
                                 name: ann.name,
@@ -97,7 +104,172 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
     }
 
     change(prop: string, index: number, event: any) {
+        if (!event.target) return;
+        let target = (event.target as HTMLInputElement);
+        if (!target.value) return;
+        const ann = this.legs[this.leg_index].annotations[index];
+        if (prop == "name") {
+            const val: string = target.value;
+            ann[prop] = val;    
+        } else if (prop=="func_x" || prop=="ofs_x" || prop=="ofs_y") {
+            const val: number = parseFloat(target.value);
+            ann[prop] = val;
+        }
+        this.mapedit.drawOverlayTransformed();
+    }
 
+    drawOverlayTransformed(event: { canvas: HTMLCanvasElement, imgWidth: number, imgHeight: number }) {
+        // get references and clear canvas
+        const canvas = event.canvas;
+        const ctx = canvas.getContext('2d')!;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (var j = 0; j < 2; j++) { // to have the selected leg drawn last
+            for (var l = 0; l < this.legs.length; l++) {
+                //let func = (x: number) => x**(1/3); // fixed to linear f(x)=x
+                let func = (x: number) => this.legs[l].function_mathjs_compiled?.evaluate({ x: x });
+
+                const leg = this.legs[l];
+                if ((leg.annotations.length > 0) && ((j == 0) != (this.leg_index == l))) {
+                    const ann = leg.annotations;
+                    // draw polygon
+                    let last_x = ann[0].func_x;
+                    const mappt = this.applyTransformationMatrix({ x: ann[0].func_x, y: func(ann[0].func_x) }, leg.matrix_func2cropmap);
+                    const [x, y] = this.mapedit.getImage2CanvasCoords(mappt.x, mappt.y);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    const numPieces = 100;
+                    for (let i = 1; i < ann.length; i++) {
+                        for (let k = 0; k <= numPieces; k++) {
+                            const dx = k * (ann[i].func_x - last_x) / numPieces;
+                            const funcpt = { x: last_x + dx, y: func(last_x + dx) };
+                            const mappt = this.applyTransformationMatrix(funcpt, leg.matrix_func2cropmap);
+                            const [x, y] = this.mapedit.getImage2CanvasCoords(mappt.x, mappt.y);
+                            ctx.lineTo(x, y);
+                        }
+                        last_x = ann[i].func_x;
+                    }
+                    //ctx.closePath();
+                    ctx.lineWidth = 6;
+                    ctx.strokeStyle = l == this.leg_index ? "red" : "blue";
+                    ctx.stroke();
+
+                    // draw corners and names
+                    for (let i = 0; i < ann.length; i++) {
+                        const mappt = this.applyTransformationMatrix({ x: ann[i].func_x, y: func(ann[i].func_x) }, leg.matrix_func2cropmap);
+                        const [x, y] = this.mapedit.getImage2CanvasCoords(mappt.x, mappt.y);
+                        ctx.beginPath();
+                        ctx.fillStyle = (l == this.leg_index) ? ((i == this.mapedit.selectedPoint)) ? "green" : "red" : "blue";
+                        ctx.arc(x, y, 12, 0, 2 * Math.PI);
+                        ctx.fill();
+                        const tx = x + ann[i].ofs_x;
+                        const ty = y + ann[i].ofs_y;
+                        ctx.font = "12px serif";
+                        const bubsize = this.estimateBubbleSize(12, 4, 30);
+                        this.drawBubble(ctx, tx, ty, bubsize.width, bubsize.height, ann[i].name, 12);
+                    }
+
+                    /*/ draw extra point
+                    if (this.extrapoint != null) {
+                        const [x, y] = this.mapedit.getImage2CanvasCoords(this.extrapoint[0], this.extrapoint[1]);
+                        ctx.beginPath();
+                        ctx.fillStyle = "purple";
+                        ctx.arc(x, y, 12, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }//*/
+                }
+            }
+        }
+    }
+
+
+    private estimateBubbleSize(fontSize: number, numLines: number, maxChars: number): { width: number; height: number } {
+        const charWidth = 0.6 * fontSize;      // average char width
+        const lineHeight = 1.2 * fontSize;     // line spacing
+        const padding = 0.5 * fontSize;        // bubble margin
+
+        const width = maxChars * charWidth + 2 * padding;
+        const height = numLines * lineHeight + 2 * padding;
+
+        return { width, height };
+    }
+
+    private drawBubble(
+        ctx: CanvasRenderingContext2D,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+        text: string,
+        fontSize: number = 14
+    ) {
+        ctx.save(); // save state
+
+        // Bubble background
+        ctx.fillStyle = "rgba(135, 206, 250, 0.5)"; // semi-transparent lightblue
+        ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";     // darker border
+        ctx.lineWidth = 2;
+
+        this.drawRoundedRect(ctx, x, y, width, height, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        // Draw text
+        ctx.fillStyle = "black";
+        ctx.font = `${fontSize}px sans-serif`;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+
+        const lines = text.split("\n");
+        const lineHeight = fontSize * 1.2;
+        for (let i = 0; i < lines.length; i++) {
+            ctx.fillText(lines[i], x + 10, y + 10 + i * lineHeight);
+        }
+
+        ctx.restore(); // restore state
+    }
+
+    private drawRoundedRect(
+        ctx: CanvasRenderingContext2D,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+        radius: number
+    ) {
+        ctx.beginPath();
+        ctx.moveTo(x + radius, y);
+        ctx.lineTo(x + width - radius, y);
+        ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+        ctx.lineTo(x + width, y + height - radius);
+        ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+        ctx.lineTo(x + radius, y + height);
+        ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+        ctx.lineTo(x, y + radius);
+        ctx.quadraticCurveTo(x, y, x + radius, y);
+        ctx.closePath();
+    }
+
+
+    /**
+     * Apply a 2D transformation matrix to a point.
+     * @param {{x: number, y: number}} point - Original point.
+     * @param {number[][]} matrix - 3x3 transformation matrix as nested arrays.
+     * @returns {{x: number, y: number}} Transformed point.
+     */
+    private applyTransformationMatrix(point: { x: number, y: number }, matrix: number[][]) {
+        // Convert point to homogeneous coordinates vector
+        const pointVector = [point.x, point.y, 1];
+
+        // Multiply matrix * pointVector
+        const transformedVector = [
+            matrix[0][0] * pointVector[0] + matrix[0][1] * pointVector[1] + matrix[0][2] * pointVector[2],
+            matrix[1][0] * pointVector[0] + matrix[1][1] * pointVector[1] + matrix[1][2] * pointVector[2],
+            matrix[2][0] * pointVector[0] + matrix[2][1] * pointVector[1] + matrix[2][2] * pointVector[2],
+        ];
+
+        // Return the transformed point (ignore the homogeneous coordinate w)
+        return { x: transformedVector[0], y: transformedVector[1] };
     }
 
 }

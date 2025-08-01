@@ -6,5 +6,9 @@ export type Annotation = {
 }
 export type AnnLeg = {
     name: string;
+    function_latex: string;
+    function_mathjs_compiled: any;
+    matrix_func2cropmap: number[][];
+    matrix_cropmap2func: number[][];
     annotations: Annotation[];
 };

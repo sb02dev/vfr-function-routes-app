@@ -213,6 +213,9 @@ async def websocket_endpoint(websocket: WebSocket):
                                 "image": image,
                                 "annotations": [{
                                             "name": leg.name,
+                                            "function_name": leg.function_name,
+                                            "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
+                                            "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
                                             "annotations": [{
                                                 "name": ann.name,
                                                 "func_x": ann.x,

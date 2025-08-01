@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import 'mathlive';
 import { ComputeEngine } from '@cortex-js/compute-engine';
 import { create, all, MathNode } from 'mathjs';
@@ -15,14 +15,28 @@ const math = create(all);
     styleUrl: './math-edit.component.css'
 })
 export class MathEditComponent implements AfterViewInit {
+    
     @ViewChild('mf') mf!: ElementRef;
     @Output() latexChange = new EventEmitter<{ latex: string, ast: any, mathjs: any }>();
-
+    
+    private _readonly = false;
+    @Input()
+    set readOnly(value: boolean) {
+        this._readonly = value;
+        if (this.mf) {
+            this.mf.nativeElement.readOnly = value;
+        }
+    }
+    get readonly(): boolean {
+        return this._readonly;
+    }
+    
     private ce!: ComputeEngine;
     
     ngAfterViewInit(): void {
         this.ce = new ComputeEngine();
         MathfieldElement.computeEngine = this.ce;
+        this.mf.nativeElement.readOnly = this.readOnly;
     }
 
     onInput(event: any) {

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, OnDestroy, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { MatIconModule } from "@angular/material/icon";
 import { CommonModule } from '@angular/common';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
