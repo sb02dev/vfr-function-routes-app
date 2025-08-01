@@ -2,6 +2,8 @@ from typing import NamedTuple
 import numpy as np
 import math
 
+from sympy import E, pi, oo, I, Symbol
+from sympy.parsing.latex import parse_latex
 
 
 class PointLonLat(NamedTuple):
@@ -127,3 +129,15 @@ def _get_extent_from_extents(extents: list[ExtentLonLat]) -> ExtentLonLat:
         min_lon = min(n for n in [min_lon, ex.minlon, ex.maxlon] if n is not None)
         max_lon = max(n for n in [max_lon, ex.minlon, ex.maxlon] if n is not None)
     return ExtentLonLat(min_lon, min_lat, max_lon, max_lat)
+
+
+def parse_latex_with_constants(s: str):
+    expr = parse_latex(s)
+
+    replacements = {
+        Symbol("e"): E,
+        Symbol("pi"): pi,
+        Symbol("∞"): oo,
+        Symbol("i"): I
+    }
+    return expr.xreplace(replacements)

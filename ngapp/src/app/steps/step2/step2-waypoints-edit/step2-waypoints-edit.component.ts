@@ -33,7 +33,7 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
 
     constructor(public router: Router, private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'high-res') {
+            if (msg.type === 'waypoints-map') {
                 this.mapedit.drawBackgroundImage(msg['image']);
                 this.waypoints = msg['waypoints'].map((wp: any) => { 
                     return {
@@ -65,17 +65,13 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
     ngAfterViewInit(): void {
         // initiate image load
         this.imgsrv.send({
-            type: 'get-high-res-map',
+            type: 'get-waypoints-map',
         });
     }
 
     ngOnDestroy(): void {
         // stop observers
         this.subs.unsubscribe();
-    }
-
-    stepForward() {
-        throw Error("Sorry this is not implemented yet")
     }
 
     deleteWaypoint(index: number) {
@@ -174,7 +170,6 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
                 ctx.fillText(wp.name, x+15, y);
             }
         }
-
     }
 
 }

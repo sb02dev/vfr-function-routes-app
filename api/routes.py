@@ -42,13 +42,9 @@ async def websocket_endpoint(websocket: WebSocket):
                 ####################
                 # General messages #
                 ####################
-                case 'step-back':
-                    if rte and rte._state.value>1:
-                        rte.set_state(VFRRouteState(rte._state.value-1))
-
-                case 'step-forward':
-                    if rte and rte._state.value<max(v.value for v in VFRRouteState):
-                        rte.set_state(VFRRouteState(rte._state.value+1))
+                case 'step':
+                    if rte:
+                        rte.set_state(VFRRouteState(msg.get("step", rte._state.value+1)))
 
                 ################################################
                 # Step 0: Initialize a VFRFunctionRoute object #
@@ -130,12 +126,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 ####################################################################
                 # Step 2: mark the waypoints on a high-res map of area of interest #
                 ####################################################################
-                case 'get-high-res-map':
+                case 'get-waypoints-map':
                     if rte:
-                        with rte.get_highres_map() as fig:
+                        with rte.get_highres_map() as (fig, ax):
                             image = _get_image_from_figure(fig, dpi=rte.DPI)
                             await websocket.send_text(json.dumps({
-                                "type": "high-res",
+                                "type": "waypoints-map",
                                 "image": image,
                                 "waypoints": [{"name": name,
                                                "x": pp.x, 
@@ -159,6 +155,72 @@ async def websocket_endpoint(websocket: WebSocket):
                             "type": "waypoints",
                             "waypoints": wps,
                         }))
+
+                ################################################################################
+                # Step 3: define the legs: add constraint points, define function and x values #
+                ################################################################################
+                case 'get-legs-map':
+                    if rte:
+                        with rte.get_highres_map() as (fig, ax):
+                            image = _get_image_from_figure(fig, dpi=rte.DPI)
+                            await websocket.send_text(json.dumps({
+                                "type": "legs-map",
+                                "image": image,
+                                "legs": [{"name": leg.name,
+                                          "function_name": leg.function_name,
+                                          "function_range": leg.function_range,
+                                          "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
+                                          "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                                          "points": [{
+                                              "lon": p.lon, 
+                                              "lat": p.lat,
+                                              "x": pp.x,
+                                              "y": pp.y,
+                                              "func_x": x
+                                          } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
+                                         }  for leg in rte.legs]
+                            }))
+
+                case 'update-legs':
+                    if rte:
+                        rte.updateLegs(msg.get("legs"))
+                        await websocket.send_text(json.dumps({
+                            "type": "legs",
+                            "legs": [{"name": leg.name,
+                                      "function_name": leg.function_name,
+                                      "function_range": leg.function_range,
+                                      "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
+                                      "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                                      "points": [{
+                                          "lon": p.lon,
+                                          "lat": p.lat,
+                                          "x": pp.x,
+                                          "y": pp.y,
+                                          "func_x": x
+                                      } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
+                                      } for leg in rte.legs]
+                        }))
+
+                #############################################################################
+                # Step 4: define annotation points, their names and an offset of the bubble #
+                #############################################################################
+                case 'get-annotations-map':
+                    if rte:
+                        with rte.get_annotations_map() as (fig, ax):
+                            image = _get_image_from_figure(fig, dpi=rte.DPI)
+                            await websocket.send_text(json.dumps({
+                                "type": "annotations-map",
+                                "image": image,
+                                "annotations": [{
+                                            "name": leg.name,
+                                            "annotations": [{
+                                                "name": ann.name,
+                                                "func_x": ann.x,
+                                                "ofs": {"x": ann.ofs[0], "y": ann.ofs[1]}
+                                            } for ann in leg.annotations],
+                                          } for leg in rte.legs]
+                            }))
+
 
 
         except Exception as e:
@@ -195,16 +257,26 @@ def default_route():
         tracksfolder=r"E:\dev\projects\VFRFunctionRoutes\data"
     )
 
+    rgen.set_area_of_interest(858, 542, 1268, 852)
 
+    rgen.set_state(VFRRouteState.AREAOFINTEREST)
+
+    rgen.add_waypoint("LHFH", VFRPoint(18.912424867046774, 47.48950030173632, VFRCoordSystem.LONLAT, rgen))
+    rgen.add_waypoint("Lovasberény", VFRPoint(18.55314689455907, 47.31145066437747, VFRCoordSystem.LONLAT, rgen))
+    rgen.add_waypoint("Császár", VFRPoint(18.13993451767051, 47.50100085714328, VFRCoordSystem.LONLAT, rgen))
+
+    rgen.set_state(VFRRouteState.LEGS) # because we also want to add annotations
+
+    rgen.legs = [] # TODO: currently recreate (should be updating and calculating lambdas)
     rgen.add_leg(
         'LHFH->Lovasberény',
-        '$f(x)=\\sqrt[3]{{x}}$ $x\\in [0,1.5]$',
+        '\\sqrt[3]{{x}}',
         '$x=0$ at Lovasberény, $x=1.5$ at LHFH',
         lambda x: x ** (1. / 3.),
         [
             # (lat, lon, x),
-            (VFRPoint(18.55314689455907, 47.31145066437747), 0),
-            (VFRPoint(18.912424867046774, 47.48950030173632), 1.5)
+            (VFRPoint(18.912424867046774, 47.48950030173632), 1.5),
+            (VFRPoint(18.55314689455907, 47.31145066437747), 0)
         ]
     ).add_annotation("START", 1.5, (-120, 10)) \
     .add_annotation("Etyek", 0.8, (20, -25)) \
@@ -214,7 +286,7 @@ def default_route():
 
     rgen.add_leg(
         'Lovasberény->Császár',
-        r'$f(x)=\frac{1}{e^x}$ $x\in [-\frac{\pi}{2},\pi]$',
+        r'\frac{1}{e^x}',
         r'$x=\pi$ at Lovasberény, $x=-\frac{\pi}{2}$ at Császár',
         lambda x: 1. / math.exp(x),
         [
@@ -229,13 +301,13 @@ def default_route():
 
     rgen.add_leg(
         'Császár->LHFH',
-        r'$f(x)=sin(x)$ $x\in [0,\pi]$',
+        r'\sin\left(x\right)',
         r'$x=0$ at Császár, $x=\pi$ at LHFH, $x=\frac{\pi}{2}$ at Nyergesújfalu',
         lambda x: math.sin(x),
         [
             (VFRPoint(18.13993451767051, 47.50100085714328), 0),
-            (VFRPoint(18.912424867046774, 47.48950030173632), math.pi),
-            (VFRPoint(18.54614123145077, 47.7612944935143), math.pi/2)
+            (VFRPoint(18.54614123145077, 47.7612944935143), math.pi/2),
+            (VFRPoint(18.912424867046774, 47.48950030173632), math.pi)
         ]
     ).add_annotation("Császár", 0, (-80, 40)) \
     .add_annotation("Szákszend", 0.15, (10, 0)) \
@@ -248,6 +320,8 @@ def default_route():
     .add_annotation("Tinnye", 2.57, (-25, 60)) \
     .add_annotation("Telki", 2.9, (-33, 80)) \
     .add_annotation("END", math.pi, (-140, 60))
+
+    rgen.set_state(VFRRouteState.ANNOTATIONS)
 
     rgen.finalize()
 

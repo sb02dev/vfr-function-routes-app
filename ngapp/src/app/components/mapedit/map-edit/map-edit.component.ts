@@ -48,8 +48,8 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
             // update canvas size or layout
             this.bgCanvasRef.nativeElement.width = w;
             this.bgCanvasRef.nativeElement.height = h;
-            this.xlim = [0, w];
-            this.ylim = [0, h];
+            this.xlim = [this.xlim[0], this.xlim[0] + w];
+            this.ylim = [this.ylim[0], this.ylim[0] + h];
             this.overlayCanvasRef.nativeElement.width = w;
             this.overlayCanvasRef.nativeElement.height = h;
             // redraw
@@ -79,6 +79,32 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     ngOnDestroy(): void {
         // stop observers
         this.bgResize.disconnect();
+    }
+
+    resetView() {
+        this.xlim = [0, this.bgCanvasRef.nativeElement.width];
+        this.ylim = [0, this.bgCanvasRef.nativeElement.height];
+        this.drawBackgroundTransformed();
+        this.drawOverlayTransformed();
+    }
+
+    zoomToAll() {
+        if (!this.baseImage) return;
+        const imw = this.baseImage.width;
+        const imh = this.baseImage.height;
+        const canvasw = this.bgCanvasRef.nativeElement.width;
+        const canvash = this.bgCanvasRef.nativeElement.height;
+        const widthratio = imw / canvasw;
+        const heightratio = imh / canvash;
+        if (widthratio > heightratio) {
+            this.xlim = [0,imw];
+            this.ylim = [0,canvash*widthratio];
+        } else {
+            this.xlim = [0,canvasw*heightratio];
+            this.ylim = [0,imh];
+        }
+        this.drawBackgroundTransformed();
+        this.drawOverlayTransformed();
     }
 
     private mouseDown(e: MouseEvent) {

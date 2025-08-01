@@ -79,7 +79,7 @@ export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
     }
 
     enumPoints(enumerate: (i: number, x: number, y: number) => boolean) {
-        const [sx, sy, sw, sh] = this.getRectImageCoords();
+        const [sx, sy, sw, sh] = this.rect;
         const xys = [[sx, sy], [sx + sw, sy], [sx + sw, sy + sh], [sx, sy + sh]];
         for (var i = 0; i < xys.length; i++) {
             const xy = xys[i];
@@ -90,7 +90,7 @@ export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
     }
 
     movePointTo(event: { i: number, x: number, y: number, callback: () => void }) {
-        const [x, y] = this.mapedit.getCanvas2ImageCoords(event.x, event.y);
+        const [x, y] = [event.x, event.y]; //this.mapedit.getCanvas2ImageCoords(event.x, event.y);
         const [sx, sy, sw, sh] = this.rect;
         if (event.i == 0) {
             this.rect = [x, y, sw - (x - sx), sh - (y - sy)];

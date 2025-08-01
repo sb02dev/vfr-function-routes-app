@@ -30,7 +30,8 @@ export class HeaderComponent {
 
     stepBack() {
         this.imgsrv.send({
-            type: "step-back",
+            type: "step",
+            step: this.step_index-1,
         }); // we don't need to wait for the answer
         this.router.navigateByUrl(`/step${this.step_index-1}`);
     }
@@ -38,7 +39,8 @@ export class HeaderComponent {
     stepForward() {
         this.before_forward.emit();
         this.imgsrv.send({
-            type: "step-forward",
+            type: "step",
+            step: this.step_index+1,
         }); // we don't need to wait for the answer
         this.router.navigateByUrl(`/step${this.step_index+1}`);
     }

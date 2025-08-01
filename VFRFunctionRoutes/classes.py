@@ -33,6 +33,11 @@ import matplotlib.patches as patches
 from docx import Document
 from docx.shared import Inches, Cm
 
+# LaTeX evaluation related imports
+from sympy.parsing.latex import parse_latex
+from sympy.utilities.lambdify import lambdify
+import sympy.abc
+
 # package imports
 from .projutils import (
     PointLonLat, PointXY,
@@ -41,7 +46,8 @@ from .projutils import (
     _apply_transformation_matrix,
     _rotate_point,
     _get_extent_from_points,
-    _get_extent_from_extents
+    _get_extent_from_extents,
+    parse_latex_with_constants
 )
 from .docxutils import add_formula_par
 
@@ -362,7 +368,7 @@ class VFRLeg:
     def add_annotation(self, name: str, x: float, ofs: tuple[float, float]) -> Self:
         """
         """
-        self._route._ensure_state(VFRRouteState.DEFINITION)
+        self._route._ensure_state(VFRRouteState.LEGS)
         newannotation = VFRAnnotation(self, name, x, ofs)
         self.annotations.append(newannotation)
         return self
@@ -372,7 +378,7 @@ class VFRLeg:
         return _get_extent_from_points([PointLonLat(p.lon, p.lat) for p, x in self.points])
         
         
-    def draw(self, ax):
+    def draw(self, ax, with_annotations: bool = True):
         # draw planned track
         x = np.linspace(min([x for p, x in self.points]), 
                         max([x for p, x in self.points]),
@@ -386,8 +392,9 @@ class VFRLeg:
                 lw=self.lw
                )
         # draw annotations
-        for a in self.annotations:
-            a.draw(ax)
+        if with_annotations:
+            for a in self.annotations:
+                a.draw(ax)
     
     
     def calc_transformations(self):
@@ -397,8 +404,11 @@ class VFRLeg:
         if len(sp) < 3:
             sp.append(_rotate_point(sp[0], sp[1], -90))
             dp.append(_rotate_point(dp[0], dp[1], 90))
-        self._matrix_func2cropmap = _calculate_2d_transformation_matrix(sp, dp)
-        self._matrix_cropmap2func = np.linalg.inv(self._matrix_func2cropmap)
+        try:
+            self._matrix_func2cropmap = _calculate_2d_transformation_matrix(sp, dp)
+            self._matrix_cropmap2func = np.linalg.inv(self._matrix_func2cropmap)
+        except:
+            pass # keep the old matrix
         
         
     def transform_point(self,
@@ -516,9 +526,31 @@ class VFRFunctionRoute:
         self.calc_transformations()
         
 
-    def _ensure_state(self, required_state: VFRRouteState):
-        if self._state.value<required_state.value:
-            raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required: {required_state}.")
+    def _ensure_state(self, required_state: VFRRouteState, ensure_minimum: bool = True, ensure_exactly: bool = False):
+        """
+        Ensure the object is in the desired state. Otherwise raise an exception.
+
+        Args
+            required_state: VFRRouteState
+                The state we compare to
+            
+            ensure_minimum: bool
+                The direction we compare: if True we need to have at least
+                the given state, if False we need to have at most the given
+                state.
+
+            ensure_exactly: bool
+                We have to have exactly the given state (no more, no less).
+        """
+        if ensure_exactly:
+            if self._state.value!=required_state.value:
+                raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required exact state: {required_state}.")
+        elif ensure_minimum:
+            if self._state.value<required_state.value:
+                raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required minimum state: {required_state}.")
+        else:
+            if self._state.value>required_state.value:
+                raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required maximum state: {required_state}.")
         
     
     def set_state(self, required_state: VFRRouteState):
@@ -534,7 +566,10 @@ class VFRFunctionRoute:
             if self._state==VFRRouteState.AREAOFINTEREST and required_state.value>self._state.value:
                 # AREAOFINTEREST -> WAYPOINTS
                 self._state = VFRRouteState.WAYPOINTS
-            if self._state==VFRRouteState.WAYPOINTS and required_state.value>self._state.value:
+                self.waypoints_to_legs()
+                self.calc_extents()
+                self.calc_transformations()
+            if self._state == VFRRouteState.WAYPOINTS and required_state.value > self._state.value:
                 # WAYPOINTS -> LEGS
                 self._state = VFRRouteState.LEGS
             if self._state==VFRRouteState.LEGS and required_state.value>self._state.value:
@@ -546,6 +581,27 @@ class VFRFunctionRoute:
         else: # backward stepping
             # TODO: currently nothing is done (we could free up resources, etc)
             self._state = required_state
+
+
+    def waypoints_to_legs(self):
+        for i in range(len(self.waypoints)):
+            wp_start = self.waypoints[i]
+            wp_end = self.waypoints[i+1 if i+1<len(self.waypoints) else 0] # circle around (last point is the same as first)
+            if len(self.legs)>i: # we have a leg at that position
+                # so we adjust its endpoints position (not the x value)
+                self.legs[i].points[0] = (VFRPoint(wp_start[1].lon, wp_start[1].lat, VFRCoordSystem.LONLAT, self), self.legs[i].points[0][1])
+                self.legs[i].points[-1] = (VFRPoint(wp_end[1].lon, wp_end[1].lat, VFRCoordSystem.LONLAT, self), self.legs[i].points[-1][1])
+                # we adjust the name of the leg
+                self.legs[i].name = f"{wp_start[0]} -- {wp_end[0]}"
+                # TODO: and we adjust the annotations so we have the
+                # waypoint names for the first and last (or add if needed)
+            else: # we don't have a leg yet
+                # so we add a new one
+                self.add_leg(f"{wp_start[0]} -- {wp_end[0]}", f"x^{i+1}", "", lambda x: x**i, 
+                             [
+                                 (VFRPoint(wp_start[1].lon, wp_start[1].lat, VFRCoordSystem.LONLAT, self), 0),
+                                 (VFRPoint(wp_end[1].lon, wp_end[1].lat, VFRCoordSystem.LONLAT, self), 1)
+                             ])
 
 
     def finalize(self):
@@ -622,16 +678,64 @@ class VFRFunctionRoute:
         ax.imshow(self._basemapimg)
 
         # return
-        yield fig
+        yield fig, ax
 
         # TODO: cleanup
         plt.close(fig)
 
 
+    @contextmanager
+    def get_annotations_map(self):
+        with self.get_highres_map() as (fig, ax):
+            for l in self.legs:
+                l.draw(ax, False)
+            yield fig, ax            
+
+
+    def add_waypoint(self, name: str, point: VFRPoint):
+        point.route = self
+        self.waypoints.append((name, point.project_point(VFRCoordSystem.LONLAT)))
+
+
     def updateWaypoints(self, wps: list[dict]):
         # calculate new waypoints
         self.waypoints = [(wp["name"], VFRPoint(wp["x"], wp["y"], VFRCoordSystem.MAPCROP_XY, self).project_point(VFRCoordSystem.LONLAT)) for wp in wps]
-        # TODO: update legs if they exist
+
+
+    def updateLegs(self, legs: list[dict]):
+        # set legs according to edits
+        for i, leg in enumerate(legs):
+            curleg = self.legs[i]
+            # setup general
+            curleg.name = leg["name"]
+            # setup function
+            curleg.function_range = leg["function_range"]
+            latex = leg["function_name"]
+            curleg.function_name = latex
+            try:
+                parsedfun = parse_latex_with_constants(latex) # parse_latex(latex)
+                curleg.function = lambdify(sympy.abc.x, parsedfun, modules=["math"])
+                print(f"{latex} --> {[f"({p['func_x']}, {curleg.function(p['func_x'])})" for p in leg["points"]]}")
+            except Exception as e:
+                print(f'could not convert {latex}, fallback to linear (${e})')
+                curleg.function = lambda x: x # fallback to linear
+            # setup constraint points
+            lp_start, lp_end = curleg.points[0], curleg.points[-1]
+            newpoints: list[tuple[VFRPoint, float]] = []
+            for j, pt in enumerate(leg["points"]):
+                if j==0:
+                    newpoints.append((lp_start[0], pt["func_x"]))
+                elif j==len(leg["points"])-1:
+                    newpoints.append((lp_end[0], pt["func_x"]))
+                else:
+                    newpoints.append((
+                        VFRPoint(pt["x"], pt["y"], VFRCoordSystem.MAPCROP_XY, self, curleg).project_point(VFRCoordSystem.LONLAT),
+                        pt["func_x"]
+                    ))
+            curleg.points = newpoints
+            # recalculate
+            curleg.calc_transformations()
+
 
 
     def _fullmap_clicker(self):
@@ -861,6 +965,7 @@ class VFRFunctionRoute:
                 Default is equal to horizontal margin.
         """
         # extent: (min_lat, max_lat, min_lon, max_lon)
+        lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
         match self._state:
             case VFRRouteState.INITIATED:
                 self.extent=ExtentLonLat(18.5, 47.0, 19.5, 47.5) # just a default around Budapest
@@ -875,9 +980,7 @@ class VFRFunctionRoute:
                     max(lon0, lon1),
                     max(lat0, lat1)
                 )
-            case VFRRouteState.WAYPOINTS:
-                raise NotImplementedError("Sorry this is not implemented yet")
-            case VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED:
+            case VFRRouteState.WAYPOINTS | VFRRouteState.LEGS | VFRRouteState.ANNOTATIONS | VFRRouteState.FINALIZED:
                 if len(self.legs)==0 and len(self.tracks)==0:
                     self.extent=ExtentLonLat(18.5, 47.0, 19.5, 47.5) # just a default around Budapest
                     return
@@ -945,6 +1048,7 @@ class VFRFunctionRoute:
         
     def calc_basemap(self):
         # calc clip coordinates
+        lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
         match self._state:
             case VFRRouteState.INITIATED:
                 raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required: {VFRRouteState.AREAOFINTEREST}.")
@@ -955,7 +1059,7 @@ class VFRFunctionRoute:
                                           self.area_of_interest["bottom-right"].lon)
             case VFRRouteState.WAYPOINTS:
                 raise NotImplementedError("Sorry this is not implemented yet")
-            case VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED:
+            case VFRRouteState.LEGS | VFRRouteState.ANNOTATIONS | VFRRouteState.FINALIZED:
                 lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
         corners_lonlat = [
             VFRPoint(lon0, lat0, route=self),

@@ -1,0 +1,43 @@
+.map-info {
+    width: 450px;
+    height: 100%;
+}
+
+.table-header-cell td {
+    font-weight: bold;
+    border-bottom: 2px solid midnightblue;
+    border-right: 2px solid midnightblue;
+}
+
+.table-cell tr td {
+    border-right: 2px solid midnightblue;
+}
+
+.lonlat-invalid {
+    color: lightgray;
+}
+
+.stacked-buttons {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transform: scale(0.65);
+}
+
+.button {
+    transform: scale(0.8);
+}
+
+.row-buttons {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.disabled-button {
+    pointer-events: none !important;
+    cursor: default;
+    color: Gray;
+}

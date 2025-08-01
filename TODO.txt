@@ -1,0 +1,26 @@
+v0.1:
++ transition to LEG definition step (waypoints to legs conversion, 
+  considering existing legs)
++ stepping refactor
++ legs
+  + transferring leg definitions to frontend
+  + transferring leg function matrices to frontend
+  + drawing leg overlays (with hardcoded linear function)
+  + editing leg functions
+  + converting leg functions to evaluateable on frontend
+  + converting leg functions to evaluateable on backend
+  + draw the functions correctly
+  + editable constraint points and x-values
++ bugfix of step 1: point moving did not work
++ bugfix of mapedit: resize observer does not reset top left corner
++ mapedit: moving amount is not decreasing when scaled
++ mapedit: zoom to all
++ docgen_sample.py works again
+- annotations
+- tracks
+- final step: download generated files (doc, gpx, vfr)
+  - vfr format save-load
+  - save to cloud
+- change to socket.io (for auto reconnect and simpler code)
+- order constraint points by func_x
+- prepare for deploy

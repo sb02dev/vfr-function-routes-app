@@ -7,7 +7,7 @@ import datetime
 import requests
 from dotenv import load_dotenv
 
-from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint
+from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, VFRRouteState
 
 
 """
@@ -33,6 +33,8 @@ rgen = VFRFunctionRoute(
     outfolder=r"E:\dev\projects\VFRFunctionRoutes\output",
     tracksfolder=r"E:\dev\projects\VFRFunctionRoutes\data"
 )
+
+rgen.set_state(VFRRouteState.LEGS) # because we also want to add annotations
 
 rgen.add_leg(
     'LHFH->Lovasberény',
@@ -86,6 +88,8 @@ rgen.add_leg(
  .add_annotation("Tinnye", 2.57, (-25, 60)) \
  .add_annotation("Telki", 2.9, (-33, 80)) \
  .add_annotation("END", math.pi, (-140, 60))
+
+rgen.set_state(VFRRouteState.ANNOTATIONS)
 
 rgen.finalize()
 

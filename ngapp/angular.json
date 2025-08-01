@@ -26,9 +26,13 @@
             ],
             "styles": [
               "@angular/material/prebuilt-themes/purple-green.css",
+              "node_modules/mathlive/mathlive-static.css",
+              "node_modules/mathlive/mathlive-fonts.css",
               "src/styles.css"
             ],
-            "scripts": []
+            "scripts": [
+                "node_modules/mathlive/mathlive.mjs",
+            ]
           },
           "configurations": {
             "production": {
