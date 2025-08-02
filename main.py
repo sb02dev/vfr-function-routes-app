@@ -40,11 +40,6 @@ async def root():
     return RedirectResponse("/frontend", status_code=status.HTTP_303_SEE_OTHER)
 
 
-@app.post("/clicked")
-async def clicked():
-    return "Whatever"
-
-
 app.include_router(routes, prefix="/api")
 
 if __name__=="__main__":

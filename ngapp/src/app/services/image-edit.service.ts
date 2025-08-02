@@ -1,29 +1,29 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
 
 import { ImageEditMessage } from '../models/image-edit-msg';
 
+const WS_URL = 'ws://localhost:8000/api/ws';
+
 @Injectable({
     providedIn: 'root'
 })
-export class ImageEditService {
-    socket!: WebSocket;
+export class ImageEditService implements OnDestroy {
+    private socket!: WebSocket;
 
-    channel = new Subject<ImageEditMessage>();
+    private reconnectAttempts = 0;
+    private readonly maxReconnectDelay = 30000; // 30s max wait
+    private reconnectTimer: any;
+
+    public channel = new Subject<ImageEditMessage>();
+    public connected = new Subject<boolean>();
   
     constructor() { 
-        this.socket = new WebSocket("ws://localhost:8000/api/ws");
-        this.socket.onopen = () => {
-            //this.socket.send(JSON.stringify({ event: 'init' }));
-        };
-        this.socket.onmessage = (msg) => {
-            const data: ImageEditMessage = JSON.parse(msg.data);
-            this.channel.next(data);
-        };
+        this.scheduleReconnect();        
     }
 
     async send(msg: ImageEditMessage) {
-        while (this.socket.readyState !== WebSocket.OPEN) {
+        while (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             await new Promise((resolve, reject) => {
                 setInterval(() => {
                     resolve(null);
@@ -33,4 +33,45 @@ export class ImageEditService {
         this.socket.send(JSON.stringify(msg));
     }
 
+    connect() {
+        if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+            return; // already connected or connecting
+        }
+
+        this.socket = new WebSocket(WS_URL);
+
+        this.socket.onopen = () => {
+            console.log('WebSocket connected');
+            this.reconnectAttempts = 0;
+            this.connected.next(true);
+        };
+
+        this.socket.onmessage = (msg) => {
+            const data: ImageEditMessage = JSON.parse(msg.data);
+            this.channel.next(data);
+        };
+
+        this.socket.onclose = () => {
+            console.log('WebSocket closed, retrying…');
+            this.connected.next(false);
+            this.scheduleReconnect();
+        };
+
+        this.socket.onerror = (err) => {
+            console.error('WebSocket error', err);
+            this.socket.close();
+        };
+    }
+
+    private scheduleReconnect() {
+        this.reconnectAttempts++;
+        const delay = Math.min(1000 * 2 ** this.reconnectAttempts, this.maxReconnectDelay);
+        clearTimeout(this.reconnectTimer);
+        this.reconnectTimer = setTimeout(() => this.connect(), delay);
+    }
+
+    ngOnDestroy() {
+        clearTimeout(this.reconnectTimer);
+        this.socket?.close();
+    }
 }

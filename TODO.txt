@@ -13,7 +13,6 @@ v0.1:
   + editable constraint points and x-values
 + bugfix of step 1: point moving did not work
 + bugfix of mapedit: resize observer does not reset top left corner
-+ mapedit: moving amount is not decreasing when scaled
 + mapedit: zoom to all
 + docgen_sample.py works again
 - annotations
@@ -28,13 +27,15 @@ v0.1:
   + download gpx
   + vfr format save-load
   + change dof before generation
-- auto reconnect websocket (or change to socket.io)
++ auto reconnect websocket (or change to socket.io)
 - deploy
 
 v0.2
 - bugfix: map-info width and horizontal scrolling
+- mapedit: moving amount is not decreasing when scaled
 - order constraint points by func_x automatically
-- mobile friendly (responsive + touch controls)
+- server side session cache (but how to reconnect to the same session?)
 - save to cloud
 - annotations: more precise bubble estimation
+- mobile friendly (responsive + touch controls)
 - progress indication while waiting for server

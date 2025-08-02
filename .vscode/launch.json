@@ -29,8 +29,15 @@
         {
             "type": "chrome",
             "request": "launch",
-            "name": "Launch Chrome against localhost",
+            "name": "Launch Chrome against ng-serve",
             "url": "http://localhost:4200",
+            "webRoot": "${workspaceFolder}\\ngapp"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Chrome against FastAPI",
+            "url": "http://localhost:8000",
             "webRoot": "${workspaceFolder}\\ngapp"
         },
     ]

@@ -25,6 +25,7 @@ _vfrroutes: dict = {}
 @routes.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     session_id = websocket.cookies.get("session_id")
+    print("Session id:", session_id)
     await websocket.accept()
 
     rte: Union[VFRFunctionRoute, None] = _vfrroutes.get(session_id, None)
@@ -40,7 +41,12 @@ async def websocket_endpoint(websocket: WebSocket):
             ####################
             if msgtype=='step':
                 if rte:
-                    rte.set_state(VFRRouteState(msg.get("step", rte._state.value+1)))
+                    step = msg.get("step", rte._state.value+1)
+                    try:
+                        newstate = VFRRouteState(step)
+                        rte.set_state(newstate)
+                    except ValueError:
+                        print(f"Not a valid VFRRouteState: {step}")
 
             ################################################
             # Step 0: Initialize a VFRFunctionRoute object #
