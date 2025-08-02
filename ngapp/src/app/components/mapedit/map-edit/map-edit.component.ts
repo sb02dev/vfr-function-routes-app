@@ -17,6 +17,7 @@ import { MatButtonModule } from '@angular/material/button';
     styleUrl: './map-edit.component.css'
 })
 export class MapEditComponent implements AfterViewInit, OnDestroy {
+    @Input() panelWidth: string = '50px';
     @Output() drawOverlay = new EventEmitter();
     @Output() enumPoints = new EventEmitter<(i: number, x: number, y: number) => boolean>();
     @Output() addPointAt = new EventEmitter<{ x: number, y: number, callback: () => void }>();

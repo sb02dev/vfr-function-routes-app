@@ -5,6 +5,7 @@
                      In the table on the right you can edit the waypoint names and reorder them.">
 </app-header>
 <app-map-edit
+    panelWidth="370px"
     (drawOverlay)="drawOverlayTransformed($event)"
     (enumPoints)="enumPoints($event)"
     (movePointTo)="movePointTo($event)"

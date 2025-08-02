@@ -1,8 +1,3 @@
-.map-info {
-    width: 350px;
-    height: 100%;
-}
-
 a.mat-tonal-button {
     background-color: var(--mdc-filled-button-container-color);
     color: var(--mdc-filled-button-label-text-color); 

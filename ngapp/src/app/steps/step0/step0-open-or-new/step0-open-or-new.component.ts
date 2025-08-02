@@ -46,7 +46,6 @@ export class Step0OpenOrNewComponent {
 
 
     loadRoute() {
-        // TODO: upload from JSON file
         let fs = this.file_selector.nativeElement;
         fs.onchange = null;
         fs.files = null;

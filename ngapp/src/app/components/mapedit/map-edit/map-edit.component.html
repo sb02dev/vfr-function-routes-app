@@ -13,7 +13,7 @@
         <canvas id="bgCanvas" #bgCanvas></canvas>
         <canvas id="overlayCanvas" #overlayCanvas></canvas>
     </div>
-    <div class="map-info">
+    <div class="map-info" [style.width]="panelWidth">
         <ng-content></ng-content>
     </div>
 </section>

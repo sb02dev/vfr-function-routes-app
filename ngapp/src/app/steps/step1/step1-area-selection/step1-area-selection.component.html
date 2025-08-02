@@ -6,6 +6,7 @@
                      In the table on the right you see the latitude-longitude values of the corners.">
 </app-header>
 <app-map-edit
+    panelWidth="350px"
     (drawOverlay)="drawOverlayTransformed($event)"
     (enumPoints)="enumPoints($event)"
     (movePointTo)="movePointTo($event)"
