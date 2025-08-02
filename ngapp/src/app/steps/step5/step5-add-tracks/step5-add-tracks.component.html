@@ -5,3 +5,39 @@
                      In the table on the right you can edit the points' x-valaue in function space and edit the function to use for that
                      leg's route.">
 </app-header>
+<app-map-edit 
+    panelWidth="300px"
+    (drawOverlay)="drawOverlayTransformed($event)"><!--    
+    (enumPoints)="enumPoints($event)"
+    (movePointTo)="movePointTo($event)" 
+    (addPointAt)="addPointAt($event)" 
+    (finalizePoints)="finalizeMove()"
+-->
+    <h1>Tracks</h1>
+    <div>
+        <a mat-raised-button (click)="loadTrack()">Add track</a>
+        <input type="file" id="file-selector" #file_selector accept=".gpx" class="hidden" aria-label="---">
+    </div>
+    <table>
+        <thead class="table-header-cell">
+            <td>Name</td>
+            <td>Color</td>
+            <td>#Pts</td>
+            <td>Actions</td>
+        </thead>
+        <tr *ngFor="let t of tracks; index as i">
+            <td>{{t.name}}</td>
+            <td>
+                <div mat-button (click)="openColorPicker(i)" [style.background]="t.color" style="width:20px;height:20px;cursor: pointer;"></div>
+            </td>
+            <td>{{t.num_points}}</td>
+            <td>
+                <span class="row-buttons">
+                    <a (click)="deleteTrack(i)">
+                        <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
+                    </a>
+                </span>
+            </td>
+        </tr>
+    </table>
+</app-map-edit>

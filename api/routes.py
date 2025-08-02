@@ -228,6 +228,49 @@ async def websocket_endpoint(websocket: WebSocket):
             ###################################
             # Step 5: add tracks to the route #
             ###################################
+            elif msgtype=='get-tracks-map':
+                if rte:
+                    with rte.get_tracks_map() as (fig, _):
+                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        await websocket.send_text(json.dumps({
+                            "type": "tracks-map",
+                            "image": image,
+                            "tracks": [{
+                                "name": trk.fname,
+                                "color": trk.color,
+                                "num_points": len(trk.points)
+                            } for trk in rte.tracks]
+                        }))
+
+            elif msgtype=='load-track':
+                if rte:
+                    rte.add_track(msg.get('filename'), msg.get('color', '#0000FF'), base64.b64decode(msg.get('data')))
+                    with rte.get_tracks_map() as (fig, _):
+                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        await websocket.send_text(json.dumps({
+                            "type": "tracks-map",
+                            "image": image,
+                            "tracks": [{
+                                "name": trk.fname,
+                                "color": trk.color,
+                                "num_points": len(trk.points)
+                            } for trk in rte.tracks]
+                        }))
+
+            elif msgtype=='update-tracks':
+                if rte:
+                    rte.update_tracks(msg.get('tracks'))
+                    with rte.get_tracks_map() as (fig, _):
+                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        await websocket.send_text(json.dumps({
+                            "type": "tracks-map",
+                            "image": image,
+                            "tracks": [{
+                                "name": trk.fname,
+                                "color": trk.color,
+                                "num_points": len(trk.points)
+                            } for trk in rte.tracks]
+                        }))
 
             ##################################################################
             # Step 6: Download and save generated files or save to the cloud #

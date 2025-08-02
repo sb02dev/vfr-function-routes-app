@@ -512,30 +512,57 @@ class VFRLeg:
 class VFRTrack:
     """
     """
-    def __init__(self, route: "VFRRoute", fname: Union[str, Path], color: str):
+    def __init__(self, route: "VFRRoute", fname: Union[str, Path], color: str, xmlb: Optional[bytes] = None, load: bool = True):
         self._route = route
         self.fname = fname
         self.color = color
-        self.points = self.read_gpx(fname)
+        self.points: list[VFRPoint] = []
+        if load:
+            self.points=self.read_gpx(fname=fname, xmlb=xmlb)
         
-    def read_gpx(self, fname):
-        """Reads flown points from a GPX file"""
-        plangpx = etree.parse(fname)
+    def read_gpx(self, fname: Union[str, Path] = None, xmlb: Optional[bytes] = None) -> list[VFRPoint]:
+        """Reads flown points from a GPX file / GPX string"""
+        if xmlb:
+            plangpx = etree.fromstring(xmlb)
+        else:
+            plangpx = etree.parse(fname)
         ns = {"gpx": "http://www.topografix.com/GPX/1/1", "geotracker": "http://ilyabogdanovich.com/gpx/extensions/geotracker"}
         planptx = plangpx.xpath("/gpx:gpx/gpx:trk/gpx:trkseg/gpx:trkpt", namespaces=ns)
-        planpts = []
+        planpts: list[VFRPoint] = []
         for i, ptx in enumerate(planptx):
             lon = float(ptx.get('lon'))
             lat = float(ptx.get('lat'))
-            planpts.append({
-                "lon": lon, "lat": lat,
-            })
+            planpts.append(
+                VFRPoint(lon, lat, VFRCoordSystem.LONLAT, self._route)
+            )
             prevlon = lon
             prevlat = lat
         return planpts
+    
+    def draw(self, ax: matplotlib.axes.Axes):
+        # draw track
+        ps = [p.project_point(VFRCoordSystem.MAPCROP_XY) for p in self.points]
+        ax.plot([p.x for p in ps],
+                [p.y for p in ps],
+                color=self.color,
+                lw=2
+               )
+        
+    def toDict(self):
+        return {
+            'name': self.fname,
+            'color': self.color,
+            'points': [p.toDict() for p in self.points]
+        }
+
+    @classmethod
+    def fromDict(cls, value, route: 'VFRFunctionRoute'):
+        trk = VFRTrack(route, value['name'], value['color'], load=False)
+        trk.points = [VFRPoint.fromDict(p, route) for p in value['points']]
+        return trk
         
     def get_extent(self):
-        return _get_extent_from_points([(p["lat"], p["lon"]) for p in self.points])
+        return _get_extent_from_points([PointLonLat(p.lon, p.lat) for p in self.points])
 
 
 class VFRFunctionRoute:
@@ -761,6 +788,16 @@ class VFRFunctionRoute:
             yield fig, ax            
 
 
+    @contextmanager
+    def get_tracks_map(self):
+        with self.get_highres_map() as (fig, ax):
+            for l in self.legs:
+                l.draw(ax)
+            for t in self.tracks:
+                t.draw(ax)
+            yield fig, ax            
+
+
     def add_waypoint(self, name: str, point: VFRPoint):
         point.route = self
         self.waypoints.append((name, point.project_point(VFRCoordSystem.LONLAT)))
@@ -923,17 +960,28 @@ class VFRFunctionRoute:
         
     def add_track(self,
                   fname: Union[str, Path],
-                  color: str):
+                  color: str,
+                  xmlb: Optional[bytes] = None):
         """Adds a flown track to show on the map.
         
         Args:
             fname: str
-                The filename of the track (it will be looked for in the trackfolders folder)
+                The filename of the track (it will be looked for in the trackfolders folder
+                if xmlstring is not given)
             color: str
         """
         self._ensure_state(VFRRouteState.ANNOTATIONS)
-        self.tracks.append(VFRTrack(self, fname, color))
+        self.tracks.append(VFRTrack(self, fname, color, xmlb=xmlb))
         return self
+    
+
+    def update_tracks(self, tracks):
+        newtracks: list[VFRTrack] = []
+        for t in self.tracks:
+            if t.fname in [nt['name'] for nt in tracks]:
+                newtracks.append(t)
+                t.color = [nt['color'] for nt in tracks if nt['name']==t.fname][0]
+        self.tracks = newtracks
         
         
     def calc_transformations(self):
@@ -1048,7 +1096,7 @@ class VFRFunctionRoute:
                 return
             extent = _get_extent_from_extents(
                     [l.get_extent() for l in self.legs] +
-                    [t.get_extent for t in self.tracks]
+                    [t.get_extent() for t in self.tracks]
                 )
             if margin_y is None:
                 margin_y = margin_x
@@ -1308,9 +1356,9 @@ class VFRFunctionRoute:
         # step 4: annotation points
         if self._state.value>=VFRRouteState.ANNOTATIONS.value:
             jsonrte['step4'] = { 'annotations': [[ann.toDict() for ann in leg.annotations] for leg in self.legs] }
-        # TODO: step 5: tracks
+        # step 5: tracks
         if self._state.value>=VFRRouteState.FINALIZED.value:
-            pass
+            jsonrte['step5'] = { 'tracks': [t.toDict() for t in self.tracks]}
         # return
         return jsonrte
     
@@ -1353,6 +1401,7 @@ class VFRFunctionRoute:
             rte.set_state(VFRRouteState.ANNOTATIONS)
         # TODO: step 5: tracks
         if state.value>=VFRRouteState.FINALIZED.value:
+            rte.tracks = [VFRTrack.fromDict(t, rte) for t in jsonrte['step5']['tracks']]
             rte.set_state(VFRRouteState.FINALIZED)
         # set final state and return
         rte.set_state(state)

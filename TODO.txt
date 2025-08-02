@@ -19,17 +19,22 @@ v0.1:
 - annotations
   + basic implementation
   - add/move annotations with mouse (changing func-x-value)
-  - more precise bubble estimation
-- tracks
++ tracks
+  + upload track files and import it in state
+  + assign colors to them
+  + draw the full image with annotations and routes
 - final step: download generated files (docx, png, gpx, vfr)
   + download docx, png
   + download gpx
   + vfr format save-load
   - change dof before generation
-- change to socket.io (for auto reconnect and simpler code)
+- bugfix: map-info width and horizontal scrolling
+- auto reconnect websocket (or change to socket.io)
 - deploy
 
 v0.2
 - order constraint points by func_x automatically
 - mobile friendly (responsive + touch controls)
 - save to cloud
+- annotations: more precise bubble estimation
+- progress indication while waiting for server
