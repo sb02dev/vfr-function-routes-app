@@ -6,15 +6,15 @@ import os
 from typing import Union
 from fastapi import APIRouter, WebSocket
 from dotenv import load_dotenv
+load_dotenv()
 
 import matplotlib.pyplot as plt
 import requests
 
-from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint
-from VFRFunctionRoutes.classes import VFRCoordSystem, VFRRouteState
+from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint  # pylint: disable=no-name-in-module
+from VFRFunctionRoutes.classes import VFRCoordSystem, VFRRouteState  # pylint: disable=no-name-in-module
 
 
-load_dotenv()
 rootpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 routes = APIRouter()
@@ -58,16 +58,21 @@ async def websocket_endpoint(websocket: WebSocket):
                     session = requests.Session(),
                     workfolder=os.path.join(rootpath, "data"),
                     outfolder=os.path.join(rootpath, "output"),
-                    tracksfolder=os.path.join(rootpath, "data")
+                    tracksfolder=os.path.join(rootpath, "tracks")
                 )
                 _vfrroutes[session_id] = rte
             elif msgtype=='sample':
                 rte = default_route()
                 _vfrroutes[session_id] = rte
             elif msgtype=='load':
-                data = json.loads(msg.get('data'))
-                print(data)
-                rte = default_route()
+                rte = VFRFunctionRoute.fromJSON(
+                    msg.get('data'), 
+                    session=requests.Session(),
+                    workfolder=os.path.join(rootpath, "data"),
+                    outfolder=os.path.join(rootpath, "output"),
+                    tracksfolder=os.path.join(rootpath, "tracks")
+                )
+
                 _vfrroutes[session_id] = rte
 
             #######################################################
@@ -253,12 +258,20 @@ async def websocket_endpoint(websocket: WebSocket):
 
             elif msgtype=='get-gpx':
                 if rte:
-                    plt.close(fig)
                     await websocket.send_text(json.dumps({
                         "type": "gpx",
                         "data":  rte.save_plan(),
                         "mime": 'application/gpx+xml',
                         "filename": f"{rte.name}.gpx"
+                    }))
+
+            elif msgtype=='get-vfr':
+                if rte:                    
+                    await websocket.send_text(json.dumps({
+                        "type": "vfr",
+                        "data":  rte.toJSON(),
+                        "mime": 'application/vnd.VFRFunctionRoutes.project+json',
+                        "filename": f"{rte.name}.vfr"
                     }))
 
 

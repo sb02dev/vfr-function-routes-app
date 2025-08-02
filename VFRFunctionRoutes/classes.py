@@ -3,6 +3,7 @@
 Calculates VFR routes where the legs are defined as a function
 """
 # general packages
+import json
 from pathlib import Path
 from typing import Optional, Union
 import matplotlib.axes
@@ -33,7 +34,7 @@ from docx import Document
 from docx.shared import Cm
 
 # gpx read and create
-from lxml import etree
+from lxml import etree # pylint: disable=no-name-in-module
 import gpxpy
 
 # LaTeX evaluation related imports
@@ -106,7 +107,29 @@ class VFRPoint:
     @property
     def lat(self):
         return self.y
-            
+
+    def toDict(self):
+        """
+        Converts this object to a JSON serializable dictionary.
+        WARNING: References to `route` and `leg` are NOT preserved!
+        """
+        return {
+            'x': self.x,
+            'y': self.y,
+            'coord_system': self.coord_system.name
+        }
+    
+
+    @classmethod
+    def fromDict(cls, value, route: Union['VFRFunctionRoute', None] = None, leg: Union['VFRLeg', None] = None):
+        """
+        Converts a dictionary from toDict into a VFRPoint.
+        WARNING: since references were not saved they can be passed to
+        this method.
+        """
+        return VFRPoint(value['x'], value['y'], VFRCoordSystem[value['coord_system']], route, leg)
+
+
     def project_point(self, to_system: VFRCoordSystem) -> "VFRPoint":
         """
         Project this point to another coordinate system.
@@ -143,8 +166,8 @@ class VFRPoint:
 class VFRAnnotation:
     """
     """
-    
-    USE_SAMPLE_WEATHER = True
+
+    USE_SAMPLE_WEATHER = os.getenv('USE_SAMPLE_WEATHER', "True").lower() in ["true", "yes", "on", "1"]
     BACKGROUND_COLOR = (1.0, 0.7, 0.7, 0.99)
 
     def __init__(self, 
@@ -182,6 +205,18 @@ class VFRAnnotation:
         """
         """
         return f"{type(self).__name__}({self.name}, {self.x})"
+    
+
+    def toDict(self):
+        return {
+            'name': self.name,
+            'x': self.x,
+            'ofs': self.ofs
+        }
+    
+    @classmethod
+    def fromDict(cls, value, leg: 'VFRLeg'):
+        return VFRAnnotation(leg, value['name'], value['x'], value['ofs'])
     
     
     @property
@@ -405,7 +440,16 @@ class VFRLeg:
                 a.draw(ax)
     
     
+    def calc_function(self):
+        try:
+            parsedfun = parse_latex_with_constants(self.function_name) # parse_latex(latex)
+            self.function = lambdify(sympy.abc.x, parsedfun, modules=["math"])
+        except Exception as e:
+            self.function = lambda x: x # fallback to linear
+
+
     def calc_transformations(self):
+        self.calc_function()
         sp = [(x, self.function(x)) for (p, x) in self.points]
         dpp = [p.project_point(VFRCoordSystem.MAPCROP_XY) for p, x in self.points]
         dp = [(p.x, p.y) for p in dpp]
@@ -438,6 +482,23 @@ class VFRLeg:
             x0 = x1 + dirmul*0.00001
         return x0, x1
 
+
+    def toDict(self):
+        return {
+            'name': self.name,
+            'function_name': self.function_name,
+            'function_range': self.function_range,
+            'points': [{'p': p.toDict(), 'x': x} for p, x in self.points]
+        }
+    
+    @classmethod
+    def fromDict(cls, value, route: Union['VFRFunctionRoute', None]):
+        return VFRLeg(route,
+                      value['name'],
+                      value['function_name'],
+                      value['function_range'],
+                      None,
+                      [(VFRPoint.fromDict(pdef['p'], route), pdef['x']) for pdef in value['points']])
     
     def __repr__(self):
         """
@@ -720,11 +781,7 @@ class VFRFunctionRoute:
             curleg.function_range = leg["function_range"]
             latex = leg["function_name"]
             curleg.function_name = latex
-            try:
-                parsedfun = parse_latex_with_constants(latex) # parse_latex(latex)
-                curleg.function = lambdify(sympy.abc.x, parsedfun, modules=["math"])
-            except Exception as e:
-                curleg.function = lambda x: x # fallback to linear
+            curleg.calc_function()
             # setup constraint points
             lp_start, lp_end = curleg.points[0], curleg.points[-1]
             newpoints: list[tuple[VFRPoint, float]] = []
@@ -1138,7 +1195,7 @@ class VFRFunctionRoute:
             # leg heading and definiton
             doc.add_heading(leg.name, level=1)
             doc.add_heading("Definition", level=2)
-            add_formula_par(doc, leg.function_name, style="List Bullet")
+            add_formula_par(doc, f"${leg.function_name}$", style="List Bullet")
             add_formula_par(doc, leg.function_range, style="List Bullet")
             doc.add_heading("Segments", level=2)
 
@@ -1226,8 +1283,77 @@ class VFRFunctionRoute:
         for l in self.legs:
             s += textwrap.indent(repr(l), "  ")
         return s
+    
 
+    def toDict(self):
+        # initiate json object with basic info
+        jsonrte = {
+            'name': self.name,
+            'speed': self.speed,
+            'dof': self.dof.isoformat(),
+            'state': self._state.name
+        }
+        # step 1: area of interest
+        if self._state.value>=VFRRouteState.AREAOFINTEREST.value:
+            jsonrte['step1'] = { 'area_of_interest': {
+                'top-left': self.area_of_interest['top-left'].toDict(),
+                'bottom-right': self.area_of_interest['bottom-right'].toDict(),
+            }}
+        # step 2: waypoints
+        if self._state.value>=VFRRouteState.WAYPOINTS.value:
+            jsonrte['step2'] = { 'waypoints': [(wp[0], wp[1].toDict()) for wp in self.waypoints] }
+        # step 3: legs
+        if self._state.value>=VFRRouteState.LEGS.value:
+            jsonrte['step3'] = { 'legs': [leg.toDict() for leg in self.legs] }
+        # step 4: annotation points
+        if self._state.value>=VFRRouteState.ANNOTATIONS.value:
+            jsonrte['step4'] = { 'annotations': [[ann.toDict() for ann in leg.annotations] for leg in self.legs] }
+        # TODO: step 5: tracks
+        if self._state.value>=VFRRouteState.FINALIZED.value:
+            pass
+        # return
+        return jsonrte
     
+    def toJSON(self):
+        return json.dumps(self.toDict(), indent=2)
     
-if __name__=="__main__":
-    pass
+
+    @classmethod
+    def fromJSON(cls, jsonstring: str, 
+                 session: requests.Session = None,
+                 workfolder: Union[str, Path, None] = None,
+                 outfolder: Union[str, Path, None] = None,
+                 tracksfolder: Union[str, Path, None] = None):
+        # decode json
+        jsonrte = json.loads(jsonstring)
+        # initiate with basic info
+        rte = VFRFunctionRoute(jsonrte['name'], jsonrte['speed'], datetime.datetime.fromisoformat(jsonrte['dof']),
+                               session, workfolder, outfolder, tracksfolder)
+        state = VFRRouteState[jsonrte['state']]
+        # step 1: area of interest
+        if state.value>=VFRRouteState.AREAOFINTEREST.value:
+            rte.area_of_interest = {
+                'top-left': VFRPoint.fromDict(jsonrte['step1']['area_of_interest']['top-left'], rte),
+                'bottom-right': VFRPoint.fromDict(jsonrte['step1']['area_of_interest']['bottom-right'], rte),
+            }
+            rte.set_state(VFRRouteState.AREAOFINTEREST)
+        # step 2: waypoints
+        if state.value>=VFRRouteState.WAYPOINTS.value:
+            rte.waypoints = [(name, VFRPoint.fromDict(p, rte)) for name, p in jsonrte['step2']['waypoints']]
+            rte.set_state(VFRRouteState.WAYPOINTS)
+        # step 3: legs
+        if state.value>=VFRRouteState.LEGS.value:
+            rte.legs = [VFRLeg.fromDict(leg, rte) for leg in jsonrte['step3']['legs']]
+            rte.set_state(VFRRouteState.LEGS)
+        # step 4: annotation points
+        if state.value>=VFRRouteState.ANNOTATIONS.value:
+            for i, l in enumerate(jsonrte['step4']['annotations']):
+                leg = rte.legs[i]
+                leg.annotations = [VFRAnnotation.fromDict(ann, leg) for ann in l]
+            rte.set_state(VFRRouteState.ANNOTATIONS)
+        # TODO: step 5: tracks
+        if state.value>=VFRRouteState.FINALIZED.value:
+            rte.set_state(VFRRouteState.FINALIZED)
+        # set final state and return
+        rte.set_state(state)
+        return rte

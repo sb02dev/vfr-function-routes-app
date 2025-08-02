@@ -28,7 +28,7 @@ export class Step6DownloadAndSaveComponent {
             if (msg.type === 'docx' || msg.type === 'png') {                
                 const blob = this.base64ToBlob(msg['data'], msg['mime']);
                 this.downloadFile(msg['filename'], blob);
-            } else if (msg.type === 'gpx') {
+            } else if (msg.type === 'gpx' || msg.type === 'vfr') {
                 const blob = new Blob([msg['data']], { type: msg['mime'] });
                 this.downloadFile(msg['filename'], blob);
             }

@@ -18,14 +18,16 @@ v0.1:
 + docgen_sample.py works again
 - annotations
   + basic implementation
+  - add/move annotations with mouse (changing func-x-value)
+  - more precise bubble estimation
 - tracks
 - final step: download generated files (docx, png, gpx, vfr)
   + download docx, png
-  - download gpx
-  - vfr format save-load
+  + download gpx
+  + vfr format save-load
   - change dof before generation
-  - save to cloud
 - change to socket.io (for auto reconnect and simpler code)
-- order constraint points by func_x
+- order constraint points by func_x automatically
 - prepare for deploy
-- mobile friendly
+- mobile friendly (responsive + touch controls)
+- save to cloud
