@@ -27,7 +27,9 @@ v0.1:
   + vfr format save-load
   - change dof before generation
 - change to socket.io (for auto reconnect and simpler code)
+- deploy
+
+v0.2
 - order constraint points by func_x automatically
-- prepare for deploy
 - mobile friendly (responsive + touch controls)
 - save to cloud

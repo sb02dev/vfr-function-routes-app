@@ -11,6 +11,8 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { ImageEditService } from '../../../services/image-edit.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
+const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'ANNOTATIONS', 'FINALIZED'];
+
 @Component({
     selector: 'app-step0-open-or-new',
     standalone: true,
@@ -49,10 +51,11 @@ export class Step0OpenOrNewComponent {
         fs.onchange = null;
         fs.files = null;
         fs.onchange = async () => {
-            if (fs.files && fs.files.length>0) {
+            if (fs.files && fs.files.length > 0) {
+                let fstr = '';
                 for (var i = 0; i < fs.files.length; i++) {
                     const fbuf = await fs.files[i].arrayBuffer()
-                    const fstr = String.fromCharCode(...new Uint8Array(fbuf)); // no base64 because it is JSON anyway
+                    fstr = String.fromCharCode(...new Uint8Array(fbuf)); // no base64 because it is JSON anyway
                     this.imgsrv.send({
                         type: 'load',
                         data: fstr
@@ -60,7 +63,10 @@ export class Step0OpenOrNewComponent {
                     break; // don't upload multiple files
                 };
                 // jump to its current step
-                this.router.navigateByUrl('/step1')
+                const rte = JSON.parse(fstr);
+                const sstep = rte['state'];
+                const step = steps.indexOf(sstep)+1;
+                this.router.navigateByUrl(`/step${step}`)
             }
         }
         fs.click()
