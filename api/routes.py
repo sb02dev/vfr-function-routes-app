@@ -1,6 +1,9 @@
 import datetime
-import json, io, base64
+import json
+import io
+import base64
 import os
+from typing import Union
 from fastapi import APIRouter, WebSocket
 from dotenv import load_dotenv
 
@@ -24,216 +27,210 @@ async def websocket_endpoint(websocket: WebSocket):
     session_id = websocket.cookies.get("session_id")
     await websocket.accept()
 
-    rte: VFRFunctionRoute = _vfrroutes.get(session_id, None)
-    width = 800
-    height = 600
+    rte: Union[VFRFunctionRoute, None] = _vfrroutes.get(session_id, None)
 
     while True:
         try:
             data = await websocket.receive_text()
             msg = json.loads(data)
-            event = msg.get("type")
+            msgtype = msg.get("type")
 
-            if event in ['init', 'resize']:
-                width = msg.get("width", 800)
-                height = msg.get("height", 600)
+            ####################
+            # General messages #
+            ####################
+            if msgtype=='step':
+                if rte:
+                    rte.set_state(VFRRouteState(msg.get("step", rte._state.value+1)))
 
-            match event:
-                ####################
-                # General messages #
-                ####################
-                case 'step':
-                    if rte:
-                        rte.set_state(VFRRouteState(msg.get("step", rte._state.value+1)))
+            ################################################
+            # Step 0: Initialize a VFRFunctionRoute object #
+            ################################################
+            elif msgtype=='create':
+                dv = msg.get("dof", None)
+                if dv:
+                    d = datetime.datetime.fromisoformat(dv)
+                else:
+                    d = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)
+                rte = VFRFunctionRoute(
+                    msg.get("name", "Untitled route"),
+                    msg.get("speed", 90),
+                    d,
+                    session = requests.Session(),
+                    workfolder=os.path.join(rootpath, "data"),
+                    outfolder=os.path.join(rootpath, "output"),
+                    tracksfolder=os.path.join(rootpath, "data")
+                )
+                _vfrroutes[session_id] = rte
+            elif msgtype=='sample':
+                rte = default_route()
+                _vfrroutes[session_id] = rte
+            elif msgtype=='load':
+                data = json.loads(msg.get('data'))
+                print(data)
+                rte = default_route()
+                _vfrroutes[session_id] = rte
 
-                ################################################
-                # Step 0: Initialize a VFRFunctionRoute object #
-                ################################################
-                case 'create':
-                    dv = msg.get("dof", None)
-                    if dv:
-                        d = datetime.datetime.fromisoformat(dv)
-                    else:
-                        d = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)
-                    rte = VFRFunctionRoute(
-                        msg.get("name", "Untitled route"),
-                        msg.get("speed", 90),
-                        d,
-                        session = requests.Session(),
-                        workfolder=os.path.join(rootpath, "data"),
-                        outfolder=os.path.join(rootpath, "output"),
-                        tracksfolder=os.path.join(rootpath, "data")
-                    )
-                    _vfrroutes[session_id] = rte
-                case 'sample':
-                    rte = default_route()
-                    _vfrroutes[session_id] = rte
-                case 'load':
-                    data = json.loads(msg.get('data'))
-                    print(data)
-                    rte = default_route()
-                    _vfrroutes[session_id] = rte
-
-                #######################################################
-                # Step 1: mark an 'area of interest' on a low-res map #
-                #######################################################
-                case 'get-low-res-map':
-                    if rte:
-                        tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
-                        br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
-                        with rte.get_lowres_map() as fig:
-                            image = _get_image_from_figure(fig, dpi=rte.LOWDPI)
-                            await websocket.send_text(json.dumps({
-                                "type": "low-res", 
-                                "image": image,
-                                "top-left": {
-                                    "x": tl.x, 
-                                    "y": tl.y,
-                                    "lon": rte.area_of_interest["top-left"].lon,
-                                    "lat": rte.area_of_interest["top-left"].lat,
-                                },
-                                "bottom-right": {
-                                    "x": br.x, 
-                                    "y": br.y,
-                                    "lon": rte.area_of_interest["bottom-right"].lon,
-                                    "lat": rte.area_of_interest["bottom-right"].lat,
-                                },
-                            }))
-
-                case 'set-area-of-interest':
-                    if rte:
-                        tl = msg.get("topleft")
-                        br = msg.get("bottomright")
-                        rte.set_area_of_interest(tl.get("x"), tl.get("y"), br.get("x"), br.get("y"))
-                        tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
-                        br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
+            #######################################################
+            # Step 1: mark an 'area of interest' on a low-res map #
+            #######################################################
+            elif msgtype=='get-low-res-map':
+                if rte:
+                    tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
+                    br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
+                    with rte.get_lowres_map() as fig:
+                        image = _get_image_from_figure(fig, dpi=rte.LOWDPI)
                         await websocket.send_text(json.dumps({
-                            "type": "area-of-interest",
+                            "type": "low-res", 
+                            "image": image,
                             "top-left": {
-                                "x": tl.x,
+                                "x": tl.x, 
                                 "y": tl.y,
                                 "lon": rte.area_of_interest["top-left"].lon,
                                 "lat": rte.area_of_interest["top-left"].lat,
                             },
                             "bottom-right": {
-                                "x": br.x,
+                                "x": br.x, 
                                 "y": br.y,
                                 "lon": rte.area_of_interest["bottom-right"].lon,
                                 "lat": rte.area_of_interest["bottom-right"].lat,
                             },
                         }))
 
-                ####################################################################
-                # Step 2: mark the waypoints on a high-res map of area of interest #
-                ####################################################################
-                case 'get-waypoints-map':
-                    if rte:
-                        with rte.get_highres_map() as (fig, ax):
-                            image = _get_image_from_figure(fig, dpi=rte.DPI)
-                            await websocket.send_text(json.dumps({
-                                "type": "waypoints-map",
-                                "image": image,
-                                "waypoints": [{"name": name,
-                                               "x": pp.x, 
-                                               "y": pp.y,
-                                               "lon": p.lon,
-                                               "lat": p.lat,
-                                              } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
-                            }))
+            elif msgtype=='set-area-of-interest':
+                if rte:
+                    tl = msg.get("topleft")
+                    br = msg.get("bottomright")
+                    rte.set_area_of_interest(tl.get("x"), tl.get("y"), br.get("x"), br.get("y"))
+                    tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
+                    br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
+                    await websocket.send_text(json.dumps({
+                        "type": "area-of-interest",
+                        "top-left": {
+                            "x": tl.x,
+                            "y": tl.y,
+                            "lon": rte.area_of_interest["top-left"].lon,
+                            "lat": rte.area_of_interest["top-left"].lat,
+                        },
+                        "bottom-right": {
+                            "x": br.x,
+                            "y": br.y,
+                            "lon": rte.area_of_interest["bottom-right"].lon,
+                            "lat": rte.area_of_interest["bottom-right"].lat,
+                        },
+                    }))
 
-                case 'update-wps':
-                    if rte:
-                        rte.updateWaypoints(msg.get("waypoints"))
-                        wps = [{
-                            "name": name,
-                            "x": pp.x,
-                            "y": pp.y,
-                            "lon": p.lon,
-                            "lat": p.lat,
-                        } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
+            ####################################################################
+            # Step 2: mark the waypoints on a high-res map of area of interest #
+            ####################################################################
+            elif msgtype=='get-waypoints-map':
+                if rte:
+                    with rte.get_highres_map() as (fig, _):
+                        image = _get_image_from_figure(fig, dpi=rte.DPI)
                         await websocket.send_text(json.dumps({
-                            "type": "waypoints",
-                            "waypoints": wps,
+                            "type": "waypoints-map",
+                            "image": image,
+                            "waypoints": [{"name": name,
+                                            "x": pp.x, 
+                                            "y": pp.y,
+                                            "lon": p.lon,
+                                            "lat": p.lat,
+                                            } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
                         }))
 
-                ################################################################################
-                # Step 3: define the legs: add constraint points, define function and x values #
-                ################################################################################
-                case 'get-legs-map':
-                    if rte:
-                        with rte.get_highres_map() as (fig, ax):
-                            image = _get_image_from_figure(fig, dpi=rte.DPI)
-                            await websocket.send_text(json.dumps({
-                                "type": "legs-map",
-                                "image": image,
-                                "legs": [{"name": leg.name,
-                                          "function_name": leg.function_name,
-                                          "function_range": leg.function_range,
-                                          "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
-                                          "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
-                                          "points": [{
-                                              "lon": p.lon, 
-                                              "lat": p.lat,
-                                              "x": pp.x,
-                                              "y": pp.y,
-                                              "func_x": x
-                                          } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
-                                         }  for leg in rte.legs]
-                            }))
+            elif msgtype=='update-wps':
+                if rte:
+                    rte.updateWaypoints(msg.get("waypoints"))
+                    wps = [{
+                        "name": name,
+                        "x": pp.x,
+                        "y": pp.y,
+                        "lon": p.lon,
+                        "lat": p.lat,
+                    } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
+                    await websocket.send_text(json.dumps({
+                        "type": "waypoints",
+                        "waypoints": wps,
+                    }))
 
-                case 'update-legs':
-                    if rte:
-                        rte.updateLegs(msg.get("legs"))
+            ################################################################################
+            # Step 3: define the legs: add constraint points, define function and x values #
+            ################################################################################
+            elif msgtype=='get-legs-map':
+                if rte:
+                    with rte.get_highres_map() as (fig, _):
+                        image = _get_image_from_figure(fig, dpi=rte.DPI)
                         await websocket.send_text(json.dumps({
-                            "type": "legs",
+                            "type": "legs-map",
+                            "image": image,
                             "legs": [{"name": leg.name,
-                                      "function_name": leg.function_name,
-                                      "function_range": leg.function_range,
-                                      "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
-                                      "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
-                                      "points": [{
-                                          "lon": p.lon,
-                                          "lat": p.lat,
-                                          "x": pp.x,
-                                          "y": pp.y,
-                                          "func_x": x
-                                      } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
-                                      } for leg in rte.legs]
+                                        "function_name": leg.function_name,
+                                        "function_range": leg.function_range,
+                                        "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
+                                        "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                                        "points": [{
+                                            "lon": p.lon, 
+                                            "lat": p.lat,
+                                            "x": pp.x,
+                                            "y": pp.y,
+                                            "func_x": x
+                                        } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
+                                        }  for leg in rte.legs]
                         }))
 
-                #############################################################################
-                # Step 4: define annotation points, their names and an offset of the bubble #
-                #############################################################################
-                case 'get-annotations-map':
-                    if rte:
-                        with rte.get_annotations_map() as (fig, ax):
-                            image = _get_image_from_figure(fig, dpi=rte.DPI)
-                            await websocket.send_text(json.dumps({
-                                "type": "annotations-map",
-                                "image": image,
-                                "annotations": [{
-                                            "name": leg.name,
-                                            "function_name": leg.function_name,
-                                            "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
-                                            "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
-                                            "annotations": [{
-                                                "name": ann.name,
-                                                "func_x": ann.x,
-                                                "ofs": {"x": ann.ofs[0], "y": ann.ofs[1]}
-                                            } for ann in leg.annotations],
-                                          } for leg in rte.legs]
-                            }))
+            elif msgtype=='update-legs':
+                if rte:
+                    rte.updateLegs(msg.get("legs"))
+                    await websocket.send_text(json.dumps({
+                        "type": "legs",
+                        "legs": [{"name": leg.name,
+                                    "function_name": leg.function_name,
+                                    "function_range": leg.function_range,
+                                    "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
+                                    "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                                    "points": [{
+                                        "lon": p.lon,
+                                        "lat": p.lat,
+                                        "x": pp.x,
+                                        "y": pp.y,
+                                        "func_x": x
+                                    } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
+                                    } for leg in rte.legs]
+                    }))
 
-                ###################################
-                # Step 5: add tracks to the route #
-                ###################################
+            #############################################################################
+            # Step 4: define annotation points, their names and an offset of the bubble #
+            #############################################################################
+            elif msgtype=='get-annotations-map':
+                if rte:
+                    with rte.get_annotations_map() as (fig, _):
+                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        await websocket.send_text(json.dumps({
+                            "type": "annotations-map",
+                            "image": image,
+                            "annotations": [{
+                                        "name": leg.name,
+                                        "function_name": leg.function_name,
+                                        "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
+                                        "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                                        "annotations": [{
+                                            "name": ann.name,
+                                            "func_x": ann.x,
+                                            "ofs": {"x": ann.ofs[0], "y": ann.ofs[1]}
+                                        } for ann in leg.annotations],
+                                        } for leg in rte.legs]
+                        }))
 
-                ##################################################################
-                # Step 6: Download and save generated files or save to the cloud #
-                ##################################################################
-                case 'get-docx':
-                    if rte:
-                        buf = rte.create_doc(False)
+            ###################################
+            # Step 5: add tracks to the route #
+            ###################################
+
+            ##################################################################
+            # Step 6: Download and save generated files or save to the cloud #
+            ##################################################################
+            elif msgtype=='get-docx':
+                if rte:
+                    buf = rte.create_doc(False)
+                    if buf:
                         b64 = base64.b64encode(buf.read()).decode("utf-8")
                         await websocket.send_text(json.dumps({
                             "type": "docx",
@@ -242,17 +239,27 @@ async def websocket_endpoint(websocket: WebSocket):
                             "filename": f"{rte.name}.docx",
                         }))
 
-                case 'get-png':
-                    if rte:
-                        fig, ax = rte.draw_map()
-                        image = _get_image_from_figure(fig, dpi=rte.DPI)
-                        plt.close(fig)
-                        await websocket.send_text(json.dumps({
-                            "type": "png",
-                            "data":  image,
-                            "mime": 'image/png',
-                            "filename": f"{rte.name}.png"
-                        }))
+            elif msgtype=='get-png':
+                if rte:
+                    fig, _ = rte.draw_map()
+                    image = _get_image_from_figure(fig, dpi=rte.DPI)
+                    plt.close(fig)
+                    await websocket.send_text(json.dumps({
+                        "type": "png",
+                        "data":  image,
+                        "mime": 'image/png',
+                        "filename": f"{rte.name}.png"
+                    }))
+
+            elif msgtype=='get-gpx':
+                if rte:
+                    plt.close(fig)
+                    await websocket.send_text(json.dumps({
+                        "type": "gpx",
+                        "data":  rte.save_plan(),
+                        "mime": 'application/gpx+xml',
+                        "filename": f"{rte.name}.gpx"
+                    }))
 
 
 
@@ -264,7 +271,7 @@ async def websocket_endpoint(websocket: WebSocket):
             break
 
 
-def _get_image_from_figure(fig: plt.figure, size: tuple[float, float] = None, dpi: float = None) -> str:
+def _get_image_from_figure(fig, size: tuple[float, float] = None, dpi: float = None) -> str:
     buf = io.BytesIO()
     if size:
         figsize = fig.get_size_inches()
@@ -337,7 +344,7 @@ def default_route():
         'Császár->LHFH',
         r'\sin\left(x\right)',
         r'$x=0$ at Császár, $x=\pi$ at LHFH, $x=\frac{\pi}{2}$ at Nyergesújfalu',
-        lambda x: math.sin(x),
+        lambda x: math.sin(x), # pylint disable=unneccessary-lambda
         [
             (VFRPoint(18.13993451767051, 47.50100085714328), 0),
             (VFRPoint(18.54614123145077, 47.7612944935143), math.pi/2),

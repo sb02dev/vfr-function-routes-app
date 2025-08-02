@@ -25,10 +25,14 @@ export class Step6DownloadAndSaveComponent {
     
     constructor(private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'docx' || msg.type === 'png') {
+            if (msg.type === 'docx' || msg.type === 'png') {                
                 const blob = this.base64ToBlob(msg['data'], msg['mime']);
                 this.downloadFile(msg['filename'], blob);
+            } else if (msg.type === 'gpx') {
+                const blob = new Blob([msg['data']], { type: msg['mime'] });
+                this.downloadFile(msg['filename'], blob);
             }
+
         });
     }
 

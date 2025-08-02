@@ -1,8 +1,8 @@
 import re
-from latex2mathml.converter import convert as latex2mml
-from lxml import etree
 import os
 from pathlib import Path
+from latex2mathml.converter import convert as latex2mml
+from lxml import etree # pylint: disable=no-name-in-module
 
 _filespath = Path(__file__).parent
 

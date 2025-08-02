@@ -16,7 +16,6 @@ import math
 from contextlib import contextmanager
 
 import requests
-from lxml import etree
 
 # projection related packages
 from pyproj import Proj, Geod
@@ -31,10 +30,13 @@ import matplotlib.patches as patches
 
 # document creation related packages
 from docx import Document
-from docx.shared import Inches, Cm
+from docx.shared import Cm
+
+# gpx read and create
+from lxml import etree
+import gpxpy
 
 # LaTeX evaluation related imports
-from sympy.parsing.latex import parse_latex
 from sympy.utilities.lambdify import lambdify
 import sympy.abc
 
@@ -156,8 +158,14 @@ class VFRAnnotation:
         self.name = name
         self.x = x
         self.ofs = ofs
-        self._clear_cache()
-    
+        self._seglen = None
+        self._seglens = None
+        self._segtime = None
+        self._times_withwind = None
+        self._weather = None
+        self._headings = None
+        self._declination = None
+
 
     def _clear_cache(self):
         # clear cache of cached items
@@ -715,9 +723,7 @@ class VFRFunctionRoute:
             try:
                 parsedfun = parse_latex_with_constants(latex) # parse_latex(latex)
                 curleg.function = lambdify(sympy.abc.x, parsedfun, modules=["math"])
-                print(f"{latex} --> {[f"({p['func_x']}, {curleg.function(p['func_x'])})" for p in leg["points"]]}")
             except Exception as e:
-                print(f'could not convert {latex}, fallback to linear (${e})')
                 curleg.function = lambda x: x # fallback to linear
             # setup constraint points
             lp_start, lp_end = curleg.points[0], curleg.points[-1]
@@ -868,7 +874,7 @@ class VFRFunctionRoute:
                 The filename of the track (it will be looked for in the trackfolders folder)
             color: str
         """
-        self._ensure_state(VFRRouteState.DEFINITION)
+        self._ensure_state(VFRRouteState.ANNOTATIONS)
         self.tracks.append(VFRTrack(self, fname, color))
         return self
         
@@ -966,37 +972,36 @@ class VFRFunctionRoute:
         """
         # extent: (min_lat, max_lat, min_lon, max_lon)
         lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
-        match self._state:
-            case VFRRouteState.INITIATED:
+        if self._state==VFRRouteState.INITIATED:
+            self.extent=ExtentLonLat(18.5, 47.0, 19.5, 47.5) # just a default around Budapest
+        elif self._state==VFRRouteState.AREAOFINTEREST:
+            lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
+                                        self.area_of_interest["bottom-right"].lat,
+                                        self.area_of_interest["top-left"].lon,
+                                        self.area_of_interest["bottom-right"].lon)
+            self.extent = ExtentLonLat(
+                min(lon0, lon1),
+                min(lat0, lat1),
+                max(lon0, lon1),
+                max(lat0, lat1)
+            )
+        elif self._state in [VFRRouteState.WAYPOINTS, VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
+            if len(self.legs)==0 and len(self.tracks)==0:
                 self.extent=ExtentLonLat(18.5, 47.0, 19.5, 47.5) # just a default around Budapest
-            case VFRRouteState.AREAOFINTEREST:
-                lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
-                                          self.area_of_interest["bottom-right"].lat,
-                                          self.area_of_interest["top-left"].lon,
-                                          self.area_of_interest["bottom-right"].lon)
-                self.extent = ExtentLonLat(
-                    min(lon0, lon1),
-                    min(lat0, lat1),
-                    max(lon0, lon1),
-                    max(lat0, lat1)
+                return
+            extent = _get_extent_from_extents(
+                    [l.get_extent() for l in self.legs] +
+                    [t.get_extent for t in self.tracks]
                 )
-            case VFRRouteState.WAYPOINTS | VFRRouteState.LEGS | VFRRouteState.ANNOTATIONS | VFRRouteState.FINALIZED:
-                if len(self.legs)==0 and len(self.tracks)==0:
-                    self.extent=ExtentLonLat(18.5, 47.0, 19.5, 47.5) # just a default around Budapest
-                    return
-                extent = _get_extent_from_extents(
-                        [l.get_extent() for l in self.legs] +
-                        [t.get_extent for t in self.tracks]
-                    )
-                if margin_y is None:
-                    margin_y = margin_x
-                extent_with_margins = ExtentLonLat(
-                        extent.minlon - (extent.maxlon-extent.minlon)*margin_x,
-                        extent.minlat - (extent.maxlat-extent.minlat)*margin_y,
-                        extent.maxlon + (extent.maxlon-extent.minlon)*margin_x,
-                        extent.maxlat + (extent.maxlat-extent.minlat)*margin_y
-                    )
-                self.extent = extent_with_margins
+            if margin_y is None:
+                margin_y = margin_x
+            extent_with_margins = ExtentLonLat(
+                    extent.minlon - (extent.maxlon-extent.minlon)*margin_x,
+                    extent.minlat - (extent.maxlat-extent.minlat)*margin_y,
+                    extent.maxlon + (extent.maxlon-extent.minlon)*margin_x,
+                    extent.maxlat + (extent.maxlat-extent.minlat)*margin_y
+                )
+            self.extent = extent_with_margins
 
 
     def get_mapxyextent(self) -> ExtentXY:
@@ -1049,18 +1054,17 @@ class VFRFunctionRoute:
     def calc_basemap(self):
         # calc clip coordinates
         lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
-        match self._state:
-            case VFRRouteState.INITIATED:
-                raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required: {VFRRouteState.AREAOFINTEREST}.")
-            case VFRRouteState.AREAOFINTEREST:
-                lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
-                                          self.area_of_interest["bottom-right"].lat,
-                                          self.area_of_interest["top-left"].lon,
-                                          self.area_of_interest["bottom-right"].lon)
-            case VFRRouteState.WAYPOINTS:
-                raise NotImplementedError("Sorry this is not implemented yet")
-            case VFRRouteState.LEGS | VFRRouteState.ANNOTATIONS | VFRRouteState.FINALIZED:
-                lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
+        if self._state==VFRRouteState.INITIATED:
+            raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required: {VFRRouteState.AREAOFINTEREST}.")
+        elif self._state==VFRRouteState.AREAOFINTEREST:
+            lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
+                                        self.area_of_interest["bottom-right"].lat,
+                                        self.area_of_interest["top-left"].lon,
+                                        self.area_of_interest["bottom-right"].lon)
+        elif self._state==VFRRouteState.WAYPOINTS:
+            raise NotImplementedError("Sorry this is not implemented yet")
+        elif self._state in [VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
+            lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
         corners_lonlat = [
             VFRPoint(lon0, lat0, route=self),
             VFRPoint(lon1, lat1, route=self),
@@ -1088,7 +1092,7 @@ class VFRFunctionRoute:
         self._basemapimg = PIL.Image.open(io.BytesIO(pdfimage.tobytes("png")))
             
             
-    def create_doc(self, save: bool = True) -> io.BytesIO | None:
+    def create_doc(self, save: bool = True) -> Union[io.BytesIO, None]:
         """
         Generates a report of the route as a Word document
         Argument: a list of a tuple
@@ -1198,7 +1202,21 @@ class VFRFunctionRoute:
 
     def save_plan(self):
         self._ensure_state(VFRRouteState.FINALIZED)
-        pass
+        gpx = gpxpy.gpx.GPX()
+        gpx.name = "Elmebeteg VFR útvonal"
+        gpx.time = datetime.datetime.now()
+        rte = gpxpy.gpx.GPXRoute(name="Elmebeteg VFR útvonal")
+        for leg in self.legs:
+            x = np.linspace(min([x for p, x in leg.points]),
+                            max([x for p, x in leg.points]),
+                            100
+                            )
+            psrc = [VFRPoint(x, leg.function(x), VFRCoordSystem.FUNCTION, self, leg) for x in x]
+            ps = [p.project_point(VFRCoordSystem.LONLAT) for p in psrc]
+            pt = [gpxpy.gpx.GPXRoutePoint(p.lat, p.lon, name=leg.name if i==0 else None) for i, p in enumerate(ps)]
+            rte.points.extend(pt)
+        gpx.routes.append(rte)
+        return gpx.to_xml()
 
 
     def __repr__(self):
