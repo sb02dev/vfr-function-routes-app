@@ -75,7 +75,7 @@ export class Step0OpenOrNewComponent {
     createRoute() {
         // just create an empty route
         const val = this.form.value;
-        const dof = val.dof.getFullYear() + "-" + ("00" + val.dof.getMonth()).slice(-2) + "-" + ("00" + val.dof.getDay()).slice(-2) + "T" +
+        const dof = val.dof.getFullYear() + "-" + ("00" + (val.dof.getMonth()+1)).slice(-2) + "-" + ("00" + val.dof.getDate()).slice(-2) + "T" +
                     val.tof + ":00.000Z"
         this.imgsrv.send({
             type: 'create',

@@ -15,4 +15,28 @@
         &nbsp;
         <a mat-raised-button (click)="downloadVFR()">Download VFR file (to load here later)</a>
     </div>
+    <div><!--form [formGroup]="form" fxLayout="column" class="spacing"-->
+        <mat-label>Date of flight (UTC):</mat-label>
+        <div style="background-color: var(--mdc-filled-text-field-container-color);" fxLayoutAlign="center center">
+            <input type="text"
+                   matInput
+                   [matDatepicker]="dofPicker"
+                   placeholder="Date of flight (UTC)"
+                   name="dof"
+                   [(ngModel)]="dof"
+                   (dateChange)="changeDOF()" />
+            <mat-datepicker-toggle matIconSuffix [for]="dofPicker"></mat-datepicker-toggle>
+        </div>
+        <mat-datepicker #dofPicker></mat-datepicker>
+        <mat-label>Time of flight (UTC):</mat-label>
+        <div style="background-color: var(--mdc-filled-text-field-container-color);">
+            <input type="time"
+                   matInput
+                   placeholder="Time of flight (UTC)"
+                   name="tof"
+                   style="width: calc(100% - 37px); margin: 16px;"
+                   [(ngModel)]="tof"
+                   (change)="changeDOF()" />
+        </div>
+    </div>
 </section>

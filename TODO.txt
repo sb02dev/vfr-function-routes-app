@@ -23,16 +23,16 @@ v0.1:
   + upload track files and import it in state
   + assign colors to them
   + draw the full image with annotations and routes
-- final step: download generated files (docx, png, gpx, vfr)
++ final step: download generated files (docx, png, gpx, vfr)
   + download docx, png
   + download gpx
   + vfr format save-load
-  - change dof before generation
-- bugfix: map-info width and horizontal scrolling
+  + change dof before generation
 - auto reconnect websocket (or change to socket.io)
 - deploy
 
 v0.2
+- bugfix: map-info width and horizontal scrolling
 - order constraint points by func_x automatically
 - mobile friendly (responsive + touch controls)
 - save to cloud

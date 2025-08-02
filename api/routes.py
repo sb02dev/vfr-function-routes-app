@@ -309,12 +309,30 @@ async def websocket_endpoint(websocket: WebSocket):
                     }))
 
             elif msgtype=='get-vfr':
-                if rte:                    
+                if rte:
                     await websocket.send_text(json.dumps({
                         "type": "vfr",
                         "data":  rte.toJSON(),
                         "mime": 'application/vnd.VFRFunctionRoutes.project+json',
                         "filename": f"{rte.name}.vfr"
+                    }))
+
+            elif msgtype=='get-dof':
+                if rte:
+                    await websocket.send_text(json.dumps({
+                        "type": "dof",
+                        "dof":  rte.dof.isoformat(),
+                    }))
+
+            elif msgtype == 'set-dof':
+                if rte:
+                    dv = msg.get("dof", None)
+                    if dv:
+                        d = datetime.datetime.fromisoformat(dv)
+                        rte.dof = d
+                    await websocket.send_text(json.dumps({
+                        "type": "dof",
+                        "dof":  rte.dof.isoformat(),
                     }))
 
 
