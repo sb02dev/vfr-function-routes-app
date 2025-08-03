@@ -2,13 +2,15 @@ import { AfterViewInit, Component, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatIconModule } from "@angular/material/icon";
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Subscription } from 'rxjs';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
-import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../../../components/header/header/header.component';
-import { AnnLeg } from '../../../models/annotations'
+import { AnnLeg, Annotation } from '../../../models/annotations'
 import { MathEditComponent } from '../../../components/mathedit/math-edit/math-edit.component';
 
 @Component({
@@ -18,6 +20,8 @@ import { MathEditComponent } from '../../../components/mathedit/math-edit/math-e
         CommonModule,
         MatIconModule,
         FlexLayoutModule,
+        FormsModule,
+        MatCheckboxModule,
         MapEditComponent,
         MathEditComponent,
         HeaderComponent,
@@ -27,10 +31,24 @@ import { MathEditComponent } from '../../../components/mathedit/math-edit/math-e
 })
 export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
 
+    private readonly numPieces: number = 100;
+
     subs: Subscription;
 
     legs: AnnLeg[] = [];
     leg_index: number = 0;
+    leg_func: (x: number) => number = (x) => x;
+    leg_matrix: number[][] = [];
+    leg_invmatrix: number[][] = [];
+    leg_points: { x: number, y: number }[] = [];
+    private _showBubbles: boolean = true;
+    set showBubbles(value: boolean) {
+        this._showBubbles = value;
+        this.mapedit.drawOverlayTransformed();
+    }
+    get showBubbles() {
+        return this._showBubbles;
+    }
     
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
     @ViewChild(MathEditComponent) mathedit!: MathEditComponent;
@@ -62,6 +80,10 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
                 this.legs = msg['annotations'].map((leg: any) => {
                     return {
                         name: leg.name,
+                        function_latex: leg.function_name,
+                        function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name)).compile(),
+                        matrix_func2cropmap: leg.matrix_func2cropmap,
+                        matrix_cropmap2func: leg.matrix_cropmap2func,
                         annotations: leg.annotations.map((ann: any) => {
                             return {
                                 name: ann.name,
@@ -95,12 +117,92 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
         if (new_index < 0) new_index = this.legs.length - 1;
         if (new_index >= 0 && new_index < this.legs.length) {
             this.leg_index = new_index;
+            this.leg_func = (x: number) => this.legs[this.leg_index].function_mathjs_compiled?.evaluate({ x: x });
+            this.leg_matrix = this.legs[this.leg_index].matrix_func2cropmap;
+            this.leg_invmatrix = this.legs[this.leg_index].matrix_cropmap2func;
+            this.calculateFuncPoints();
         }
         this.mapedit.drawOverlayTransformed();
     }
 
-    deleteAnnotation(index: number) {
+    updateAnnotations() {
+        this.imgsrv.send({
+            type: 'update-annotations',
+            annotations: this.legs.map((leg: AnnLeg) => {
+                return {
+                    name: leg.name,
+                    annotations: leg.annotations.map((ann: Annotation) => {
+                        return {
+                            name: ann.name,
+                            func_x: ann.func_x,
+                            ofs: {x: ann.ofs_x, y: ann.ofs_y},
+                        }
+                    })
+                }
+            }),
+        });
+    }
+    
 
+    deleteAnnotation(index: number) {
+        this.legs[this.leg_index].annotations.splice(index, 1);
+        this.updateAnnotations();
+    }
+
+    enumPoints(enumerate: (i: number, x: number, y: number) => boolean) {
+        for (var i = 1; i < this.legs[this.leg_index].annotations.length - 1; i++) {
+            // we don't enumerate the first and last (because those are edited in the previous step)
+            const ann = this.legs[this.leg_index].annotations[i];
+            const mappt = this.applyTransformationMatrix({ x: ann.func_x, y: this.leg_func(ann.func_x) }, this.leg_matrix);
+            if (!enumerate(i, mappt.x, mappt.y)) {
+                break;
+            }
+        }
+    }
+
+    movePointTo(event: { i: number, x: number, y: number, callback: () => void }) {
+        // calculate function point closest to x,y
+        const { index: minidx, point: minpt, point_func: minptfunc } = this.calcMinimumPoint(event);
+        const x = minptfunc.x;
+        // check if still between the point before and after
+        const prev_x = this.legs[this.leg_index].annotations[event.i - 1].func_x;
+        const next_x = this.legs[this.leg_index].annotations[event.i + 1].func_x;
+        if ((x > prev_x && x < next_x) || (x > next_x && x < prev_x)) {
+            // change point
+            this.legs[this.leg_index].annotations[event.i].func_x = x;
+            event.callback();
+        }
+    }
+
+    finalizeMove() {
+        this.updateAnnotations();
+    }
+
+    addPointAt(event: { x: number, y: number, callback: () => void }) {
+        const anns = this.legs[this.leg_index].annotations;
+        // calculate function point closest to x,y
+        const { index: minidx, point: minpt, point_func: minptfunc } = this.calcMinimumPoint(event);
+        const x = minptfunc.x;
+        // find the two neighbours (i.e. the index)
+        let index = anns.length - 1;
+        for (let i = 0; i < anns.length - 1; i++) {
+            const prev_x = anns[i].func_x;
+            const next_x = anns[i + 1].func_x;
+            if ((x > prev_x && x < next_x) || (x > next_x && x < prev_x)) {
+                index = i + 1;
+                break;
+            }
+        }
+        // insert new annotation
+        anns.splice(index, 0, {
+            name: 'xxx',
+            func_x: x,
+            ofs_x: 0,
+            ofs_y: 0,
+        });
+        event.callback();
+        // send to server
+        this.updateAnnotations();
     }
 
     change(prop: string, index: number, event: any) {
@@ -115,7 +217,40 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
             const val: number = parseFloat(target.value);
             ann[prop] = val;
         }
+        this.updateAnnotations();
         this.mapedit.drawOverlayTransformed();
+    }
+
+    private calculateFuncPoints() {
+        this.leg_points = [];
+        let last_x = this.legs[this.leg_index].annotations[0].func_x;
+        for (let i = 1; i < this.legs[this.leg_index].annotations.length; i++) {
+            const ann = this.legs[this.leg_index].annotations[i]
+            for (let k = 0; k <= this.numPieces; k++) {
+                const dx = k * (ann.func_x - last_x) / this.numPieces;
+                const funcpt = { x: last_x + dx, y: this.leg_func(last_x + dx) };
+                const mappt = this.applyTransformationMatrix(funcpt, this.leg_matrix);
+                this.leg_points.push(mappt);
+            }
+        }
+    }
+
+    private calcMinimumPoint(p: { x: number, y: number }): { index: number; point: { x: number; y: number }; point_func: { x: number; y: number } } {
+        // calculate function point closest to p=(x,y)
+        const minidx = this.leg_points.map((pt) => {
+            const [xp, yp] = [pt.x, pt.y]; //this.mapedit.getImage2CanvasCoords(pt.x, pt.y);
+            const dist = Math.sqrt((xp - p.x) ** 2 + (yp - p.y) ** 2);
+            return dist
+        }).reduce((mnidx, cur, i, a) => {
+            if (mnidx == -1 || cur <= a[mnidx]) {
+                return i;
+            } else {
+                return mnidx;
+            }
+        }, -1);
+        const minpt = this.leg_points[minidx];
+        const minptfunc = this.applyTransformationMatrix(minpt, this.leg_invmatrix);
+        return { index: minidx, point: minpt, point_func: minptfunc };
     }
 
     drawOverlayTransformed(event: { canvas: HTMLCanvasElement, imgWidth: number, imgHeight: number }) {
@@ -138,10 +273,9 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
                     const [x, y] = this.mapedit.getImage2CanvasCoords(mappt.x, mappt.y);
                     ctx.beginPath();
                     ctx.moveTo(x, y);
-                    const numPieces = 100;
                     for (let i = 1; i < ann.length; i++) {
-                        for (let k = 0; k <= numPieces; k++) {
-                            const dx = k * (ann[i].func_x - last_x) / numPieces;
+                        for (let k = 0; k <= this.numPieces; k++) {
+                            const dx = k * (ann[i].func_x - last_x) / this.numPieces;
                             const funcpt = { x: last_x + dx, y: func(last_x + dx) };
                             const mappt = this.applyTransformationMatrix(funcpt, leg.matrix_func2cropmap);
                             const [x, y] = this.mapedit.getImage2CanvasCoords(mappt.x, mappt.y);
@@ -162,11 +296,13 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
                         ctx.fillStyle = (l == this.leg_index) ? ((i == this.mapedit.selectedPoint)) ? "green" : "red" : "blue";
                         ctx.arc(x, y, 12, 0, 2 * Math.PI);
                         ctx.fill();
-                        const tx = x + ann[i].ofs_x;
-                        const ty = y + ann[i].ofs_y;
-                        ctx.font = "12px serif";
-                        const bubsize = this.estimateBubbleSize(12, 4, 30);
-                        this.drawBubble(ctx, tx, ty, bubsize.width, bubsize.height, ann[i].name, 12);
+                        if (this._showBubbles) {
+                            const tx = x + ann[i].ofs_x;
+                            const ty = y + ann[i].ofs_y;
+                            ctx.font = "12px serif";
+                            const bubsize = this.estimateBubbleSize(12, 4, 30);
+                            this.drawBubble(ctx, tx, ty, bubsize.width, bubsize.height, ann[i].name, 12);
+                        }
                     }
 
                     /*/ draw extra point

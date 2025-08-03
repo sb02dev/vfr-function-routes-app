@@ -237,6 +237,24 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                         } for leg in rte.legs]
                         }))
 
+            elif msgtype=='update-annotations':
+                if rte:
+                    rte.update_annotations(msg.get("annotations"))
+                    await websocket.send_text(json.dumps({
+                        "type": "annotations",
+                        "annotations": [{
+                                    "name": leg.name,
+                                    "function_name": leg.function_name,
+                                    "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
+                                    "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                                    "annotations": [{
+                                        "name": ann.name,
+                                        "func_x": ann.x,
+                                        "ofs": {"x": ann.ofs[0], "y": ann.ofs[1]}
+                                    } for ann in leg.annotations],
+                                    } for leg in rte.legs]
+                    }))
+
             ###################################
             # Step 5: add tracks to the route #
             ###################################
@@ -449,6 +467,8 @@ def default_route():
     .add_annotation("END", math.pi, (-140, 60))
 
     rgen.set_state(VFRRouteState.ANNOTATIONS)
+
+    # TODO: add tracks
 
     rgen.finalize()
 

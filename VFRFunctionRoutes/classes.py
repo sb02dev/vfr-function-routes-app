@@ -837,6 +837,19 @@ class VFRFunctionRoute:
             curleg.calc_transformations()
 
 
+    def update_annotations(self, legs: list[dict]):
+        for i, l in enumerate(legs):
+            if i>len(self.legs)-1:
+                break
+            if self.legs[i].name!=l['name']:
+                print(f"WARNING: leg number {i} name does not match ({self.legs[i].name}!={l['name']})")
+            self.legs[i].annotations = [VFRAnnotation(self.legs[i],
+                                                      a['name'],
+                                                      a['func_x'],
+                                                      (a['ofs']['x'], a['ofs']['y']))
+                                        for a in l['annotations']
+                                       ]
+
 
     def _fullmap_clicker(self):
         """

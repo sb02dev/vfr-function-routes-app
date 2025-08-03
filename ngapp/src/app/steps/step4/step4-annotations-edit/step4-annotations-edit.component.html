@@ -1,26 +1,29 @@
 <app-header [step-index]="4"
             title="Define Annotation Points" 
             tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
-                     In Edit mode you can move constraint points with the left mouse button and create a new one with the middle button.
-                     In the table on the right you can edit the points' x-valaue in function space and edit the function to use for that
-                     leg's route.">
+                     In Edit mode you can move points which will be annotated (name, current heading, wind correction, timing, etc.)
+                     with the left mouse button and create a new one with the middle button.
+                     In the table on the right you can edit the points' x-valaue in function space and edit the offset (in image 
+                     coordinates) of the bubble for the annotations.">
 </app-header>
 <app-map-edit
     panelWidth="610px!important"
     (drawOverlay)="drawOverlayTransformed($event)" 
-><!--    
     (enumPoints)="enumPoints($event)"
     (movePointTo)="movePointTo($event)" 
     (addPointAt)="addPointAt($event)" 
     (finalizePoints)="finalizeMove()"
--->
+>
     <h1>Leg</h1>
     <div fxLayout="row" fxLayoutAlign="center">
         <a mat-icon-button (click)="changeLeg(-1)"><mat-icon aria-hidden="false" aria-label="Previous leg" fontIcon="arrow_left"></mat-icon></a>
         <span>{{legs[leg_index]?legs[leg_index].name:''}} ({{leg_index+1}}/{{legs.length}})</span>
         <a mat-icon-button (click)="changeLeg(1)"><mat-icon aria-hidden="false" aria-label="Next leg" fontIcon="arrow_right"></mat-icon></a>
     </div>
-    <app-math-edit [readOnly]="true"></app-math-edit>
+    <app-math-edit [readOnly]="false"></app-math-edit>
+    <div style="background-color: var(--mdc-filled-text-field-container-color);">
+        <mat-checkbox [(ngModel)]="showBubbles" title="Show bubbles">Show bubbles</mat-checkbox>
+    </div>
     <table>
         <thead class="table-header-cell">
             <td>Name</td>
