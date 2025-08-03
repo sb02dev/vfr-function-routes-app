@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, OnDestroy } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -22,7 +22,6 @@ import { ImageEditService } from '../../../services/image-edit.service';
         MatButtonModule,
         FormsModule,
         ReactiveFormsModule,
-        DatePipe,
         HeaderComponent,
     ],
     providers: [provideNativeDateAdapter()],

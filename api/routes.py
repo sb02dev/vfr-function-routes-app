@@ -23,10 +23,15 @@ routes = APIRouter()
 _vfrroutes: dict = {}
 
 @routes.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    session_id = websocket.cookies.get("session_id")
-    print("Session id:", session_id)
+async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
     await websocket.accept()
+
+    if not session_id:
+        session_id = websocket.cookies.get("session_id")
+    if not session_id:
+        session_id = str(uuid.uuid4())
+        await websocket.send_json({"type": "new_session", "session_id": session_id})
+    print("Session id:", session_id)
 
     rte: Union[VFRFunctionRoute, None] = _vfrroutes.get(session_id, None)
 

@@ -15,9 +15,13 @@ v0.1:
 + bugfix of mapedit: resize observer does not reset top left corner
 + mapedit: zoom to all
 + docgen_sample.py works again
-- annotations
++ annotations
   + basic implementation
-  - add/move annotations with mouse (changing func-x-value)
+  + bubbles are switchable
+  + add/move annotations with mouse (changing func-x-value)
+  + server state is updated
+  + annotation can be deleted
+  + annotation can be created
 + tracks
   + upload track files and import it in state
   + assign colors to them
@@ -32,10 +36,15 @@ v0.1:
 
 v0.2
 - bugfix: map-info width and horizontal scrolling
+- bugfix: readonly mathedit does not show formula
 - mapedit: moving amount is not decreasing when scaled
+- edit "function_range" on leg page
 - order constraint points by func_x automatically
-- server side session cache (but how to reconnect to the same session?)
+- server side session cache
+  - caching of states per session to disk on each modification
+  - session_id is always sent in http and ws requests (retreived from localStorage)
 - save to cloud
 - annotations: more precise bubble estimation
+- annotations: bubbles can be moved with mouse
 - mobile friendly (responsive + touch controls)
 - progress indication while waiting for server

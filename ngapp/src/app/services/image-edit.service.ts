@@ -2,6 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
 
 import { ImageEditMessage } from '../models/image-edit-msg';
+import { SessionService } from './session.service';
 
 const WS_URL = 'ws://localhost:8000/api/ws';
 
@@ -18,7 +19,7 @@ export class ImageEditService implements OnDestroy {
     public channel = new Subject<ImageEditMessage>();
     public connected = new Subject<boolean>();
   
-    constructor() { 
+    constructor(private session: SessionService) { 
         this.scheduleReconnect();        
     }
 
@@ -38,7 +39,9 @@ export class ImageEditService implements OnDestroy {
             return; // already connected or connecting
         }
 
-        this.socket = new WebSocket(WS_URL);
+        const storedId = this.session.getStoredSessionId();
+
+        this.socket = new WebSocket(`${WS_URL}${storedId ? '?session_id=' + storedId : ''}`);
 
         this.socket.onopen = () => {
             console.log('WebSocket connected');
@@ -48,7 +51,11 @@ export class ImageEditService implements OnDestroy {
 
         this.socket.onmessage = (msg) => {
             const data: ImageEditMessage = JSON.parse(msg.data);
-            this.channel.next(data);
+            if (data.type === 'set_session') {
+                this.session.storeSessionId(data['session_id']);
+            } else {
+                this.channel.next(data);
+            }
         };
 
         this.socket.onclose = () => {
