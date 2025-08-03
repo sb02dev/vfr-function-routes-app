@@ -803,12 +803,12 @@ class VFRFunctionRoute:
         self.waypoints.append((name, point.project_point(VFRCoordSystem.LONLAT)))
 
 
-    def updateWaypoints(self, wps: list[dict]):
+    def update_waypoints(self, wps: list[dict]):
         # calculate new waypoints
         self.waypoints = [(wp["name"], VFRPoint(wp["x"], wp["y"], VFRCoordSystem.MAPCROP_XY, self).project_point(VFRCoordSystem.LONLAT)) for wp in wps]
 
 
-    def updateLegs(self, legs: list[dict]):
+    def update_legs(self, legs: list[dict]):
         # set legs according to edits
         for i, leg in enumerate(legs):
             curleg = self.legs[i]

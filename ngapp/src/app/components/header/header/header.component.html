@@ -1,6 +1,6 @@
 <section>
     <div fxLayout="row">
-        <a mat-raised-button (click)="stepBack()">
+        <a mat-raised-button [disabled]="first_step" (click)="stepBack()">
             <mat-icon aria-hidden="false" aria-label="Step back" fontIcon="arrow_back"></mat-icon>
             Step {{step_index-1}}
         </a>
@@ -12,7 +12,7 @@
                       [matTooltip]="tooltip">
             </mat-icon>
         </div>
-        <a mat-raised-button (click)="stepForward()">
+        <a mat-raised-button [disabled]="last_step" (click)="stepForward()">
             Step {{step_index+1}}
             <mat-icon aria-hidden="false" aria-label="Step forward" fontIcon="arrow_forward"></mat-icon>
         </a>

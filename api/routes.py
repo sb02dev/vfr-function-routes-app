@@ -4,6 +4,7 @@ import io
 import base64
 import os
 from typing import Union
+import uuid
 from fastapi import APIRouter, WebSocket
 from dotenv import load_dotenv
 load_dotenv()
@@ -155,7 +156,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype=='update-wps':
                 if rte:
-                    rte.updateWaypoints(msg.get("waypoints"))
+                    rte.update_waypoints(msg.get("waypoints"))
                     wps = [{
                         "name": name,
                         "x": pp.x,
@@ -195,7 +196,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype=='update-legs':
                 if rte:
-                    rte.updateLegs(msg.get("legs"))
+                    rte.update_legs(msg.get("legs"))
                     await websocket.send_text(json.dumps({
                         "type": "legs",
                         "legs": [{"name": leg.name,

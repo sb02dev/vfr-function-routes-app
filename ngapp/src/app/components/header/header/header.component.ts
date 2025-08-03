@@ -25,6 +25,8 @@ export class HeaderComponent {
     @Input() title: string = '';
     @Input() tooltip: string = '';
     @Output('before-forward') before_forward = new EventEmitter();
+    @Input('last-step') last_step: boolean = false;
+    @Input('first-step') first_step: boolean = false;
 
     constructor(public router: Router, private imgsrv: ImageEditService) { }
 

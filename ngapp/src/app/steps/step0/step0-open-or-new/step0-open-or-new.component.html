@@ -1,3 +1,11 @@
+<app-header [step-index]="1" 
+            title="Create / Load a route"
+            [last-step]="true"
+            [first-step]="true"
+            tooltip="You can load a (locally) saved route (with .vfr extension). Or you can create a new one.ű
+                     If you are new to this application you can also click Sample route and you will get a pre-created
+                     route with all the features included (TODO: currently it does not demonstrate the track feature).">
+</app-header>
 <section fxLayoutAlign='center center' fxLayout='row' class="content-area">
     <div fxLayout="column">
         <a mat-raised-button (click)="loadRoute()">Load a route</a>

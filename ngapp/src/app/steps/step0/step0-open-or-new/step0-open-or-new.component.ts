@@ -8,8 +8,10 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatCommonModule, provideNativeDateAdapter } from '@angular/material/core';
 import { Router } from '@angular/router';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
-import { ImageEditService } from '../../../services/image-edit.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+
+import { ImageEditService } from '../../../services/image-edit.service';
+import { HeaderComponent } from '../../../components/header/header/header.component';
 
 const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'ANNOTATIONS', 'FINALIZED'];
 
@@ -25,7 +27,8 @@ const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'AN
         MatDatepickerModule,
         MatCommonModule,
         ReactiveFormsModule,
-        CommonModule
+        CommonModule,
+        HeaderComponent
     ],
     providers: [provideNativeDateAdapter()],
     templateUrl: './step0-open-or-new.component.html',
