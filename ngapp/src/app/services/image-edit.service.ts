@@ -1,10 +1,10 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 import { ImageEditMessage } from '../models/image-edit-msg';
 import { SessionService } from './session.service';
 
-const WS_URL = 'ws://localhost:8000/api/ws';
 
 @Injectable({
     providedIn: 'root'
@@ -41,7 +41,7 @@ export class ImageEditService implements OnDestroy {
 
         const storedId = this.session.getStoredSessionId();
 
-        this.socket = new WebSocket(`${WS_URL}${storedId ? '?session_id=' + storedId : ''}`);
+        this.socket = new WebSocket(`${environment.WS_URL}${storedId ? '?session_id=' + storedId : ''}`);
 
         this.socket.onopen = () => {
             console.log('WebSocket connected');
