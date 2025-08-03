@@ -236,8 +236,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         const img = new Image();
         img.onload = () => {
             this.baseImage = img;
-            this.drawBackgroundTransformed();
-            this.drawOverlayTransformed();
+            this.zoomToAll();
         };
         img.src = 'data:image/png;base64,' + base64;
     }
