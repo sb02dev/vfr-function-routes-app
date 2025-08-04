@@ -1,5 +1,5 @@
 export const environment = {
     production: true,
-    API_URL: 'https://vfr-function-routes-app.koyeb.app/api',
-    WS_URL: 'wss://vfr-function-routes-app.koyeb.app/api/ws',
+    API_URL: 'https://productive-nanette-sb02dev-0de6fcde.koyeb.app/api',
+    WS_URL: 'wss://productive-nanette-sb02dev-0de6fcde.koyeb.app/api/ws',
 };

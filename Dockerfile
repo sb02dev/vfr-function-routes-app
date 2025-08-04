@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend code
 COPY api/ ./api/
 COPY VFRFunctionRoutes/ ./VFRFunctionRoutes/
-COPY .env main.py ./
+COPY main.py ./
 
 # Copy Angular build into backend (to be served by FastAPI)
 COPY --from=frontend /app/frontend/browser ./frontend/browser
