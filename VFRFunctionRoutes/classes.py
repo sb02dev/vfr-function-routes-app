@@ -584,8 +584,8 @@ class VFRFunctionRoute:
       PointLonLat(21.0, 46.0): PointXY(2133.00, 1658.6),
     } # I don't see any possibility to do this automatically
     PDF_MARGINS = ((79, 110.1), (79.05, 139)) #(('left', 'top'), ('right', 'bottom'))
-    DPI = 600
-    LOWDPI = 72
+    DPI = int(os.getenv("HIGH_DPI", "600"))
+    LOWDPI = int(os.getenv("LOW_DPI", "72"))
 
     
     def __init__(self,
@@ -897,7 +897,7 @@ class VFRFunctionRoute:
         """
         xt = self.get_mapxyextent()
         x0, y0, x1, y1 = xt.minx, xt.miny, xt.maxx, xt.maxy
-        scale = 72/self.DPI #1 / (1/72*2.54/100*500000)
+        scale = self.LOWDPI/self.DPI #1 / (1/72*2.54/100*500000)
         pdf_document = pymupdf.open(self.pdf_destination)
         page = pdf_document[0]
         rect = page.rect  # the page rectangle
@@ -1035,9 +1035,9 @@ class VFRFunctionRoute:
         p = self.get_mapxyextent()
         pp = [
             (0, 0),
-            (0, (p.maxy-p.miny)*600/72),
-            ((p.maxx-p.minx)*600/72, 0),
-            ((p.maxx-p.minx)*600/72, (p.maxy-p.miny)*600/72),
+            (0, (p.maxy-p.miny)*self.DPI/self.LOWDPI),
+            ((p.maxx-p.minx)*self.DPI/self.LOWDPI, 0),
+            ((p.maxx-p.minx)*self.DPI/self.LOWDPI, (p.maxy-p.miny)*self.DPI/self.LOWDPI),
         ]  # also scale it up!
         p = [
             (p.minx, p.miny),
