@@ -22,6 +22,7 @@ v0.1:
   + server state is updated
   + annotation can be deleted
   + annotation can be created
+  + minimum of 2 annotations included
 + tracks
   + upload track files and import it in state
   + assign colors to them
@@ -32,7 +33,11 @@ v0.1:
   + vfr format save-load
   + change dof before generation
 + auto reconnect websocket (or change to socket.io)
-- deploy
++ deploy
+  + Dockerfile + koyeb.yaml
+  + websocket path adjusted to deployed one
+  + high and low resolution set from environment variable (instead if hardcoded)
+  + bugfix: fixed local paths eliminated
 
 v0.2
 - bugfix: map-info width and horizontal scrolling

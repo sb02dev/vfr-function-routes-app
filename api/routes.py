@@ -397,9 +397,9 @@ def default_route():
         datetime.datetime.now(datetime.timezone.utc) +
         datetime.timedelta(days=2),
         session=sess,
-        workfolder=r"E:\dev\projects\VFRFunctionRoutes\data",
-        outfolder=r"E:\dev\projects\VFRFunctionRoutes\output",
-        tracksfolder=r"E:\dev\projects\VFRFunctionRoutes\data"
+        workfolder=os.path.join(rootpath, "data"),
+        outfolder=os.path.join(rootpath, "output"),
+        tracksfolder=os.path.join(rootpath, "data")
     )
 
     rgen.set_area_of_interest(858, 542, 1268, 852)

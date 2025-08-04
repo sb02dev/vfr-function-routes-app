@@ -668,7 +668,10 @@ class VFRFunctionRoute:
             if self._state == VFRRouteState.WAYPOINTS and required_state.value > self._state.value:
                 # WAYPOINTS -> LEGS
                 self._state = VFRRouteState.LEGS
-            if self._state==VFRRouteState.LEGS and required_state.value>self._state.value:
+                self.legs_to_annotations()
+                self.calc_extents()
+                self.calc_transformations()
+            if self._state == VFRRouteState.LEGS and required_state.value > self._state.value:
                 # LEGS -> ANNOTATIONS
                 self._state = VFRRouteState.ANNOTATIONS
             if self._state == VFRRouteState.ANNOTATIONS and required_state.value > self._state.value:
@@ -680,17 +683,27 @@ class VFRFunctionRoute:
 
 
     def waypoints_to_legs(self):
-        for i in range(len(self.waypoints)):
-            wp_start = self.waypoints[i]
+        """
+        Converts waypoints to legs considering the already existing ones
+        """
+        for i, wp_start in enumerate(self.waypoints):
             wp_end = self.waypoints[i+1 if i+1<len(self.waypoints) else 0] # circle around (last point is the same as first)
             if len(self.legs)>i: # we have a leg at that position
+                leg = self.legs[i]
                 # so we adjust its endpoints position (not the x value)
-                self.legs[i].points[0] = (VFRPoint(wp_start[1].lon, wp_start[1].lat, VFRCoordSystem.LONLAT, self), self.legs[i].points[0][1])
-                self.legs[i].points[-1] = (VFRPoint(wp_end[1].lon, wp_end[1].lat, VFRCoordSystem.LONLAT, self), self.legs[i].points[-1][1])
+                leg.points[0] = (VFRPoint(wp_start[1].lon, wp_start[1].lat, VFRCoordSystem.LONLAT, self), leg.points[0][1])
+                leg.points[-1] = (VFRPoint(wp_end[1].lon, wp_end[1].lat, VFRCoordSystem.LONLAT, self), leg.points[-1][1])
                 # we adjust the name of the leg
-                self.legs[i].name = f"{wp_start[0]} -- {wp_end[0]}"
-                # TODO: and we adjust the annotations so we have the
-                # waypoint names for the first and last (or add if needed)
+                leg.name = f"{wp_start[0]} -- {wp_end[0]}"
+                # we adjust the annotations so we have the first and last match
+                if len(leg.annotations)>0:
+                    leg.annotations[0].x = leg.points[0][1]
+                else:
+                    leg.add_annotation('???', leg.points[0][1], (0,0))
+                if len(leg.annotations)>1:
+                    leg.annotations[-1].x = leg.points[-1][1]
+                else:
+                    leg.add_annotation('???', leg.points[-1][1], (0,0))
             else: # we don't have a leg yet
                 # so we add a new one
                 self.add_leg(f"{wp_start[0]} -- {wp_end[0]}", f"x^{i+1}", "", lambda x: x**i, 
@@ -698,6 +711,21 @@ class VFRFunctionRoute:
                                  (VFRPoint(wp_start[1].lon, wp_start[1].lat, VFRCoordSystem.LONLAT, self), 0),
                                  (VFRPoint(wp_end[1].lon, wp_end[1].lat, VFRCoordSystem.LONLAT, self), 1)
                              ])
+
+
+    def legs_to_annotations(self):
+        """
+        Transfers information from leg points to annotations (at least a start and an end is needed)
+        """
+        for leg in self.legs:
+            if len(leg.annotations) > 0:
+                leg.annotations[0].x = leg.points[0][1]
+            else:
+                leg.add_annotation('???', leg.points[0][1], (0, 0))
+            if len(leg.annotations) > 1:
+                leg.annotations[-1].x = leg.points[-1][1]
+            else:
+                leg.add_annotation('???', leg.points[-1][1], (0, 0))
 
 
     def finalize(self):

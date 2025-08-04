@@ -1,27 +1,19 @@
 """
-An example calling of VFRFunctionRoutes library
+An example use of VFRFunctionRoutes library
 """
-
 import math
 import datetime
 import requests
 from dotenv import load_dotenv
+load_dotenv()
+import os
 
 from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, VFRRouteState
 
 
-"""
-from google.colab import drive
-drive.mount('gdrive', force_remount=True)
-sys.path.append("/content/gdrive/MyDrive/Colab Notebooks/")
-import importlib
-importlib.reload(VFRFunctionRoutes)
-"""
-
-load_dotenv()
-
 sess = requests.Session()
 
+rootpath = os.path.dirname(os.path.abspath(__file__))
 
 rgen = VFRFunctionRoute(
     "LHFH--Lovasberény--Császár--Nyergesújfalu--LHFH",
@@ -29,9 +21,9 @@ rgen = VFRFunctionRoute(
     #datetime.datetime(2025, 6, 9, 7, 0, tzinfo=datetime.timezone.utc),
     datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(days=2),
     session=sess,
-    workfolder=r"E:\dev\projects\VFRFunctionRoutes\data",
-    outfolder=r"E:\dev\projects\VFRFunctionRoutes\output",
-    tracksfolder=r"E:\dev\projects\VFRFunctionRoutes\data"
+    workfolder=os.path.join(rootpath, "data"),
+    outfolder=os.path.join(rootpath, "output"),
+    tracksfolder=os.path.join(rootpath, "data")
 )
 
 rgen.set_state(VFRRouteState.LEGS) # because we also want to add annotations
