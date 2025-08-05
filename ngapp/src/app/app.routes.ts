@@ -7,9 +7,10 @@ import { Step3LegsEditComponent } from './steps/step3/step3-legs-edit/step3-legs
 import { Step4AnnotationsEditComponent } from './steps/step4/step4-annotations-edit/step4-annotations-edit.component';
 import { Step5AddTracksComponent } from './steps/step5/step5-add-tracks/step5-add-tracks.component';
 import { Step6DownloadAndSaveComponent } from './steps/step6/step6-download-and-save/step6-download-and-save.component';
+import { HomeComponent } from './home/home/home.component';
 
 export const routes: Routes = [
-    { path: "", component: Step0OpenOrNewComponent },    
+    { path: "", component: HomeComponent },    
     { path: "step0", component: Step0OpenOrNewComponent },
     { path: "step1", component: Step1AreaSelectionComponent },
     { path: "step2", component: Step2WaypointsEditComponent },

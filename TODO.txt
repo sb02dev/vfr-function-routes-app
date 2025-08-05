@@ -40,14 +40,20 @@ v0.1:
   + bugfix: fixed local paths eliminated
 
 v0.2
+- landing page
+- session management
+  - time to live for sessions in the session store (api/routes.py:_vfrroutes)
+  - limit the session connections based on available memory (or number of open sessions)
+  - visual feedback if no connection available
+  - caching of states per session to disk on each modification
+  - session_id is always sent in http and ws requests (retreived from localStorage)
+- extend map drawing with logging
+- find memory optimization possibilities for map drawing (freeing memory earlier, etc.)
 - bugfix: map-info width and horizontal scrolling
 - bugfix: readonly mathedit does not show formula
 - mapedit: moving amount is not decreasing when scaled
 - edit "function_range" on leg page
 - order constraint points by func_x automatically
-- server side session cache
-  - caching of states per session to disk on each modification
-  - session_id is always sent in http and ws requests (retreived from localStorage)
 - save to cloud
 - annotations: more precise bubble estimation
 - annotations: bubbles can be moved with mouse
