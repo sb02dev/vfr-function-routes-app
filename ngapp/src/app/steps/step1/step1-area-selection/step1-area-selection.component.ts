@@ -37,8 +37,7 @@ export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
 
     constructor(public router: Router, private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'low-res') {
-                this.mapedit.drawBackgroundImage(msg['image']);
+            if (msg.type === 'area-of-interest') {
                 this.rect = [
                     msg['top-left'].x,
                     msg['top-left'].y,
@@ -51,22 +50,14 @@ export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
                     msg['bottom-right'].lon,
                     msg['bottom-right'].lat
                 ];
-            } else if (msg.type === 'area-of-interest') {
-                this.lonlat = [
-                    msg['top-left'].lon,
-                    msg['top-left'].lat,
-                    msg['bottom-right'].lon,
-                    msg['bottom-right'].lat
-                ];
             }
         });
     }
 
     ngAfterViewInit(): void { 
         // initiate image load
-        this.imgsrv.send({
-            type: 'get-low-res-map',
-        });
+        this.imgsrv.send({ type: 'get-area-of-interest' });
+        this.imgsrv.send({ type: 'get-low-res-map' });
     }
 
     ngOnDestroy(): void {

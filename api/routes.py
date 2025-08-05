@@ -90,28 +90,40 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             #######################################################
             # Step 1: mark an 'area of interest' on a low-res map #
             #######################################################
-            elif msgtype=='get-low-res-map':
+            elif msgtype=='get-area-of-interest': 
                 if rte:
                     tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
                     br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
-                    with rte.get_lowres_map() as fig:
-                        image = _get_image_from_figure(fig, dpi=rte.LOWDPI)
-                        await websocket.send_text(json.dumps({
-                            "type": "low-res", 
-                            "image": image,
-                            "top-left": {
-                                "x": tl.x, 
+                    await websocket.send_text(json.dumps({
+                        "type": "area-of-interest",
+                        "top-left": {
+                            "x": tl.x,
                                 "y": tl.y,
                                 "lon": rte.area_of_interest["top-left"].lon,
                                 "lat": rte.area_of_interest["top-left"].lat,
-                            },
-                            "bottom-right": {
-                                "x": br.x, 
-                                "y": br.y,
-                                "lon": rte.area_of_interest["bottom-right"].lon,
-                                "lat": rte.area_of_interest["bottom-right"].lat,
-                            },
-                        }))
+                        },
+                        "bottom-right": {
+                            "x": br.x,
+                            "y": br.y,
+                            "lon": rte.area_of_interest["bottom-right"].lon,
+                            "lat": rte.area_of_interest["bottom-right"].lat,
+                        },
+                    }))
+
+            elif msgtype == 'get-low-res-map':
+                if rte:
+                    (x_size, y_size), (x_cnt, y_cnt), (x_pixels, y_pixels) = rte.get_lowres_map_tilesetup()
+                    await websocket.send_json({"type": "image", 
+                                               "tilesize": {"x": x_size, "y": y_size}, 
+                                               "tilecount": {"x": x_cnt, "y": y_cnt},
+                                               "imagesize": {"x": x_pixels, "y": y_pixels}
+                                              })
+                    for x in range(x_cnt):
+                        for y in range(y_cnt):
+                            image = rte.get_lowres_map_tile(x, y)
+                            await websocket.send_json({"type": "tile", "x": x, "y": y})
+                            await websocket.send_bytes(image)
+                    rte.get_lowres_map_tilefinish()
 
             elif msgtype=='set-area-of-interest':
                 if rte:
@@ -142,7 +154,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='get-waypoints-map':
                 if rte:
                     with rte.get_highres_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
                         await websocket.send_text(json.dumps({
                             "type": "waypoints-map",
                             "image": image,
@@ -175,7 +187,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='get-legs-map':
                 if rte:
                     with rte.get_highres_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
                         await websocket.send_text(json.dumps({
                             "type": "legs-map",
                             "image": image,
@@ -220,7 +232,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='get-annotations-map':
                 if rte:
                     with rte.get_annotations_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
                         await websocket.send_text(json.dumps({
                             "type": "annotations-map",
                             "image": image,
@@ -261,7 +273,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='get-tracks-map':
                 if rte:
                     with rte.get_tracks_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
                         await websocket.send_text(json.dumps({
                             "type": "tracks-map",
                             "image": image,
@@ -276,7 +288,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     rte.add_track(msg.get('filename'), msg.get('color', '#0000FF'), base64.b64decode(msg.get('data')))
                     with rte.get_tracks_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
                         await websocket.send_text(json.dumps({
                             "type": "tracks-map",
                             "image": image,
@@ -291,7 +303,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     rte.update_tracks(msg.get('tracks'))
                     with rte.get_tracks_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.DPI)
+                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
                         await websocket.send_text(json.dumps({
                             "type": "tracks-map",
                             "image": image,
@@ -320,7 +332,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='get-png':
                 if rte:
                     fig, _ = rte.draw_map()
-                    image = _get_image_from_figure(fig, dpi=rte.DPI)
+                    image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
                     plt.close(fig)
                     await websocket.send_text(json.dumps({
                         "type": "png",

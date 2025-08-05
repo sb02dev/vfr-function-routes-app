@@ -40,7 +40,18 @@ v0.1:
   + bugfix: fixed local paths eliminated
 
 v0.2
-- landing page
++ landing page
++ memory optimizations for low-res map
+  + separate data sending from image sending
+  + instead of contextmanager, be explicit about figure release
+  + instead of plotting the map, use Pillow based manipulation
+  + send images as binary through socket (centralize receiving in frontend)
+  + send smaller tiles through websocket (this will also be good for progress display)
+- the same memory optimizations for waypoints map
+- the same memory optimizations for legs map
+- the same memory optimizations for annotations map
+- the same memory optimizations for tracks map
+- memory optimizations for final image generation
 - session management
   - time to live for sessions in the session store (api/routes.py:_vfrroutes)
   - limit the session connections based on available memory (or number of open sessions)

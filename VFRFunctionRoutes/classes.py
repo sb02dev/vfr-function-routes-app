@@ -583,9 +583,12 @@ class VFRFunctionRoute:
       PointLonLat(16.5, 46.0): PointXY(155.83, 1639.36),
       PointLonLat(21.0, 46.0): PointXY(2133.00, 1658.6),
     } # I don't see any possibility to do this automatically
-    PDF_MARGINS = ((79, 110.1), (79.05, 139)) #(('left', 'top'), ('right', 'bottom'))
-    DPI = int(os.getenv("HIGH_DPI", "600"))
-    LOWDPI = int(os.getenv("LOW_DPI", "72"))
+    PDF_MARGINS = ((79.0, 110.1), (79.05, 139.0)) #(('left', 'top'), ('right', 'bottom'))
+    HIGH_DPI = int(os.getenv("HIGH_DPI", "600"))
+    LOW_DPI = int(os.getenv("LOW_DPI", "72"))
+    TILESIZE_X = int(os.getenv("TILESIZE_X", 512))
+    TILESIZE_Y = int(os.getenv("TILESIZE_Y", 512))
+    TILESIZE = (TILESIZE_X, TILESIZE_Y)
 
     
     def __init__(self,
@@ -746,6 +749,62 @@ class VFRFunctionRoute:
                 pdf_file.write(response.content)
 
 
+    def get_lowres_map_tilesetup(self) -> tuple[tuple[int, int], tuple[float, float], tuple[int, int]]:
+        """
+        Sets up the environment to generate tiles for the full map in low resolution.
+        MUST be followed by `get_lowres_map_tilefinish()` to free up resources.
+
+        Returns:
+            ((x_size, y_size), (x_count, y_count))
+                The size of each tile and the count of them
+        """
+        # state check
+        self._ensure_state(VFRRouteState.INITIATED)
+
+        # open pdf
+        self._pdf_document = pymupdf.open(self.pdf_destination)
+        page = self._pdf_document[0]
+        rect = page.rect  # the page rectangle
+        m = self.PDF_MARGINS
+        clip = pymupdf.Rect(m[0][0], m[0][1], rect.width-m[1][0], rect.height-m[1][1])  # the area we want
+
+        # calculate tile numbers
+        width_in_pixels = clip.width / 72 * self.LOW_DPI
+        x_count = math.ceil(width_in_pixels / self.TILESIZE[0])
+        height_in_pixels = clip.height / 72 * self.LOW_DPI
+        y_count = math.ceil(height_in_pixels / self.TILESIZE[1])
+
+        # return
+        return (self.TILESIZE, (x_count, y_count), (width_in_pixels, height_in_pixels))
+    
+
+    def get_lowres_map_tilefinish(self):
+        # close the pdf file
+        self._pdf_document = None
+
+    def get_lowres_map_tile(self, x: int, y: int) -> bytes:
+        # calculate the clip coordinates
+        page = self._pdf_document[0]
+        rect = page.rect
+        scale = 1/72*self.LOW_DPI
+        ((mx0, my0), (mx1, my1)) = self.PDF_MARGINS
+        ((mx0s, my0s), (mx1s, my1s)) = ((mx0*scale, my0*scale), (mx1*scale, my1*scale))
+        x_pixels = x * self.TILESIZE[0]
+        y_pixels = y * self.TILESIZE[1]
+        clip = pymupdf.Rect(
+            mx0s + x_pixels,
+            my0s + y_pixels,
+            min(rect.width*scale-mx1s, mx0s + (x_pixels + self.TILESIZE[0] + 1)),
+            min(rect.height*scale-my1s, my0s + (y_pixels + self.TILESIZE[1] + 1))
+        )
+
+        # get the image
+        pixmap: pymupdf.Pixmap = page.get_pixmap(clip=clip, dpi=self.LOW_DPI)
+        return pixmap.tobytes("jpg", 85)
+
+
+
+
     @contextmanager
     def get_lowres_map(self):
         # state check
@@ -758,13 +817,13 @@ class VFRFunctionRoute:
             rect = page.rect  # the page rectangle
             m = self.PDF_MARGINS
             clip = pymupdf.Rect(m[0][0], m[0][1], rect.width-m[1][0], rect.height-m[1][1])  # the area we want
-            pdfimage_cropcheck = page.get_pixmap(clip=clip, dpi=self.LOWDPI)
+            pdfimage_cropcheck = page.get_pixmap(clip=clip, dpi=self.LOW_DPI)
             pilimage_cropcheck = PIL.Image.open(io.BytesIO(pdfimage_cropcheck.tobytes("png")))
             self._lowresmap = pilimage_cropcheck
 
         # draw
         fig = plt.figure()
-        fig.set_size_inches((c/self.LOWDPI for c in self._lowresmap.size))
+        fig.set_size_inches((c/self.LOW_DPI for c in self._lowresmap.size))
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
         fig.add_axes(ax)
@@ -795,7 +854,7 @@ class VFRFunctionRoute:
 
         # draw
         fig = plt.figure()
-        fig.set_size_inches((c/self.DPI for c in self._basemapimg.size))
+        fig.set_size_inches((c/self.HIGH_DPI for c in self._basemapimg.size))
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
         fig.add_axes(ax)
@@ -925,7 +984,7 @@ class VFRFunctionRoute:
         """
         xt = self.get_mapxyextent()
         x0, y0, x1, y1 = xt.minx, xt.miny, xt.maxx, xt.maxy
-        scale = self.LOWDPI/self.DPI #1 / (1/72*2.54/100*500000)
+        scale = 72/self.HIGH_DPI # PDF coordinates are based on 72 DPI
         pdf_document = pymupdf.open(self.pdf_destination)
         page = pdf_document[0]
         rect = page.rect  # the page rectangle
@@ -936,7 +995,7 @@ class VFRFunctionRoute:
                             m[0][1]+y1,  # rect.height-m[1][1]
                            )
         print(rect, clip)
-        pdfimage_cropcheck = page.get_pixmap(clip=clip, dpi=self.DPI)
+        pdfimage_cropcheck = page.get_pixmap(clip=clip, dpi=self.HIGH_DPI)
         pilimage_cropcheck = PIL.Image.open(io.BytesIO(pdfimage_cropcheck.tobytes("png")))
         fig, ax = plt.subplots()
         print(pilimage_cropcheck.size)
@@ -1063,9 +1122,9 @@ class VFRFunctionRoute:
         p = self.get_mapxyextent()
         pp = [
             (0, 0),
-            (0, (p.maxy-p.miny)*self.DPI/self.LOWDPI),
-            ((p.maxx-p.minx)*self.DPI/self.LOWDPI, 0),
-            ((p.maxx-p.minx)*self.DPI/self.LOWDPI, (p.maxy-p.miny)*self.DPI/self.LOWDPI),
+            (0, (p.maxy-p.miny)*self.HIGH_DPI/self.LOW_DPI),
+            ((p.maxx-p.minx)*self.HIGH_DPI/self.LOW_DPI, 0),
+            ((p.maxx-p.minx)*self.HIGH_DPI/self.LOW_DPI, (p.maxy-p.miny)*self.HIGH_DPI/self.LOW_DPI),
         ]  # also scale it up!
         p = [
             (p.minx, p.miny),
@@ -1180,7 +1239,7 @@ class VFRFunctionRoute:
         
         # initialize map
         fig = plt.figure()
-        fig.set_size_inches((c/self.DPI for c in self._basemapimg.size))
+        fig.set_size_inches((c/self.HIGH_DPI for c in self._basemapimg.size))
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
         fig.add_axes(ax)
@@ -1234,7 +1293,7 @@ class VFRFunctionRoute:
             m[0][0]+x1,
             m[0][1]+y1
         )  # the area we want
-        pdfimage = page.get_pixmap(clip=clip, dpi=self.DPI)
+        pdfimage = page.get_pixmap(clip=clip, dpi=self.HIGH_DPI)
         self._basemapimg = PIL.Image.open(io.BytesIO(pdfimage.tobytes("png")))
             
             
@@ -1261,7 +1320,7 @@ class VFRFunctionRoute:
             imgname,         
             bbox_inches='tight',
             pad_inches=0,
-            dpi=self.DPI
+            dpi=self.HIGH_DPI
         )
         # header and image
         doc = Document()

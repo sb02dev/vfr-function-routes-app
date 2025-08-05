@@ -17,6 +17,7 @@ export class ImageEditService implements OnDestroy {
     private reconnectTimer: any;
 
     public channel = new Subject<ImageEditMessage>();
+    public binary_channel = new Subject<Blob>();
     public connected = new Subject<boolean>();
   
     constructor(private session: SessionService) { 
@@ -50,11 +51,16 @@ export class ImageEditService implements OnDestroy {
         };
 
         this.socket.onmessage = (msg) => {
-            const data: ImageEditMessage = JSON.parse(msg.data);
-            if (data.type === 'set_session') {
-                this.session.storeSessionId(data['session_id']);
-            } else {
-                this.channel.next(data);
+            if (typeof msg.data === 'string') {
+                const data: ImageEditMessage = JSON.parse(msg.data);
+                if (data.type === 'set_session') {
+                    this.session.storeSessionId(data['session_id']);
+                } else {
+                    this.channel.next(data);
+                }
+            } else if (msg.data instanceof Blob) {
+                const data: Blob = msg.data;
+                this.binary_channel.next(data);
             }
         };
 

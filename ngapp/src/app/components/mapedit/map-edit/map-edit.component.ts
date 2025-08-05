@@ -1,8 +1,12 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgZone, OnDestroy, Output, ViewChild } from '@angular/core';
 import { MatIconModule } from "@angular/material/icon";
 import { CommonModule } from '@angular/common';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatButtonModule } from '@angular/material/button';
+import { Subscription } from 'rxjs';
+
+import { ImageEditService } from '../../../services/image-edit.service';
+import { ImageEditMessage } from '../../../models/image-edit-msg';
 
 @Component({
     selector: 'app-map-edit',
@@ -17,6 +21,12 @@ import { MatButtonModule } from '@angular/material/button';
     styleUrl: './map-edit.component.css'
 })
 export class MapEditComponent implements AfterViewInit, OnDestroy {
+
+    // the message subscriptions
+    subs: Subscription;
+    binary_subs: Subscription;
+
+    // inputs and events
     @Input() panelWidth: string = '50px';
     @Output() drawOverlay = new EventEmitter();
     @Output() enumPoints = new EventEmitter<(i: number, x: number, y: number) => boolean>();
@@ -24,11 +34,19 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     @Output() movePointTo = new EventEmitter<{ i: number, x: number, y: number, callback: () => void }>();
     @Output() finalizePoints = new EventEmitter();
 
+    // canvas and tool selection
     @ViewChild('bgCanvas', { static: true }) bgCanvasRef!: ElementRef<HTMLCanvasElement>;
     @ViewChild('overlayCanvas', { static: true }) overlayCanvasRef!: ElementRef<HTMLCanvasElement>;
     private bgResize!: ResizeObserver;
     baseImage: HTMLImageElement | null = null;
     public selectedTool: string = 'panzoom';
+
+    // tile related
+    private tileCache = new Map<string, string>();
+    private pendingMeta: any = null;
+    private tileSize: { x: number, y: number } = { x: 0, y: 0 };
+    private tileCount: { x: number, y: number } = { x: 0, y: 0 };
+    private imageSize: { x: number, y: number } = { x: 0, y: 0 };
 
     // pan and zoom variables
     private xlim: [number, number] = [0, 4];
@@ -39,6 +57,47 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     // point edit variables
     private selectionDistance: number = 10.;
     selectedPoint: number | null = null;
+
+
+    constructor(private imgsrv: ImageEditService, private zone: NgZone) {
+        this.subs = imgsrv.channel.subscribe((msg: ImageEditMessage) => {
+            if (msg.type === 'image') {
+                // we have an image header, get ready to receive the image tiles
+                // clear the tilecache and release the URLs
+                this.tileCache.forEach((key: string, url: string) => {
+                    URL.revokeObjectURL(url);
+                });
+                this.tileCache.clear();
+                // save the image data (tilesize & tilecount)
+                this.tileSize = msg['tilesize'];
+                this.tileCount = msg['tilecount'];
+                this.imageSize = msg['imagesize'];
+                // zoom to fit
+                this.zoomToAll();
+                // redraw with no image
+                this.drawBackgroundTransformed();
+            } else if (msg.type === 'tile') {
+                // we have a tile header, get ready to receive the tile image data
+                this.pendingMeta = msg;
+            }
+        });
+        this.binary_subs = imgsrv.binary_channel.subscribe((blob: Blob) => {
+            // we have a tile data, put it to tilecache
+            if (this.pendingMeta?.type === 'tile') {
+                // save image to cache
+                const key = `${this.pendingMeta.x},${this.pendingMeta.y}`;
+                const url = URL.createObjectURL(blob);
+                this.tileCache.set(key, url);
+                // get references and clear canvas
+                const canvas = this.bgCanvasRef.nativeElement;
+                const ctx = canvas.getContext('2d')!;
+                // draw just this tile
+                this.drawTileTransformed(this.pendingMeta.x, this.pendingMeta.y, canvas, ctx, this.drawGeneration);
+                // clear meta
+                this.pendingMeta = null;
+            }
+        });
+    }
     
 
     ngAfterViewInit(): void {
@@ -80,6 +139,8 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     ngOnDestroy(): void {
         // stop observers
         this.bgResize.disconnect();
+        this.subs.unsubscribe();
+        this.binary_subs.unsubscribe();
     }
 
     resetView() {
@@ -90,9 +151,15 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     }
 
     zoomToAll() {
-        if (!this.baseImage) return;
-        const imw = this.baseImage.width;
-        const imh = this.baseImage.height;
+        let imw = 0;
+        let imh = 0;
+        if (this.baseImage) {
+            imw = this.baseImage.width;
+            imh = this.baseImage.height;
+        } else {
+            imw = this.imageSize.x;
+            imh = this.imageSize.y;
+        }
         const canvasw = this.bgCanvasRef.nativeElement.width;
         const canvash = this.bgCanvasRef.nativeElement.height;
         const widthratio = imw / canvasw;
@@ -241,13 +308,56 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         img.src = 'data:image/png;base64,' + base64;
     }
 
-    private drawBackgroundTransformed() {
-        if (!this.baseImage) return;
+    private drawGeneration = 0;
 
+    private async drawBackgroundTransformed() {
         // get references and clear canvas
         const canvas = this.bgCanvasRef.nativeElement;
         const ctx = canvas.getContext('2d')!;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (this.baseImage) { // legacy method: one large chunk
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            this.drawFullImage(canvas, ctx);
+        } else { // new method: show tiles
+            const myGen = ++this.drawGeneration; // unique ID for this draw session
+
+            // Create offscreen buffer
+            const offscreen = new OffscreenCanvas(canvas.width, canvas.height);
+            const offctx = offscreen.getContext('2d')!;
+            // clear it
+            offctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // draw tiles
+            /*for (let xi = 0; xi < this.tileCount.x; xi++) {
+                for (let yi = 0; yi < this.tileCount.y; yi++) {
+                    await this.drawTileTransformed(xi, yi, offscreen, offctx);
+                    // flip to visible
+                    ctx.drawImage(offscreen, 0, 0);
+                }
+            }*/
+            
+            // get tile order (center first)
+            const orderedTiles = this.getTileOrder();
+
+            // draw tiles incrementally in priority order
+            for (const { xi, yi } of orderedTiles) {
+                // quit early if a new generation has started
+                if (myGen !== this.drawGeneration) return;
+                // otherwise start drawing
+                await this.drawTileTransformed(xi, yi, offscreen, offctx, myGen);
+                // flip to visible
+                ctx.drawImage(offscreen, 0, 0);
+            }
+
+            // flip to visible
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(offscreen, 0, 0);
+
+        }
+    }
+
+    private drawFullImage(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
+        if (!this.baseImage) return;
 
         // get the image data
         const img = this.baseImage;
@@ -266,6 +376,72 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
 
         // Destination: full canvas
         ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    }
+
+    private async drawTileTransformed(xi: number, yi: number,
+                                      canvas: HTMLCanvasElement | OffscreenCanvas, 
+                                      ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+                                      myGen: number) {
+        if (myGen !== this.drawGeneration) return; // cancel if outdated
+        
+        // calculate coordinates
+        const [x0, y0] = [xi * this.tileSize.x, yi * this.tileSize.y];
+        const [x1, y1] = [(xi + 1) * this.tileSize.x, (yi + 1) * this.tileSize.y]; // TODO: last tile may be smaller
+        const [imx0, imy0] = this.getImage2CanvasCoords(x0, y0);
+        const [imx1, imy1] = this.getImage2CanvasCoords(x1, y1);
+        // draw only if it is in viewport
+        if ((imx0 <= canvas.width && imx1 >= 0) && (imy0 <= canvas.height && imy1 >= 0)) {
+            const key = `${xi},${yi}`;
+            const tileurl = this.tileCache.get(key);
+            if (tileurl) {
+                const resp = await fetch(tileurl);
+                if (myGen !== this.drawGeneration) return; // cancel if outdated
+                const blob = await resp.blob();
+                if (myGen !== this.drawGeneration) return; // cancel if outdated
+                const bitmap = await createImageBitmap(blob);
+                if (myGen !== this.drawGeneration) { // cancel if outdated
+                    bitmap.close();
+                    return; 
+                }
+
+                const [x1_, y1_] = [(xi + 1) * this.tileSize.x - 1, (yi + 1) * this.tileSize.y - 1]; // TODO: last tile may be smaller
+
+                console.log(`(${xi},${yi}) => (${imx0},${imy0})-(${imx1},${imy1}) x (${bitmap.width}, ${bitmap.height})`);
+
+                ctx.drawImage(bitmap, imx0, imy0, imx1 - imx0, imy1 - imy0);
+                bitmap.close(); // free GPU memory
+
+                /*const img = new Image();
+                img.onload = () => {
+                    // draw tile at desired position
+                    ctx.drawImage(img, imx0, imy0, imx1 - imx0, imy1 - imy0);
+                    // debug log
+                    //console.log(`(${xi},${yi}) => (${imx0},${imy0})-(${imx1},${imy1}) x (${img.width}, ${img.height})`);
+                    // Drop references so GC can clean up
+                    (img as any).src = "";
+                };
+                img.src = tileurl;*/
+            }
+        }
+    }
+
+    private getTileOrder(): { xi: number, yi: number, dist: number }[] {
+        const cx = this.tileCount.x / 2;
+        const cy = this.tileCount.y / 2;
+
+        const tiles: { xi: number, yi: number, dist: number }[] = [];
+        for (let xi = 0; xi < this.tileCount.x; xi++) {
+            for (let yi = 0; yi < this.tileCount.y; yi++) {
+                const dx = xi + 0.5 - cx;
+                const dy = yi + 0.5 - cy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                tiles.push({ xi, yi, dist });
+            }
+        }
+
+        // sort by distance from center (smallest first)
+        tiles.sort((a, b) => a.dist - b.dist);
+        return tiles;
     }
 
     drawOverlayTransformed() {
