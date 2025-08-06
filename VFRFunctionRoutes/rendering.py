@@ -54,8 +54,8 @@ class TileRenderer:
             scaled_crop_rect = ((self.crop_rect[0][0], self.crop_rect[0][1]),
                                 (page_rect.width - self.crop_rect[1][0], page_rect.height - self.crop_rect[1][1]))
         elif self.crop_rect_source == 'target':
-            scaled_crop_rect = ((self.crop_rect[0][0]*scale, self.crop_rect[0][1]*scale),
-                                (self.crop_rect[1][0]*scale, self.crop_rect[1][1]*scale))
+            scaled_crop_rect = ((self.crop_rect[0][0]/scale, self.crop_rect[0][1]/scale),
+                                (self.crop_rect[1][0]/scale, self.crop_rect[1][1]/scale))
         self._clip = pymupdf.Rect(scaled_crop_rect[0][0],
                                  scaled_crop_rect[0][1],
                                  scaled_crop_rect[1][0],

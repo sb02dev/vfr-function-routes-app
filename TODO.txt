@@ -1,6 +1,4 @@
 v0.2
-- bugfix: LOW_DPI dependent VFRPoint transformations
-- bugfix: HIGH_DPI dependent VFRPoint transformations
 - memory optimizations for final image generation
 - session management
   - limit the session connections based on available memory (or number of open sessions)
@@ -8,7 +6,6 @@ v0.2
   - caching of states per session to disk on each modification
   - session_id is always sent in http and ws requests (retreived from localStorage)
 - extend map drawing with logging
-- find memory optimization possibilities for map drawing (freeing memory earlier, etc.)
 - bugfix: map-info width and horizontal scrolling
 - bugfix: readonly mathedit does not show formula
 - mapedit: moving amount is not decreasing when scaled
@@ -35,6 +32,9 @@ v0.2
 + the same memory optimizations for legs map
 + the same memory optimizations for annotations map
 + the same memory optimizations for tracks map
++ bugfix: LOW_DPI dependent VFRPoint transformations
++ bugfix: HIGH_DPI dependent VFRPoint transformations
++ binary transfer of final documents (PNG, DOCX)
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 

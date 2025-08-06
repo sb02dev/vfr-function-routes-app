@@ -404,23 +404,22 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     buf = rte.create_doc(False)
                     if buf:
-                        b64 = base64.b64encode(buf.read()).decode("utf-8")
                         await websocket.send_text(json.dumps({
                             "type": "docx",
-                            "data": b64,
                             "mime": 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                             "filename": f"{rte.name}.docx",
                         }))
+                        await websocket.send_bytes(buf.getvalue())
 
             elif msgtype=='get-png':
                 if rte:
                     image = rte.draw_map()
-                    await websocket.send_text(json.dumps({
+                    await websocket.send_json({
                         "type": "png",
-                        "data":  image,
                         "mime": 'image/png',
                         "filename": f"{rte.name}.png"
-                    }))
+                    })
+                    await websocket.send_bytes(image)
 
             elif msgtype=='get-gpx':
                 if rte:

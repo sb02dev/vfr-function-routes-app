@@ -605,8 +605,6 @@ class VFRFunctionRoute:
         self.legs: list[VFRLeg] = []
         self.tracks: list[VFRTrack] = []
         self._session = session if session else requests.Session()
-        self._lowresmap = None
-        self._basemapimg = None
         self.waypoints: list[tuple[str, VFRPoint]] = []
         self.area_of_interest = {
             'top-left': VFRPoint(18.5, 47.5, VFRCoordSystem.LONLAT, self),
@@ -650,7 +648,6 @@ class VFRFunctionRoute:
         if self._state.value<required_state.value: # forward stepping
             if self._state == VFRRouteState.INITIATED and required_state.value > self._state.value:
                 # INITIADED -> AREAOFINTEREST
-                self._basemapimg = None
                 self._state = VFRRouteState.AREAOFINTEREST
                 self.calc_extents()
                 self.calc_transformations()
@@ -727,7 +724,6 @@ class VFRFunctionRoute:
         self._ensure_state(VFRRouteState.ANNOTATIONS)
         self.calc_extents()
         self.calc_transformations()
-        self.calc_basemap()
         # TODO: obtain live data (from internet)
         self._state = VFRRouteState.FINALIZED
         
@@ -803,15 +799,14 @@ class VFRFunctionRoute:
             'bottom-right': VFRPoint(bottom_right_x, bottom_right_y, VFRCoordSystem.MAP_XY, self).project_point(VFRCoordSystem.LONLAT)
         }
 
-    def _get_image_from_figure(self, fig, size: tuple[float, float] = None, dpi: float = None) -> str:
+    def _get_image_from_figure(self, fig, size: tuple[float, float] = None, dpi: float = None) -> bytes:
         buf = io.BytesIO()
         if size:
             figsize = fig.get_size_inches()
             dpi = min(size[0] / figsize[0], size[1] / figsize[1])
         fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0, dpi=dpi)
         buf.seek(0)
-        image = base64.b64encode(buf.read()).decode("utf-8")
-        return image
+        return buf.getvalue()
 
 
     def draw_annotations(self):
@@ -1068,7 +1063,8 @@ class VFRFunctionRoute:
         #print(self._proj(17,47.5))
         # calculate transformations for FULL_WORLD_XY<->MAP_XY
         p = [self._proj(ll.lon, ll.lat) for ll in self.PDF_IN_WORLD_XY.keys()] # convert to fullworld map coord
-        self._matrix_fullmap2map = _calculate_2d_transformation_matrix(p, list(self.PDF_IN_WORLD_XY.values())) # calc matrix from fullworld map coord to map coord
+        pp = [PointXY(pxy.x/72*self.LOW_DPI, pxy.y/72*self.LOW_DPI) for pxy in self.PDF_IN_WORLD_XY.values()] # must scale it to LOW_DPI from default pdf metric of 72
+        self._matrix_fullmap2map = _calculate_2d_transformation_matrix(p, pp) # calc matrix from fullworld map coord to map coord
         self._matrix_map2fullmap = np.linalg.inv(self._matrix_fullmap2map)
         #print("TEST lonlat to mapxy:")
         #for i, (lonlat, xy) in enumerate(self.PDF_IN_WORLD_XY.items()):
@@ -1089,7 +1085,7 @@ class VFRFunctionRoute:
         ]
         self._matrix_map2cropmap = _calculate_2d_transformation_matrix(p, pp)
         self._matrix_cropmap2map = np.linalg.inv(self._matrix_map2cropmap)
-        # print("TEST mapxy to cropmapxy:")
+        #print("TEST mapxy to cropmapxy:")
         #for i, (mapxy, cropmapxy) in enumerate(zip(p, pp)):
         #    print(f"  {mapxy} -> {cropmapxy} vs {_apply_transformation_matrix(mapxy, self._matrix_map2cropmap)}")
         # calculate transformations for each leg
@@ -1116,11 +1112,10 @@ class VFRFunctionRoute:
                 distance of minimum and maximum longitudinal coordinates.
                 Default is equal to horizontal margin.
         """
-        # extent: (min_lat, max_lat, min_lon, max_lon)
         lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
         if self._state==VFRRouteState.INITIATED:
             self.extent=ExtentLonLat(18.5, 47.0, 19.5, 47.5) # just a default around Budapest
-        elif self._state==VFRRouteState.AREAOFINTEREST:
+        elif self._state in [VFRRouteState.AREAOFINTEREST, VFRRouteState.WAYPOINTS]:
             lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
                                         self.area_of_interest["bottom-right"].lat,
                                         self.area_of_interest["top-left"].lon,
@@ -1131,7 +1126,7 @@ class VFRFunctionRoute:
                 max(lon0, lon1),
                 max(lat0, lat1)
             )
-        elif self._state in [VFRRouteState.WAYPOINTS, VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
+        elif self._state in [VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
             if len(self.legs)==0 and len(self.tracks)==0:
                 self.extent=ExtentLonLat(18.5, 47.0, 19.5, 47.5) # just a default around Budapest
                 return
@@ -1157,8 +1152,8 @@ class VFRFunctionRoute:
             PointLonLat(self.extent.maxlon, self.extent.minlat), # maxlon-minlat -> rightbottom
             PointLonLat(self.extent.maxlon, self.extent.maxlat), # maxlon-maxlat -> righttop
         ]
-        p = [self._proj(ll.lon, ll.lat) for ll in p] # lon, lat
-        p = [_apply_transformation_matrix(pp, self._matrix_fullmap2map) for pp in p]
+        p = [self._proj(ll.lon, ll.lat) for ll in p] # projected to FULL_WORLD_XY
+        p = [_apply_transformation_matrix(pp, self._matrix_fullmap2map) for pp in p] # projected to MAP_XY (LOW_DPI)
         p = [PointXY(pp[0], pp[1]) for pp in p]
         return ExtentXY(
             min(pp.x for pp in p),
@@ -1177,16 +1172,19 @@ class VFRFunctionRoute:
             The matplotlib axes of the final plot.
         """
         self._ensure_state(VFRRouteState.FINALIZED)
+
+        # draw background
+        bg_img = self.calc_basemap()
         
         # initialize map
         fig = plt.figure()
-        fig.set_size_inches((c/self.HIGH_DPI for c in self._basemapimg.size))
+        fig.set_size_inches((c/self.HIGH_DPI for c in bg_img.size))
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
         fig.add_axes(ax)
         
         # draw the map parts
-        ax.imshow(self._basemapimg)
+        ax.imshow(bg_img)
         for l in self.legs:
             l.draw(ax)
         for t in self.tracks:
@@ -1200,17 +1198,9 @@ class VFRFunctionRoute:
         
 
     def calc_basemap_clip(self):
-        # calc clip coordinates
-        lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
-        if self._state==VFRRouteState.INITIATED:
-            raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required: {VFRRouteState.AREAOFINTEREST}.")
-        elif self._state in [VFRRouteState.AREAOFINTEREST, VFRRouteState.WAYPOINTS]:
-            lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
-                                        self.area_of_interest["bottom-right"].lat,
-                                        self.area_of_interest["top-left"].lon,
-                                        self.area_of_interest["bottom-right"].lon)
-        elif self._state in [VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
-            lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
+        # calc clip coordinates from the appropriate lon-lat corners
+        lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
+        # adjust for non-rectangle because of projection type
         corners_lonlat = [
             VFRPoint(lon0, lat0, route=self),
             VFRPoint(lon1, lat1, route=self),
@@ -1222,48 +1212,27 @@ class VFRFunctionRoute:
         y0 = min([p.y for p in corners_map])
         x1 = max([p.x for p in corners_map])
         y1 = max([p.y for p in corners_map])
+        # the order of them is important
         if y1<y0:
-            y0, y1 = y1, y0 # the order of them is important
+            y0, y1 = y1, y0
+        # this is in LOW_DPI => convert it back to PDF coordinates
+        ((x0, y0), (x1, y1)) = ((x0/self.LOW_DPI*72, y0/self.LOW_DPI*72),
+                                (x1/self.LOW_DPI*72, y1/self.LOW_DPI*72))
+        ((xm, ym), (_, _)) = self.PDF_MARGINS
+        ((x0, y0), (x1, y1)) = ((xm+x0, ym+y0), (xm+x1, ym+y1))
         return ((x0, y0), (x1, y1))
 
 
     def calc_basemap(self):
-        # calc clip coordinates
-        lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
-        if self._state==VFRRouteState.INITIATED:
-            raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required: {VFRRouteState.AREAOFINTEREST}.")
-        elif self._state in [VFRRouteState.AREAOFINTEREST, VFRRouteState.WAYPOINTS]:
-            lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
-                                        self.area_of_interest["bottom-right"].lat,
-                                        self.area_of_interest["top-left"].lon,
-                                        self.area_of_interest["bottom-right"].lon)
-        elif self._state in [VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
-            lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
-        corners_lonlat = [
-            VFRPoint(lon0, lat0, route=self),
-            VFRPoint(lon1, lat1, route=self),
-            VFRPoint(lon1, lat0, route=self),
-            VFRPoint(lon0, lat1, route=self)
-        ]
-        corners_map = [p.project_point(to_system=VFRCoordSystem.MAP_XY) for p in corners_lonlat]
-        x0 = min([p.x for p in corners_map])
-        y0 = min([p.y for p in corners_map])
-        x1 = max([p.x for p in corners_map])
-        y1 = max([p.y for p in corners_map])
-        if y1<y0:
-            y0, y1 = y1, y0 # the order of them is important
+        # calc clip coordinates        
+        ((x0, y0), (x1, y1)) = self.calc_basemap_clip()
         # clip the image
         pdf_document = pymupdf.open(self.pdf_destination)
         page = pdf_document[0]
-        m=((79, 110.1), (79.05, 139))
-        clip = pymupdf.Rect(
-            m[0][0]+x0,
-            m[0][1]+y0,
-            m[0][0]+x1,
-            m[0][1]+y1
-        )  # the area we want
+        m=self.PDF_MARGINS
+        clip = pymupdf.Rect(x0, y0, x1, y1)  # the area we want
         pdfimage = page.get_pixmap(clip=clip, dpi=self.HIGH_DPI)
-        self._basemapimg = PIL.Image.open(io.BytesIO(pdfimage.tobytes("png")))
+        return PIL.Image.open(io.BytesIO(pdfimage.tobytes("png")))
             
             
     def create_doc(self, save: bool = True) -> Union[io.BytesIO, None]:
@@ -1285,7 +1254,7 @@ class VFRFunctionRoute:
         image = self.draw_map()
         imgname = os.path.join(self.outfolder, self.name+'.png')
         with open(imgname, "wb") as f:
-            f.write(base64.b64decode(image))
+            f.write(image)
 
         # header and image
         doc = Document()

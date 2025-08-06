@@ -31,15 +31,17 @@ import { ImageEditService } from '../../../services/image-edit.service';
 export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
 
     subs: Subscription;
+    binary_subs: Subscription;
 
     dof: Date = new Date();
     tof: string = "00:00:00";
 
+    private pendingMeta: any = null;
+
     constructor(private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
             if (msg.type === 'docx' || msg.type === 'png') {                
-                const blob = this.base64ToBlob(msg['data'], msg['mime']);
-                this.downloadFile(msg['filename'], blob);
+                this.pendingMeta = msg;
             } else if (msg.type === 'gpx' || msg.type === 'vfr') {
                 const blob = new Blob([msg['data']], { type: msg['mime'] });
                 this.downloadFile(msg['filename'], blob);
@@ -48,16 +50,20 @@ export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
                 this.tof = ("00" + this.dof.getUTCHours()).slice(-2) + ":" + ("00" + this.dof.getUTCMinutes()).slice(-2) + ":" + ("00" + this.dof.getUTCSeconds()).slice(-2);
             }
         });
+        this.binary_subs = imgsrv.binary_channel.subscribe((msg: Blob) => {
+            if (this.pendingMeta) {
+                this.downloadFile(this.pendingMeta['filename'], msg);
+            }
+        })
     }
 
     ngAfterViewInit(): void {
-        this.imgsrv.send({
-            type: 'get-dof'
-        });
+        this.imgsrv.send({ type: 'get-dof' });
     }
 
     ngOnDestroy(): void {
         this.subs.unsubscribe();
+        this.binary_subs.unsubscribe();
     }
 
     changeDOF() {
@@ -69,27 +75,10 @@ export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
         })
     }
 
-    downloadDOCX() {
-        this.imgsrv.send({
-            type: 'get-docx'
-        })
-    }
-
-    downloadVFR() {
-        this.imgsrv.send({
-            type: 'get-vfr'
-        })
-    }
-    downloadGPX() {
-        this.imgsrv.send({
-            type: 'get-gpx'
-        })
-    }
-    downloadPNG() {
-        this.imgsrv.send({
-            type: 'get-png'
-        })
-    }
+    downloadDOCX() { this.imgsrv.send({ type: 'get-docx' }); }
+    downloadVFR() { this.imgsrv.send({ type: 'get-vfr' }); }
+    downloadGPX() { this.imgsrv.send({ type: 'get-gpx' }); }
+    downloadPNG() { this.imgsrv.send({ type: 'get-png' }); }
 
     private base64ToBlob(base64: string, mime: string): Blob {
         const byteChars = atob(base64);
