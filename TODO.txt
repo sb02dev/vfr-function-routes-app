@@ -49,7 +49,7 @@ v0.2
   + send smaller tiles through websocket (this will also be good for progress display)
 + bugfix: LOW_DPI dependent tiles coordinates
 + no contextmanagers for figures
-- session management: time to live for sessions in the session store (api/routes.py:_vfrroutes)
++ session management: time to live for sessions in the session store (api/routes.py:_vfrroutes)
 - bugfix: LOW_DPI dependent VFRPoint transformations
 - bugfix: HIGH_DPI dependent VFRPoint transformations
 - the same memory optimizations for waypoints map

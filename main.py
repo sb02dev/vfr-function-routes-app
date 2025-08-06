@@ -1,11 +1,21 @@
+import asyncio
+from contextlib import asynccontextmanager
 import uuid
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import RedirectResponse
 
-from api import routes
+from api import routes, session_cleanup_loop
 from api.staticfilesfallback import StaticFilesFallback
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    asyncio.create_task(session_cleanup_loop())
+    yield
+    pass
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.mount("/frontend",
           StaticFilesFallback(directory="frontend/browser", html=True),

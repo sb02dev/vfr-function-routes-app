@@ -1,9 +1,11 @@
+import asyncio
 import datetime
+import time
 import json
 import io
 import base64
 import os
-from typing import Union
+from typing import Optional, Union
 import uuid
 from fastapi import APIRouter, WebSocket
 from dotenv import load_dotenv
@@ -21,7 +23,50 @@ rootpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 routes = APIRouter()
 
 
-_vfrroutes: dict = {}
+class SessionStore:
+    def __init__(self, ttl_seconds: int = 600):
+        # session_id -> (data, expiry_time)
+        self._store: dict[str, tuple[time.time, VFRFunctionRoute]] = {}
+        self.ttl = ttl_seconds
+
+    def set(self, session_id: str, data: VFRFunctionRoute):
+        """Store or update session data with TTL."""
+        expiry = time.time() + self.ttl
+        self._store[session_id] = (expiry, data)
+
+    def get(self, session_id: str) -> Optional[VFRFunctionRoute]:
+        """Retrieve data if not expired, else remove it."""
+        item = self._store.get(session_id)
+        if not item:
+            return None
+        expiry, data = item
+        if time.time() > expiry:
+            del self._store[session_id]  # expire
+            return None
+        return data
+
+    def cleanup(self):
+        """Remove expired sessions. Call periodically."""
+        now = time.time()
+        expired = [sid for sid, (expiry, _)
+                   in self._store.items() if now > expiry]
+        for sid in expired:
+            del self._store[sid]
+
+    def __len__(self):
+        return len(self._store)
+    
+       
+
+_vfrroutes = SessionStore(ttl_seconds=600)
+
+
+async def cleanup_loop():
+    while True:
+        _vfrroutes.cleanup()
+        await asyncio.sleep(60)  # run every minute
+
+
 
 @routes.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
@@ -34,7 +79,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
         await websocket.send_json({"type": "new_session", "session_id": session_id})
     print("Session id:", session_id)
 
-    rte: Union[VFRFunctionRoute, None] = _vfrroutes.get(session_id, None)
+    rte: Union[VFRFunctionRoute, None] = _vfrroutes.get(session_id)
 
     while True:
         try:
@@ -72,11 +117,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     outfolder=os.path.join(rootpath, "output"),
                     tracksfolder=os.path.join(rootpath, "tracks")
                 )
-                _vfrroutes[session_id] = rte
+                _vfrroutes.set(session_id, rte)
             elif msgtype=='sample':
                 rte = default_route()
-                _vfrroutes[session_id] = rte
-            elif msgtype=='load':
+                _vfrroutes.set(session_id, rte)
+            elif msgtype == 'load':
                 rte = VFRFunctionRoute.fromJSON(
                     msg.get('data'), 
                     session=requests.Session(),
@@ -85,7 +130,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     tracksfolder=os.path.join(rootpath, "tracks")
                 )
 
-                _vfrroutes[session_id] = rte
+                _vfrroutes.set(session_id, rte)
 
             #######################################################
             # Step 1: mark an 'area of interest' on a low-res map #
@@ -130,6 +175,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     tl = msg.get("topleft")
                     br = msg.get("bottomright")
                     rte.set_area_of_interest(tl.get("x"), tl.get("y"), br.get("x"), br.get("y"))
+                    _vfrroutes.set(session_id, rte)
                     tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
                     br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
                     await websocket.send_text(json.dumps({
@@ -168,6 +214,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='update-wps':
                 if rte:
                     rte.update_waypoints(msg.get("waypoints"))
+                    _vfrroutes.set(session_id, rte)
                     wps = [{
                         "name": name,
                         "x": pp.x,
@@ -207,6 +254,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='update-legs':
                 if rte:
                     rte.update_legs(msg.get("legs"))
+                    _vfrroutes.set(session_id, rte)
                     await websocket.send_text(json.dumps({
                         "type": "legs",
                         "legs": [{"name": leg.name,
@@ -249,6 +297,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='update-annotations':
                 if rte:
                     rte.update_annotations(msg.get("annotations"))
+                    _vfrroutes.set(session_id, rte)
                     await websocket.send_text(json.dumps({
                         "type": "annotations",
                         "annotations": [{
@@ -283,6 +332,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='load-track':
                 if rte:
                     rte.add_track(msg.get('filename'), msg.get('color', '#0000FF'), base64.b64decode(msg.get('data')))
+                    _vfrroutes.set(session_id, rte)
                     image = rte.get_tracks_map()
                     await websocket.send_text(json.dumps({
                         "type": "tracks-map",
@@ -297,6 +347,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype=='update-tracks':
                 if rte:
                     rte.update_tracks(msg.get('tracks'))
+                    _vfrroutes.set(session_id, rte)
                     image = rte.get_tracks_map()
                     await websocket.send_text(json.dumps({
                         "type": "tracks-map",
@@ -364,6 +415,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     if dv:
                         d = datetime.datetime.fromisoformat(dv)
                         rte.dof = d
+                        _vfrroutes.set(session_id, rte)
                     await websocket.send_text(json.dumps({
                         "type": "dof",
                         "dof":  rte.dof.isoformat(),
