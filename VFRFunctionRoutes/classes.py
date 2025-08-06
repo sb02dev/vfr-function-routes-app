@@ -26,6 +26,7 @@ import numpy as np
 import pymupdf
 import PIL
 import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
@@ -769,9 +770,10 @@ class VFRFunctionRoute:
         clip = pymupdf.Rect(m[0][0], m[0][1], rect.width-m[1][0], rect.height-m[1][1])  # the area we want
 
         # calculate tile numbers
-        width_in_pixels = clip.width / 72 * self.LOW_DPI
+        scale = 1/72*self.LOW_DPI
+        width_in_pixels = clip.width * scale
         x_count = math.ceil(width_in_pixels / self.TILESIZE[0])
-        height_in_pixels = clip.height / 72 * self.LOW_DPI
+        height_in_pixels = clip.height * scale
         y_count = math.ceil(height_in_pixels / self.TILESIZE[1])
 
         # return
@@ -788,52 +790,19 @@ class VFRFunctionRoute:
         rect = page.rect
         scale = 1/72*self.LOW_DPI
         ((mx0, my0), (mx1, my1)) = self.PDF_MARGINS
-        ((mx0s, my0s), (mx1s, my1s)) = ((mx0*scale, my0*scale), (mx1*scale, my1*scale))
+        #((mx0s, my0s), (mx1s, my1s)) = ((mx0*scale, my0*scale), (mx1*scale, my1*scale))
         x_pixels = x * self.TILESIZE[0]
         y_pixels = y * self.TILESIZE[1]
         clip = pymupdf.Rect(
-            mx0s + x_pixels,
-            my0s + y_pixels,
-            min(rect.width*scale-mx1s, mx0s + (x_pixels + self.TILESIZE[0] + 1)),
-            min(rect.height*scale-my1s, my0s + (y_pixels + self.TILESIZE[1] + 1))
+            mx0 + x_pixels/scale,
+            my0 + y_pixels/scale,
+            min(rect.width-mx1, mx0 + (x_pixels + self.TILESIZE[0] - 1)/scale),
+            min(rect.height-my1, my0 + (y_pixels + self.TILESIZE[1] - 1)/scale)
         )
 
         # get the image
         pixmap: pymupdf.Pixmap = page.get_pixmap(clip=clip, dpi=self.LOW_DPI)
-        return pixmap.tobytes("jpg", 85)
-
-
-
-
-    @contextmanager
-    def get_lowres_map(self):
-        # state check
-        self._ensure_state(VFRRouteState.INITIATED)
-
-        # pdf conversion and caching
-        if not self._lowresmap:
-            pdf_document = pymupdf.open(self.pdf_destination)
-            page = pdf_document[0]
-            rect = page.rect  # the page rectangle
-            m = self.PDF_MARGINS
-            clip = pymupdf.Rect(m[0][0], m[0][1], rect.width-m[1][0], rect.height-m[1][1])  # the area we want
-            pdfimage_cropcheck = page.get_pixmap(clip=clip, dpi=self.LOW_DPI)
-            pilimage_cropcheck = PIL.Image.open(io.BytesIO(pdfimage_cropcheck.tobytes("png")))
-            self._lowresmap = pilimage_cropcheck
-
-        # draw
-        fig = plt.figure()
-        fig.set_size_inches((c/self.LOW_DPI for c in self._lowresmap.size))
-        ax = plt.Axes(fig, [0., 0., 1., 1.])
-        ax.set_axis_off()
-        fig.add_axes(ax)
-        ax.imshow(self._lowresmap)
-
-        # return
-        yield fig
-
-        # TODO: cleanup
-        plt.close(fig)
+        return pixmap.tobytes("png")
 
 
     def set_area_of_interest(self, top_left_x: float, top_left_y: float, bottom_right_x: float, bottom_right_y: float) -> None:

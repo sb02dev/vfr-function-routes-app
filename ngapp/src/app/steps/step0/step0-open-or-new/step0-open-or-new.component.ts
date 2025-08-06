@@ -45,6 +45,12 @@ export class Step0OpenOrNewComponent {
             dof: [null, Validators.required],
             tof: [null, Validators.required]
         });
+        this.form.setValue({
+            "rteName": "xxx",
+            "speed": 100,
+            "dof": new Date(2025, 8, 1, 7, 0),
+            "tof": "07:00"
+        });
     }
 
 
