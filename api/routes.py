@@ -153,18 +153,17 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             ####################################################################
             elif msgtype=='get-waypoints-map':
                 if rte:
-                    with rte.get_highres_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
-                        await websocket.send_text(json.dumps({
-                            "type": "waypoints-map",
-                            "image": image,
-                            "waypoints": [{"name": name,
-                                            "x": pp.x, 
-                                            "y": pp.y,
-                                            "lon": p.lon,
-                                            "lat": p.lat,
-                                            } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
-                        }))
+                    image = rte.get_highres_map()
+                    await websocket.send_text(json.dumps({
+                        "type": "waypoints-map",
+                        "image": image,
+                        "waypoints": [{"name": name,
+                                        "x": pp.x, 
+                                        "y": pp.y,
+                                        "lon": p.lon,
+                                        "lat": p.lat,
+                                        } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
+                    }))
 
             elif msgtype=='update-wps':
                 if rte:
@@ -186,25 +185,24 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             ################################################################################
             elif msgtype=='get-legs-map':
                 if rte:
-                    with rte.get_highres_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
-                        await websocket.send_text(json.dumps({
-                            "type": "legs-map",
-                            "image": image,
-                            "legs": [{"name": leg.name,
-                                        "function_name": leg.function_name,
-                                        "function_range": leg.function_range,
-                                        "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
-                                        "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
-                                        "points": [{
-                                            "lon": p.lon, 
-                                            "lat": p.lat,
-                                            "x": pp.x,
-                                            "y": pp.y,
-                                            "func_x": x
-                                        } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
-                                        }  for leg in rte.legs]
-                        }))
+                    image = rte.get_highres_map()
+                    await websocket.send_text(json.dumps({
+                        "type": "legs-map",
+                        "image": image,
+                        "legs": [{"name": leg.name,
+                                    "function_name": leg.function_name,
+                                    "function_range": leg.function_range,
+                                    "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
+                                    "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                                    "points": [{
+                                        "lon": p.lon, 
+                                        "lat": p.lat,
+                                        "x": pp.x,
+                                        "y": pp.y,
+                                        "func_x": x
+                                    } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
+                                    }  for leg in rte.legs]
+                    }))
 
             elif msgtype=='update-legs':
                 if rte:
@@ -231,23 +229,22 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             #############################################################################
             elif msgtype=='get-annotations-map':
                 if rte:
-                    with rte.get_annotations_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
-                        await websocket.send_text(json.dumps({
-                            "type": "annotations-map",
-                            "image": image,
-                            "annotations": [{
-                                        "name": leg.name,
-                                        "function_name": leg.function_name,
-                                        "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
-                                        "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
-                                        "annotations": [{
-                                            "name": ann.name,
-                                            "func_x": ann.x,
-                                            "ofs": {"x": ann.ofs[0], "y": ann.ofs[1]}
-                                        } for ann in leg.annotations],
-                                        } for leg in rte.legs]
-                        }))
+                    image = rte.get_annotations_map()
+                    await websocket.send_text(json.dumps({
+                        "type": "annotations-map",
+                        "image": image,
+                        "annotations": [{
+                                    "name": leg.name,
+                                    "function_name": leg.function_name,
+                                    "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
+                                    "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                                    "annotations": [{
+                                        "name": ann.name,
+                                        "func_x": ann.x,
+                                        "ofs": {"x": ann.ofs[0], "y": ann.ofs[1]}
+                                    } for ann in leg.annotations],
+                                    } for leg in rte.legs]
+                    }))
 
             elif msgtype=='update-annotations':
                 if rte:
@@ -272,47 +269,44 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             ###################################
             elif msgtype=='get-tracks-map':
                 if rte:
-                    with rte.get_tracks_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
-                        await websocket.send_text(json.dumps({
-                            "type": "tracks-map",
-                            "image": image,
-                            "tracks": [{
-                                "name": trk.fname,
-                                "color": trk.color,
-                                "num_points": len(trk.points)
-                            } for trk in rte.tracks]
-                        }))
+                    image = rte.get_tracks_map()
+                    await websocket.send_text(json.dumps({
+                        "type": "tracks-map",
+                        "image": image,
+                        "tracks": [{
+                            "name": trk.fname,
+                            "color": trk.color,
+                            "num_points": len(trk.points)
+                        } for trk in rte.tracks]
+                    }))
 
             elif msgtype=='load-track':
                 if rte:
                     rte.add_track(msg.get('filename'), msg.get('color', '#0000FF'), base64.b64decode(msg.get('data')))
-                    with rte.get_tracks_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
-                        await websocket.send_text(json.dumps({
-                            "type": "tracks-map",
-                            "image": image,
-                            "tracks": [{
-                                "name": trk.fname,
-                                "color": trk.color,
-                                "num_points": len(trk.points)
-                            } for trk in rte.tracks]
-                        }))
+                    image = rte.get_tracks_map()
+                    await websocket.send_text(json.dumps({
+                        "type": "tracks-map",
+                        "image": image,
+                        "tracks": [{
+                            "name": trk.fname,
+                            "color": trk.color,
+                            "num_points": len(trk.points)
+                        } for trk in rte.tracks]
+                    }))
 
             elif msgtype=='update-tracks':
                 if rte:
                     rte.update_tracks(msg.get('tracks'))
-                    with rte.get_tracks_map() as (fig, _):
-                        image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
-                        await websocket.send_text(json.dumps({
-                            "type": "tracks-map",
-                            "image": image,
-                            "tracks": [{
-                                "name": trk.fname,
-                                "color": trk.color,
-                                "num_points": len(trk.points)
-                            } for trk in rte.tracks]
-                        }))
+                    image = rte.get_tracks_map()
+                    await websocket.send_text(json.dumps({
+                        "type": "tracks-map",
+                        "image": image,
+                        "tracks": [{
+                            "name": trk.fname,
+                            "color": trk.color,
+                            "num_points": len(trk.points)
+                        } for trk in rte.tracks]
+                    }))
 
             ##################################################################
             # Step 6: Download and save generated files or save to the cloud #
@@ -331,9 +325,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype=='get-png':
                 if rte:
-                    fig, _ = rte.draw_map()
-                    image = _get_image_from_figure(fig, dpi=rte.HIGH_DPI)
-                    plt.close(fig)
+                    image = rte.draw_map()
                     await websocket.send_text(json.dumps({
                         "type": "png",
                         "data":  image,
@@ -386,16 +378,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             traceback.print_exc()
             break
 
-
-def _get_image_from_figure(fig, size: tuple[float, float] = None, dpi: float = None) -> str:
-    buf = io.BytesIO()
-    if size:
-        figsize = fig.get_size_inches()
-        dpi = min(size[0] / figsize[0], size[1] / figsize[1])
-    fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0, dpi=dpi)
-    buf.seek(0)
-    image = base64.b64encode(buf.read()).decode("utf-8")
-    return image
 
 
 

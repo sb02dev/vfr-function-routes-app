@@ -14,7 +14,7 @@ import datetime
 import os
 import io
 import math
-from contextlib import contextmanager
+import base64
 
 import requests
 
@@ -620,7 +620,6 @@ class VFRFunctionRoute:
             'top-left': VFRPoint(18.5, 47.5, VFRCoordSystem.LONLAT, self),
             'bottom-right': VFRPoint(19.5, 47.0, VFRCoordSystem.LONLAT, self)
         }
-        self.fig, self.ax = None, None
         self.download_map()
         self.calc_extents()
         self.calc_transformations()
@@ -812,7 +811,16 @@ class VFRFunctionRoute:
             'bottom-right': VFRPoint(bottom_right_x, bottom_right_y, VFRCoordSystem.MAP_XY, self).project_point(VFRCoordSystem.LONLAT)
         }
 
-    @contextmanager
+    def _get_image_from_figure(self, fig, size: tuple[float, float] = None, dpi: float = None) -> str:
+        buf = io.BytesIO()
+        if size:
+            figsize = fig.get_size_inches()
+            dpi = min(size[0] / figsize[0], size[1] / figsize[1])
+        fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0, dpi=dpi)
+        buf.seek(0)
+        image = base64.b64encode(buf.read()).decode("utf-8")
+        return image
+
     def get_highres_map(self):
         # state check
         self._ensure_state(VFRRouteState.AREAOFINTEREST)
@@ -823,35 +831,85 @@ class VFRFunctionRoute:
 
         # draw
         fig = plt.figure()
-        fig.set_size_inches((c/self.HIGH_DPI for c in self._basemapimg.size))
-        ax = plt.Axes(fig, [0., 0., 1., 1.])
-        ax.set_axis_off()
-        fig.add_axes(ax)
-        ax.imshow(self._basemapimg)
+        try:
+            fig.set_size_inches((c/self.HIGH_DPI for c in self._basemapimg.size))
+            ax = plt.Axes(fig, [0., 0., 1., 1.])
+            ax.set_axis_off()
+            fig.add_axes(ax)
+            ax.imshow(self._basemapimg)
 
-        # return
-        yield fig, ax
+            # convert to base64
+            image = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
 
-        # TODO: cleanup
-        plt.close(fig)
+        finally:
+            # cleanup
+            plt.close(fig)
+
+        return image
 
 
-    @contextmanager
     def get_annotations_map(self):
-        with self.get_highres_map() as (fig, ax):
+        # state check
+        self._ensure_state(VFRRouteState.AREAOFINTEREST)
+
+        # pdf conversion and caching
+        if not self._basemapimg:
+            self.calc_basemap()
+
+        # draw
+        fig = plt.figure()
+        try:
+            fig.set_size_inches(
+                (c/self.HIGH_DPI for c in self._basemapimg.size))
+            ax = plt.Axes(fig, [0., 0., 1., 1.])
+            ax.set_axis_off()
+            fig.add_axes(ax)
+            ax.imshow(self._basemapimg)
+
             for l in self.legs:
                 l.draw(ax, False)
-            yield fig, ax            
+
+            # convert to base64
+            image = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
+
+        finally:
+            # cleanup
+            plt.close(fig)
+
+        return image
 
 
-    @contextmanager
     def get_tracks_map(self):
-        with self.get_highres_map() as (fig, ax):
+        # state check
+        self._ensure_state(VFRRouteState.AREAOFINTEREST)
+
+        # pdf conversion and caching
+        if not self._basemapimg:
+            self.calc_basemap()
+
+        # draw
+        fig = plt.figure()
+        try:
+            fig.set_size_inches(
+                (c/self.HIGH_DPI for c in self._basemapimg.size))
+            ax = plt.Axes(fig, [0., 0., 1., 1.])
+            ax.set_axis_off()
+            fig.add_axes(ax)
+            ax.imshow(self._basemapimg)
+
             for l in self.legs:
-                l.draw(ax)
+                l.draw(ax, False)
             for t in self.tracks:
                 t.draw(ax)
-            yield fig, ax            
+
+            # convert to base64
+            image = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
+
+        finally:
+            # cleanup
+            plt.close(fig)
+
+        return image
 
 
     def add_waypoint(self, name: str, point: VFRPoint):
@@ -1221,8 +1279,10 @@ class VFRFunctionRoute:
             t.draw(ax)
         
         # save and return the image
-        self.fig, self.ax = fig, ax
-        return fig, ax
+        image = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
+        plt.close(fig)
+
+        return image
         
         
     def calc_basemap(self):
@@ -1282,15 +1342,11 @@ class VFRFunctionRoute:
         """
         self._ensure_state(VFRRouteState.FINALIZED)
         # draw map if we don't have it yet and save the image
-        if not self.fig:
-            self.draw_map()
+        image = self.draw_map()
         imgname = os.path.join(self.outfolder, self.name+'.png')
-        self.fig.savefig(
-            imgname,         
-            bbox_inches='tight',
-            pad_inches=0,
-            dpi=self.HIGH_DPI
-        )
+        with open(imgname, "wb") as f:
+            f.write(base64.b64decode(image))
+
         # header and image
         doc = Document()
 
