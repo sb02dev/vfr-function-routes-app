@@ -239,12 +239,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             ################################################################################
             # Step 3: define the legs: add constraint points, define function and x values #
             ################################################################################
-            elif msgtype=='get-legs-map':
+            elif msgtype=='get-legs':
                 if rte:
-                    image = rte.get_highres_map()
                     await websocket.send_text(json.dumps({
-                        "type": "legs-map",
-                        "image": image,
+                        "type": "legs",
                         "legs": [{"name": leg.name,
                                     "function_name": leg.function_name,
                                     "function_range": leg.function_range,
@@ -259,6 +257,19 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                     } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
                                     }  for leg in rte.legs]
                     }))
+
+            elif msgtype == 'get-legs-map':
+                if rte:
+                    with TileRenderer(rte.pdf_destination, rte.calc_basemap_clip(), 'pdf', rte.HIGH_DPI) as tiles:
+                        await websocket.send_json({"type": "image",
+                                                   "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
+                                                   "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
+                                                   "imagesize": {"x": tiles.image_size[0], "y": tiles.image_size[1]}
+                                                   })
+                        for (x, y) in tiles.get_tile_order():
+                            image = tiles.get_tile(x, y)
+                            await websocket.send_json({"type": "tile", "x": x, "y": y})
+                            await websocket.send_bytes(image)
 
             elif msgtype=='update-legs':
                 if rte:
@@ -284,12 +295,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             #############################################################################
             # Step 4: define annotation points, their names and an offset of the bubble #
             #############################################################################
-            elif msgtype=='get-annotations-map':
+            elif msgtype=='get-annotations':
                 if rte:
-                    image = rte.get_annotations_map()
-                    await websocket.send_text(json.dumps({
-                        "type": "annotations-map",
-                        "image": image,
+                    await websocket.send_json({
+                        "type": "annotations",
                         "annotations": [{
                                     "name": leg.name,
                                     "function_name": leg.function_name,
@@ -301,7 +310,20 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                         "ofs": {"x": ann.ofs[0], "y": ann.ofs[1]}
                                     } for ann in leg.annotations],
                                     } for leg in rte.legs]
-                    }))
+                    })
+
+            elif msgtype == 'get-annotations-map':
+                if rte:
+                    with TileRenderer(rte.pdf_destination, rte.calc_basemap_clip(), 'pdf', rte.HIGH_DPI, draw_func=rte.draw_annotations) as tiles:
+                        await websocket.send_json({"type": "image",
+                                                   "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
+                                                   "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
+                                                   "imagesize": {"x": tiles.image_size[0], "y": tiles.image_size[1]}
+                                                   })
+                        for (x, y) in tiles.get_tile_order():
+                            image = tiles.get_tile(x, y)
+                            await websocket.send_json({"type": "tile", "x": x, "y": y})
+                            await websocket.send_bytes(image)
 
             elif msgtype=='update-annotations':
                 if rte:
@@ -325,12 +347,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             ###################################
             # Step 5: add tracks to the route #
             ###################################
-            elif msgtype=='get-tracks-map':
+            elif msgtype=='get-tracks':
                 if rte:
-                    image = rte.get_tracks_map()
                     await websocket.send_text(json.dumps({
-                        "type": "tracks-map",
-                        "image": image,
+                        "type": "tracks",
                         "tracks": [{
                             "name": trk.fname,
                             "color": trk.color,
@@ -338,14 +358,25 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         } for trk in rte.tracks]
                     }))
 
-            elif msgtype=='load-track':
+            elif msgtype == 'get-tracks-map':
+                if rte:
+                    with TileRenderer(rte.pdf_destination, rte.calc_basemap_clip(), 'pdf', rte.HIGH_DPI, draw_func=rte.draw_tracks) as tiles:
+                        await websocket.send_json({"type": "image",
+                                                   "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
+                                                   "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
+                                                   "imagesize": {"x": tiles.image_size[0], "y": tiles.image_size[1]}
+                                                   })
+                        for (x, y) in tiles.get_tile_order():
+                            image = tiles.get_tile(x, y)
+                            await websocket.send_json({"type": "tile", "x": x, "y": y})
+                            await websocket.send_bytes(image)
+
+            elif msgtype == 'load-track':
                 if rte:
                     rte.add_track(msg.get('filename'), msg.get('color', '#0000FF'), base64.b64decode(msg.get('data')))
                     _vfrroutes.set(session_id, rte)
-                    image = rte.get_tracks_map()
                     await websocket.send_text(json.dumps({
-                        "type": "tracks-map",
-                        "image": image,
+                        "type": "tracks",
                         "tracks": [{
                             "name": trk.fname,
                             "color": trk.color,
@@ -357,10 +388,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     rte.update_tracks(msg.get('tracks'))
                     _vfrroutes.set(session_id, rte)
-                    image = rte.get_tracks_map()
                     await websocket.send_text(json.dumps({
-                        "type": "tracks-map",
-                        "image": image,
+                        "type": "tracks",
                         "tracks": [{
                             "name": trk.fname,
                             "color": trk.color,
@@ -457,7 +486,11 @@ def default_route():
         tracksfolder=os.path.join(rootpath, "data")
     )
 
-    rgen.set_area_of_interest(858, 542, 1268, 852)
+    tl = VFRPoint(18.05268767493478, 47.770130324899284,
+                  VFRCoordSystem.LONLAT, rgen).project_point(VFRCoordSystem.MAP_XY)
+    br = VFRPoint(19.021069644306213, 47.28705538442129, 
+                  VFRCoordSystem.LONLAT, rgen).project_point(VFRCoordSystem.MAP_XY)
+    rgen.set_area_of_interest(tl.x, tl.y, br.x, br.y)
 
     rgen.set_state(VFRRouteState.AREAOFINTEREST)
 

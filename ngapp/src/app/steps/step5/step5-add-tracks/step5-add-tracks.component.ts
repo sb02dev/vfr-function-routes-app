@@ -37,7 +37,7 @@ export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
 
     constructor(private imgsrv: ImageEditService, private dialog: MatDialog) {
         this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'tracks-map') {
+            if (msg.type === 'tracks') {
                 this.mapedit.drawBackgroundImage(msg['image']);
                 this.tracks = msg['tracks'].map((trk: any) => {
                     return {
@@ -46,15 +46,14 @@ export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
                         num_points: trk.num_points,
                     }
                 });
+                this.imgsrv.send({ type: "get-tracks-map" });
             }
         });
     }
 
     ngAfterViewInit(): void {
         // initiate image load
-        this.imgsrv.send({
-            type: 'get-tracks-map',
-        });
+        this.imgsrv.send({ type: 'get-tracks' });
     }
 
     ngOnDestroy(): void {

@@ -37,31 +37,7 @@ export class Step3LegsEditComponent implements AfterViewInit, OnDestroy {
 
     constructor(public router: Router, private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'legs-map') {
-                this.mapedit.drawBackgroundImage(msg['image']);
-                this.legs = msg['legs'].map((leg: any) => { 
-                    return {
-                        name: leg.name,
-                        function_latex: leg.function_name,
-                        function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name)).compile(),
-                        function_range: leg.function_range,
-                        matrix_func2cropmap: leg.matrix_func2cropmap,
-                        matrix_cropmap2func: leg.matrix_cropmap2func,
-                        points: leg.points.map((pt: any) => {
-                            return {
-                                x: pt.x,
-                                y: pt.y,
-                                lon: pt.lon,
-                                lat: pt.lat,
-                                func_x: pt.func_x,
-                                lonlat_valid: true,
-                            }
-                        }),
-                    }
-                });
-                this.leg_index = 0;
-                this.changeLeg(0);
-            } else if (msg.type === "legs") {
+            if (msg.type === "legs") {
                 this.legs = msg['legs'].map((leg: any) => {
                     return {
                         name: leg.name,
@@ -89,9 +65,8 @@ export class Step3LegsEditComponent implements AfterViewInit, OnDestroy {
 
     ngAfterViewInit(): void {
         // initiate image load
-        this.imgsrv.send({
-            type: 'get-legs-map',
-        });
+        this.imgsrv.send({ type: 'get-legs' });
+        this.imgsrv.send({ type: 'get-legs-map' });
     }
 
     ngOnDestroy(): void {

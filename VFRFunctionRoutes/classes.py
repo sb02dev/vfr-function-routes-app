@@ -813,95 +813,31 @@ class VFRFunctionRoute:
         image = base64.b64encode(buf.read()).decode("utf-8")
         return image
 
-    def get_highres_map(self):
-        # state check
-        self._ensure_state(VFRRouteState.AREAOFINTEREST)
 
-        # pdf conversion and caching
-        if not self._basemapimg:
-            self.calc_basemap()
-
-        # draw
+    def draw_annotations(self):
         fig = plt.figure()
-        try:
-            fig.set_size_inches((c/self.HIGH_DPI for c in self._basemapimg.size))
-            ax = plt.Axes(fig, [0., 0., 1., 1.])
-            ax.set_axis_off()
-            fig.add_axes(ax)
-            ax.imshow(self._basemapimg)
+        ax = plt.Axes(fig, [0., 0., 1., 1.])
+        ax.set_axis_off()
+        fig.add_axes(ax)
 
-            # convert to base64
-            image = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
-
-        finally:
-            # cleanup
-            plt.close(fig)
-
-        return image
+        for l in self.legs:
+            l.draw(ax, False)
+        
+        return fig
 
 
-    def get_annotations_map(self):
-        # state check
-        self._ensure_state(VFRRouteState.AREAOFINTEREST)
-
-        # pdf conversion and caching
-        if not self._basemapimg:
-            self.calc_basemap()
-
-        # draw
+    def draw_tracks(self):
         fig = plt.figure()
-        try:
-            fig.set_size_inches(
-                (c/self.HIGH_DPI for c in self._basemapimg.size))
-            ax = plt.Axes(fig, [0., 0., 1., 1.])
-            ax.set_axis_off()
-            fig.add_axes(ax)
-            ax.imshow(self._basemapimg)
+        ax = plt.Axes(fig, [0., 0., 1., 1.])
+        ax.set_axis_off()
+        fig.add_axes(ax)
 
-            for l in self.legs:
-                l.draw(ax, False)
+        for l in self.legs:
+            l.draw(ax, False)
+        for t in self.tracks:
+            t.draw(ax)
 
-            # convert to base64
-            image = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
-
-        finally:
-            # cleanup
-            plt.close(fig)
-
-        return image
-
-
-    def get_tracks_map(self):
-        # state check
-        self._ensure_state(VFRRouteState.AREAOFINTEREST)
-
-        # pdf conversion and caching
-        if not self._basemapimg:
-            self.calc_basemap()
-
-        # draw
-        fig = plt.figure()
-        try:
-            fig.set_size_inches(
-                (c/self.HIGH_DPI for c in self._basemapimg.size))
-            ax = plt.Axes(fig, [0., 0., 1., 1.])
-            ax.set_axis_off()
-            fig.add_axes(ax)
-            ax.imshow(self._basemapimg)
-
-            for l in self.legs:
-                l.draw(ax, False)
-            for t in self.tracks:
-                t.draw(ax)
-
-            # convert to base64
-            image = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
-
-        finally:
-            # cleanup
-            plt.close(fig)
-
-        return image
+        return fig
 
 
     def add_waypoint(self, name: str, point: VFRPoint):
@@ -1268,13 +1204,11 @@ class VFRFunctionRoute:
         lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
         if self._state==VFRRouteState.INITIATED:
             raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required: {VFRRouteState.AREAOFINTEREST}.")
-        elif self._state==VFRRouteState.AREAOFINTEREST:
+        elif self._state in [VFRRouteState.AREAOFINTEREST, VFRRouteState.WAYPOINTS]:
             lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
                                         self.area_of_interest["bottom-right"].lat,
                                         self.area_of_interest["top-left"].lon,
                                         self.area_of_interest["bottom-right"].lon)
-        elif self._state==VFRRouteState.WAYPOINTS:
-            raise NotImplementedError("Sorry this is not implemented yet")
         elif self._state in [VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
             lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
         corners_lonlat = [

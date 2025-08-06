@@ -55,28 +55,7 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
 
     constructor(public router: Router, private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'annotations-map') {
-                this.mapedit.drawBackgroundImage(msg['image']);
-                this.legs = msg['annotations'].map((leg: any) => {
-                    return {
-                        name: leg.name,
-                        function_latex: leg.function_name,
-                        function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name)).compile(),
-                        matrix_func2cropmap: leg.matrix_func2cropmap,
-                        matrix_cropmap2func: leg.matrix_cropmap2func,
-                        annotations: leg.annotations.map((ann: any) => {
-                            return {
-                                name: ann.name,
-                                func_x: ann.func_x,
-                                ofs_x: ann.ofs.x,
-                                ofs_y: ann.ofs.y,
-                            }
-                        }),
-                    }
-                });
-                this.leg_index = 0;
-                this.changeLeg(0);
-            } else if (msg.type === "annotations") {
+            if (msg.type === "annotations") {
                 this.legs = msg['annotations'].map((leg: any) => {
                     return {
                         name: leg.name,
@@ -101,9 +80,8 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
 
     ngAfterViewInit(): void {
         // initiate image load
-        this.imgsrv.send({
-            type: 'get-annotations-map',
-        });
+        this.imgsrv.send({ type: 'get-annotations' });
+        this.imgsrv.send({ type: 'get-annotations-map' });
     }
 
     ngOnDestroy(): void {

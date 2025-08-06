@@ -409,7 +409,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                     [imx1, imy1] = this.getImage2CanvasCoords(x1_, y1_);
                 }
 
-                console.log(`(${xi},${yi}) => (${imx0},${imy0})-(${imx1},${imy1}) x (${bitmap.width}, ${bitmap.height})`);
+                // console.log(`(${xi},${yi}) => (${imx0},${imy0})-(${imx1},${imy1}) x (${bitmap.width}, ${bitmap.height})`);
 
                 ctx.drawImage(bitmap, imx0, imy0, imx1 - imx0, imy1 - imy0);
                 bitmap.close(); // free GPU memory
