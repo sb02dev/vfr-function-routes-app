@@ -33,8 +33,7 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
 
     constructor(public router: Router, private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'waypoints-map') {
-                this.mapedit.drawBackgroundImage(msg['image']);
+            if (msg.type === 'waypoints') {
                 this.waypoints = msg['waypoints'].map((wp: any) => { 
                     return {
                         name: wp.name,
@@ -64,9 +63,8 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
 
     ngAfterViewInit(): void {
         // initiate image load
-        this.imgsrv.send({
-            type: 'get-waypoints-map',
-        });
+        this.imgsrv.send({ type: 'get-waypoints' });
+        this.imgsrv.send({ type: 'get-waypoints-map' });
     }
 
     ngOnDestroy(): void {

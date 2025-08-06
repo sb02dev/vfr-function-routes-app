@@ -14,7 +14,7 @@ load_dotenv()
 import matplotlib.pyplot as plt
 import requests
 
-from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint  # pylint: disable=no-name-in-module
+from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, TileRenderer  # pylint: disable=no-name-in-module
 from VFRFunctionRoutes.classes import VFRCoordSystem, VFRRouteState  # pylint: disable=no-name-in-module
 
 
@@ -157,18 +157,16 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype == 'get-low-res-map':
                 if rte:
-                    (x_size, y_size), (x_cnt, y_cnt), (x_pixels, y_pixels) = rte.get_lowres_map_tilesetup()
-                    await websocket.send_json({"type": "image", 
-                                               "tilesize": {"x": x_size, "y": y_size}, 
-                                               "tilecount": {"x": x_cnt, "y": y_cnt},
-                                               "imagesize": {"x": x_pixels, "y": y_pixels}
-                                              })
-                    for x in range(x_cnt):
-                        for y in range(y_cnt):
-                            image = rte.get_lowres_map_tile(x, y)
+                    with TileRenderer(rte.pdf_destination, rte.PDF_MARGINS, 'pdf_margins', rte.LOW_DPI) as tiles:
+                        await websocket.send_json({"type": "image",
+                                                   "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
+                                                   "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
+                                                   "imagesize": {"x": tiles.image_size[0], "y": tiles.image_size[1]}
+                                                   })
+                        for (x, y) in tiles.get_tile_order():
+                            image = tiles.get_tile(x, y)
                             await websocket.send_json({"type": "tile", "x": x, "y": y})
                             await websocket.send_bytes(image)
-                    rte.get_lowres_map_tilefinish()
 
             elif msgtype=='set-area-of-interest':
                 if rte:
@@ -197,12 +195,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             ####################################################################
             # Step 2: mark the waypoints on a high-res map of area of interest #
             ####################################################################
-            elif msgtype=='get-waypoints-map':
+            elif msgtype=='get-waypoints':
                 if rte:
-                    image = rte.get_highres_map()
                     await websocket.send_text(json.dumps({
-                        "type": "waypoints-map",
-                        "image": image,
+                        "type": "waypoints",
                         "waypoints": [{"name": name,
                                         "x": pp.x, 
                                         "y": pp.y,
@@ -210,6 +206,19 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                         "lat": p.lat,
                                         } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
                     }))
+
+            elif msgtype == 'get-waypoints-map':
+                if rte:
+                    with TileRenderer(rte.pdf_destination, rte.calc_basemap_clip(), 'pdf', rte.HIGH_DPI) as tiles:
+                        await websocket.send_json({"type": "image",
+                                                   "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
+                                                   "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
+                                                   "imagesize": {"x": tiles.image_size[0], "y": tiles.image_size[1]}
+                                                   })
+                        for (x, y) in tiles.get_tile_order():
+                            image = tiles.get_tile(x, y)
+                            await websocket.send_json({"type": "tile", "x": x, "y": y})
+                            await websocket.send_bytes(image)
 
             elif msgtype=='update-wps':
                 if rte:

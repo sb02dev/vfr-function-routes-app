@@ -50,9 +50,11 @@ v0.2
 + bugfix: LOW_DPI dependent tiles coordinates
 + no contextmanagers for figures
 + session management: time to live for sessions in the session store (api/routes.py:_vfrroutes)
++ the same memory optimizations for waypoints map
++ bugfix: the last tiles (in a row, in a column) are stretched (of course: they are smaller, but this
+  is not considered)
 - bugfix: LOW_DPI dependent VFRPoint transformations
 - bugfix: HIGH_DPI dependent VFRPoint transformations
-- the same memory optimizations for waypoints map
 - the same memory optimizations for legs map
 - the same memory optimizations for annotations map
 - the same memory optimizations for tracks map

@@ -464,14 +464,6 @@ class VFRLeg:
             pass # keep the old matrix
         
         
-    def transform_point(self,
-                        p: tuple[float, float],
-                        source: VFRCoordSystem,
-                        dest: VFRCoordSystem
-                       ) -> tuple[float, float]:
-        return self._route.transform_point(p, source, dest, self)
-    
-
     def ann_start_end(self, ann: VFRAnnotation) -> float:
         # calc start and end x
         i = self.annotations.index(ann)
@@ -1169,20 +1161,6 @@ class VFRFunctionRoute:
             leg.calc_transformations()
         
         
-    def transform_point(self,
-                        p: tuple[float, float],
-                        source: VFRCoordSystem,
-                        dest: VFRCoordSystem,
-                        leg: Optional[VFRLeg] = None
-                       ) -> tuple[float, float]:
-        self._ensure_state(VFRRouteState.FINALIZED)
-        if source==dest:
-            return p
-        if (source==VFRCoordSystem.FUNCTION or dest==VFRCoordSystem.FUNCTION) and not leg:
-            raise RuntimeError(f"Can not transform coordinates from {source} to {dest} without leg specified")
-        raise NotImplementedError("you should implement transform_point")
-        
-        
     def calc_extents(self, margin_x: float = .2, margin_y: Optional[float] = None):
         """Calculates and saves the extents of the neccessary map.
         
@@ -1284,8 +1262,8 @@ class VFRFunctionRoute:
 
         return image
         
-        
-    def calc_basemap(self):
+
+    def calc_basemap_clip(self):
         # calc clip coordinates
         lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
         if self._state==VFRRouteState.INITIATED:
@@ -1297,6 +1275,34 @@ class VFRFunctionRoute:
                                         self.area_of_interest["bottom-right"].lon)
         elif self._state==VFRRouteState.WAYPOINTS:
             raise NotImplementedError("Sorry this is not implemented yet")
+        elif self._state in [VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
+            lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
+        corners_lonlat = [
+            VFRPoint(lon0, lat0, route=self),
+            VFRPoint(lon1, lat1, route=self),
+            VFRPoint(lon1, lat0, route=self),
+            VFRPoint(lon0, lat1, route=self)
+        ]
+        corners_map = [p.project_point(to_system=VFRCoordSystem.MAP_XY) for p in corners_lonlat]
+        x0 = min([p.x for p in corners_map])
+        y0 = min([p.y for p in corners_map])
+        x1 = max([p.x for p in corners_map])
+        y1 = max([p.y for p in corners_map])
+        if y1<y0:
+            y0, y1 = y1, y0 # the order of them is important
+        return ((x0, y0), (x1, y1))
+
+
+    def calc_basemap(self):
+        # calc clip coordinates
+        lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
+        if self._state==VFRRouteState.INITIATED:
+            raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required: {VFRRouteState.AREAOFINTEREST}.")
+        elif self._state in [VFRRouteState.AREAOFINTEREST, VFRRouteState.WAYPOINTS]:
+            lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
+                                        self.area_of_interest["bottom-right"].lat,
+                                        self.area_of_interest["top-left"].lon,
+                                        self.area_of_interest["bottom-right"].lon)
         elif self._state in [VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
             lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
         corners_lonlat = [

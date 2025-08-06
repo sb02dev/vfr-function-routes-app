@@ -388,7 +388,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         const [x0, y0] = [xi * this.tileSize.x, yi * this.tileSize.y];
         const [x1, y1] = [(xi + 1) * this.tileSize.x, (yi + 1) * this.tileSize.y]; // TODO: last tile may be smaller
         const [imx0, imy0] = this.getImage2CanvasCoords(x0, y0);
-        const [imx1, imy1] = this.getImage2CanvasCoords(x1, y1);
+        let [imx1, imy1] = this.getImage2CanvasCoords(x1, y1);
         // draw only if it is in viewport
         if ((imx0 <= canvas.width && imx1 >= 0) && (imy0 <= canvas.height && imy1 >= 0)) {
             const key = `${xi},${yi}`;
@@ -404,23 +404,16 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                     return; 
                 }
 
-                const [x1_, y1_] = [(xi + 1) * this.tileSize.x - 1, (yi + 1) * this.tileSize.y - 1]; // TODO: last tile may be smaller
+                if ((bitmap.width != this.tileSize.x) || (bitmap.height != this.tileSize.y)) {
+                    const [x1_, y1_] = [x0 + bitmap.width - 1, y0 + bitmap.height - 1];
+                    [imx1, imy1] = this.getImage2CanvasCoords(x1_, y1_);
+                }
 
                 console.log(`(${xi},${yi}) => (${imx0},${imy0})-(${imx1},${imy1}) x (${bitmap.width}, ${bitmap.height})`);
 
                 ctx.drawImage(bitmap, imx0, imy0, imx1 - imx0, imy1 - imy0);
                 bitmap.close(); // free GPU memory
 
-                /*const img = new Image();
-                img.onload = () => {
-                    // draw tile at desired position
-                    ctx.drawImage(img, imx0, imy0, imx1 - imx0, imy1 - imy0);
-                    // debug log
-                    //console.log(`(${xi},${yi}) => (${imx0},${imy0})-(${imx1},${imy1}) x (${img.width}, ${img.height})`);
-                    // Drop references so GC can clean up
-                    (img as any).src = "";
-                };
-                img.src = tileurl;*/
             }
         }
     }
