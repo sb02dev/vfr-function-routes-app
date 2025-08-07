@@ -6,7 +6,6 @@ Calculates VFR routes where the legs are defined as a function
 import json
 from pathlib import Path
 from typing import Optional, Union
-import matplotlib.axes
 from typing_extensions import Self
 import textwrap
 from enum import Enum, auto
@@ -14,7 +13,7 @@ import datetime
 import os
 import io
 import math
-import base64
+import matplotlib.axes
 
 import requests
 
@@ -54,6 +53,7 @@ from .projutils import (
     parse_latex_with_constants
 )
 from .docxutils import add_formula_par
+from .rendering import TileRenderer
 
 OPENWEATHER_ENDPOINT = "https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={OPENWEATHER_APIKEY}"
 MAGDEV_ENDPOINT = "https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1={lat}&lon1={lon}&startYear={when.year}&startMonth={when.month}&startDay={when.day}&resultFormat=json&key={MAGDEV_APIKEY}"
@@ -579,6 +579,7 @@ class VFRFunctionRoute:
     PDF_MARGINS = ((79.0, 110.1), (79.05, 139.0)) #(('left', 'top'), ('right', 'bottom'))
     HIGH_DPI = int(os.getenv("HIGH_DPI", "600"))
     LOW_DPI = int(os.getenv("LOW_DPI", "72"))
+    DOC_DPI = int(os.getenv("DOC_DPI", "200"))
     TILESIZE_X = int(os.getenv("TILESIZE_X", 512))
     TILESIZE_Y = int(os.getenv("TILESIZE_Y", 512))
     TILESIZE = (TILESIZE_X, TILESIZE_Y)
@@ -1189,10 +1190,10 @@ class VFRFunctionRoute:
             t.draw(ax)
         
         # render the overlay
-        fig.set_size_inches((c/self.HIGH_DPI for c in [bg_img.width, bg_img.height]))
-        ax.set_xlim(0, bg_img.size[0])
-        ax.set_ylim(0, bg_img.size[1])
-        overlay_pngbuf = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
+        fig.set_size_inches((c/self.DOC_DPI for c in [bg_img.width, bg_img.height]))
+        ax.set_xlim(0, bg_img.size[0]/self.DOC_DPI*self.HIGH_DPI)
+        ax.set_ylim(bg_img.size[1]/self.DOC_DPI*self.HIGH_DPI, 0)
+        overlay_pngbuf = self._get_image_from_figure(fig, dpi=self.DOC_DPI)
         overlay_img = PIL.Image.open(overlay_pngbuf)
         plt.close(fig)
 
@@ -1231,15 +1232,14 @@ class VFRFunctionRoute:
 
 
     def calc_basemap(self):
-        # calc clip coordinates        
-        ((x0, y0), (x1, y1)) = self.calc_basemap_clip()
         # clip the image
-        pdf_document = pymupdf.open(self.pdf_destination)
-        page = pdf_document[0]
-        m=self.PDF_MARGINS
-        clip = pymupdf.Rect(x0, y0, x1, y1)  # the area we want
-        pdfimage = page.get_pixmap(clip=clip, dpi=self.HIGH_DPI)
-        return PIL.Image.open(io.BytesIO(pdfimage.tobytes("png")))
+        with TileRenderer(self.pdf_destination, self.calc_basemap_clip(), 'pdf', self.DOC_DPI) as tiles:
+            composite = PIL.Image.new("RGBA", [int(s) for s in tiles.image_size], (0, 0, 0, 0))
+            for x in range(tiles.tile_count[0]):
+                for y in range(tiles.tile_count[1]) :
+                    tile = tiles.get_tile(x, y, return_format='image')
+                    composite.paste(tile, (x*tiles.tile_size[0], y*tiles.tile_size[1]))
+        return composite
             
             
     def create_doc(self, save: bool = True) -> Union[io.BytesIO, None]:

@@ -3,7 +3,9 @@ Tile rendering capabilities
 """
 import io
 import math
-from typing import Callable, Iterator, Optional, Literal
+from typing import Callable, Iterator, Optional, Literal, Union
+import matplotlib
+matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import PIL
 import pymupdf
@@ -80,7 +82,7 @@ class TileRenderer:
         if self._fig:
             plt.close(self._fig)
 
-    def get_tile(self, x: int, y: int) -> bytes:
+    def get_tile(self, x: int, y: int, return_format: Literal['buf', 'image'] = 'buf') -> Union[bytes, PIL.Image]:
         """
         Get the tile at the xth row yth column as a PNG bytes array
         """
@@ -101,10 +103,13 @@ class TileRenderer:
 
         if not self._fig:
             # only background: just get the image
-            return pixmap.tobytes("jpg", 85)
+            if return_format=='buf':
+                return pixmap.tobytes("jpg", 85)
+            return PIL.Image.open(io.BytesIO(pixmap.tobytes("png"))).convert("RGBA")    
 
         # get the image as a Pillow Image object
         bg_img: PIL.Image = PIL.Image.open(io.BytesIO(pixmap.tobytes("png"))).convert("RGBA")
+
         # render a tile of the overlay figure
         fig = self._fig
         self._fig.set_size_inches((c/self.dpi for c in [bg_img.width, bg_img.height]))
@@ -117,9 +122,13 @@ class TileRenderer:
         fig.savefig(buf, format='png', bbox_inches="tight", pad_inches=0, dpi=self.dpi, transparent=True)
         buf.seek(0)
         overlay_img = PIL.Image.open(buf).convert("RGBA")
+
         # composite the two images
         final_img = PIL.Image.alpha_composite(bg_img, overlay_img).convert("RGB")
-        # return as jpg
+        if return_format=='image':
+            return final_img
+
+        # return as jpg buffer
         buf = io.BytesIO()
         final_img.save(buf, 'jpeg', quality=85)
         buf.seek(0)
