@@ -46,7 +46,9 @@ export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
                         num_points: trk.num_points,
                     }
                 });
-                this.imgsrv.send({ type: "get-tracks-map" });
+                if (msg['svg_overlay'] && msg['svg_overlay'] !== '-') {
+                    this.mapedit.setSVG(msg['svg_overlay']);
+                }
             }
         });
     }
@@ -54,6 +56,7 @@ export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
     ngAfterViewInit(): void {
         // initiate image load
         this.imgsrv.send({ type: 'get-tracks' });
+        this.imgsrv.send({ type: 'get-tracks-map' });
     }
 
     ngOnDestroy(): void {

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatButtonModule } from '@angular/material/button';
 import { Subscription } from 'rxjs';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { ImageEditMessage } from '../../../models/image-edit-msg';
@@ -37,9 +38,11 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     // canvas and tool selection
     @ViewChild('bgCanvas', { static: true }) bgCanvasRef!: ElementRef<HTMLCanvasElement>;
     @ViewChild('overlayCanvas', { static: true }) overlayCanvasRef!: ElementRef<HTMLCanvasElement>;
+    @ViewChild('svgContainer', { static: true }) svgContainer!: ElementRef<HTMLDivElement>;
     private bgResize!: ResizeObserver;
     baseImage: HTMLImageElement | null = null;
     public selectedTool: string = 'panzoom';
+    public svgContent: SafeHtml = '';
 
     // tile related
     private tileCache = new Map<string, string>();
@@ -59,7 +62,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     selectedPoint: number | null = null;
 
 
-    constructor(private imgsrv: ImageEditService, private zone: NgZone) {
+    constructor(private imgsrv: ImageEditService, private zone: NgZone, private sanitizer: DomSanitizer) {
         this.subs = imgsrv.channel.subscribe((msg: ImageEditMessage) => {
             if (msg.type === 'image') {
                 // we have an image header, get ready to receive the image tiles
@@ -72,6 +75,8 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 this.tileSize = msg['tilesize'];
                 this.tileCount = msg['tilecount'];
                 this.imageSize = msg['imagesize'];
+                // setup the SVG container
+                this.setSVG(msg['svg_overlay']);
                 // zoom to fit
                 this.zoomToAll();
                 // redraw with no image
@@ -100,6 +105,13 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     }
     
 
+    public setSVG(svgstr: string) {
+        this.svgContainer.nativeElement.style.width = `${this.imageSize.x}px`;
+        this.svgContainer.nativeElement.style.height = `${this.imageSize.y}px`;
+        this.svgContent = this.sanitizer.bypassSecurityTrustHtml(svgstr ?? '');
+        setTimeout(() => { this.updateSVGTransform(); }, 500);
+    }
+
     ngAfterViewInit(): void {
         // setup resize handlers
         this.bgResize = new ResizeObserver(() => {
@@ -114,6 +126,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
             this.overlayCanvasRef.nativeElement.height = h;
             // redraw
             this.drawBackgroundTransformed();
+            this.updateSVGTransform();
             this.drawOverlayTransformed();
         });
         this.bgResize.observe(this.bgCanvasRef.nativeElement);
@@ -147,6 +160,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         this.xlim = [0, this.bgCanvasRef.nativeElement.width];
         this.ylim = [0, this.bgCanvasRef.nativeElement.height];
         this.drawBackgroundTransformed();
+        this.updateSVGTransform();
         this.drawOverlayTransformed();
     }
 
@@ -172,6 +186,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
             this.ylim = [0,imh];
         }
         this.drawBackgroundTransformed();
+        this.updateSVGTransform();
         this.drawOverlayTransformed();
     }
 
@@ -223,6 +238,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 this.ylim = [ymin - deltaY, ymax - deltaY];
 
                 this.drawBackgroundTransformed();
+                this.updateSVGTransform();
                 this.drawOverlayTransformed();
             }
         } else if (this.selectedTool == 'edit') {
@@ -272,6 +288,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
             this.ylim = this.zoomWindow(this.ylim, y, zoomIn);
 
             this.drawBackgroundTransformed();
+            this.updateSVGTransform();
             this.drawOverlayTransformed();
         }
     }
@@ -443,6 +460,18 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
             imgWidth: this.baseImage?.width,
             imgHeight: this.baseImage?.height,
         });
+    }
+    
+    updateSVGTransform() {
+        const canvas: HTMLCanvasElement = this.bgCanvasRef.nativeElement;
+        const [xmin, xmax] = this.xlim;
+        const [ymin, ymax] = this.ylim;
+        const xscale = canvas.width / (xmax - xmin);
+        const yscale = canvas.height / (ymax - ymin);
+        const scale = Math.min(xscale, yscale);
+        this.svgContainer.nativeElement.children.item(0)?.setAttribute('width', '100%');
+        this.svgContainer.nativeElement.children.item(0)?.setAttribute('height', '100%');
+        this.svgContainer.nativeElement.style.transform = `translate(${-this.xlim[0] * scale}px, ${-this.ylim[0] * scale}px) scale(${scale})`
     }
 
     getImage2CanvasCoords(x: number, y: number) {

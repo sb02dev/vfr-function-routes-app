@@ -22,7 +22,7 @@
     </div>
     <app-math-edit [readOnly]="false"></app-math-edit>
     <div style="background-color: var(--mdc-filled-text-field-container-color);">
-        <mat-checkbox [(ngModel)]="showBubbles" title="Show bubbles">Show bubbles</mat-checkbox>
+        <mat-checkbox [(ngModel)]="showBubbles" title="Show estimated bubbles">Show bubbles</mat-checkbox>
     </div>
     <table>
         <thead class="table-header-cell">
@@ -47,4 +47,5 @@
             </td>
         </tr>
     </table>
+    <button mat-raised-button title="Refresh image" style="width: 100%;" (click)="updateAnnotations(true);">Refresh image</button>
 </app-map-edit>

@@ -155,3 +155,46 @@ class TileRenderer:
         tiles.sort(key=lambda item: item[2])
         for item in tiles:
             yield (item[0], item[1])
+
+
+class SVGRenderer():
+    """
+    Renders overlays (no map background) with Matplotlib into svg byte arrays
+    """
+    def __init__(self,
+                 crop_rect: tuple[tuple[float, float], tuple[float, float]],
+                 crop_rect_source: Literal['pdf', 'target'],
+                 dpi: float,
+                 original_dpi: float,
+                 draw_func: Callable
+                 ):
+        # save parameters
+        self.dpi = dpi
+        self.odpi = original_dpi
+        self._draw_func = draw_func
+        # calculate image size
+        if crop_rect_source == 'pdf':
+            self.image_size = ((crop_rect[1][0]-crop_rect[0][0]) / 72 * self.dpi,
+                               (crop_rect[1][1]-crop_rect[0][1]) / 72 * self.dpi)
+        elif crop_rect_source == 'target':
+            self.image_size = ((crop_rect[1][0]-crop_rect[0][0]),
+                               (crop_rect[1][1]-crop_rect[0][1]))
+
+    
+    def get_svg(self):
+    
+        fig=self._draw_func()
+
+        fig.set_size_inches((c/self.odpi for c in self.image_size))
+        ax=fig.get_axes()[0]
+        ax.set_xlim(0, self.image_size[0])
+        ax.set_ylim(self.image_size[1], 0)
+
+        buf=io.StringIO()
+        fig.savefig(buf, format='svg', dpi=self.dpi, transparent=True)
+        buf.seek(0)
+
+        plt.close(fig)
+
+        return buf.getvalue()
+

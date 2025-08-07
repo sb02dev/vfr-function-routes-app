@@ -817,7 +817,7 @@ class VFRFunctionRoute:
         fig.add_axes(ax)
 
         for l in self.legs:
-            l.draw(ax, False)
+            l.draw(ax, True)
         
         return fig
 

@@ -11,6 +11,7 @@
     </div>
     <div class="map-content">
         <canvas id="bgCanvas" #bgCanvas></canvas>
+        <div class="svg-container" #svgContainer [innerHTML]="svgContent"></div>
         <canvas id="overlayCanvas" #overlayCanvas></canvas>
     </div>
     <div class="map-info" [style.width]="panelWidth">

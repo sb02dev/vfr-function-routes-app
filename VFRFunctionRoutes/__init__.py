@@ -1,2 +1,2 @@
 from .classes import *
-from .rendering import TileRenderer
+from .rendering import TileRenderer, SVGRenderer

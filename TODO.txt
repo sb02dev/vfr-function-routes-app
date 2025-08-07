@@ -1,8 +1,5 @@
 v0.2
 - frontend side tile cache
-  - overlay rendered into svg, frontend has 3 layers: map (canvas, tiles),
-    server_overlay (svg), client_overlay (canvas); figure released immediately by
-    SVGRenderer
   - high resolution tiles are rendered according to fixed grid, frontend clips on the side
     to avoid larger maps than requested
   - frontend caches tiles and requests only what it does not have, signals when finished
@@ -47,6 +44,10 @@ v0.2
   + introduced a resolution for this drawing (DOC_DPI)
   + background not drawn with matplotlib, but composited with PIL
   + background done with tiling (for tiles: bg_img.paste(get_tile(0, 0), (0, 0)))
+- frontend side tile cache
+  + overlay rendered into svg, frontend has 3 layers: map (canvas, tiles),
+    server_overlay (svg), client_overlay (canvas); figure released immediately by
+    SVGRenderer
 
 
 v0.1:

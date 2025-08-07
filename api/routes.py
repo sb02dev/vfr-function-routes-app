@@ -14,7 +14,7 @@ load_dotenv()
 import matplotlib.pyplot as plt
 import requests
 
-from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, TileRenderer  # pylint: disable=no-name-in-module
+from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, TileRenderer, SVGRenderer  # pylint: disable=no-name-in-module
 from VFRFunctionRoutes.classes import VFRCoordSystem, VFRRouteState  # pylint: disable=no-name-in-module
 
 
@@ -314,11 +314,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype == 'get-annotations-map':
                 if rte:
-                    with TileRenderer(rte.pdf_destination, rte.calc_basemap_clip(), 'pdf', rte.HIGH_DPI, draw_func=rte.draw_annotations) as tiles:
+                    clip = rte.calc_basemap_clip()
+                    svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
+                    with TileRenderer(rte.pdf_destination, clip, 'pdf', rte.HIGH_DPI) as tiles:
                         await websocket.send_json({"type": "image",
                                                    "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
                                                    "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
-                                                   "imagesize": {"x": tiles.image_size[0], "y": tiles.image_size[1]}
+                                                   "imagesize": {"x": tiles.image_size[0], "y": tiles.image_size[1]},
+                                                   "svg_overlay": svgrenderer.get_svg(),
                                                    })
                         for (x, y) in tiles.get_tile_order():
                             image = tiles.get_tile(x, y)
@@ -329,8 +332,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     rte.update_annotations(msg.get("annotations"))
                     _vfrroutes.set(session_id, rte)
+                    clip = rte.calc_basemap_clip()
+                    svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
                     await websocket.send_text(json.dumps({
                         "type": "annotations",
+                        "svg_overlay": svgrenderer.get_svg() if msg.get("with_svg", False) else '-',
                         "annotations": [{
                                     "name": leg.name,
                                     "function_name": leg.function_name,
@@ -360,11 +366,14 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype == 'get-tracks-map':
                 if rte:
-                    with TileRenderer(rte.pdf_destination, rte.calc_basemap_clip(), 'pdf', rte.HIGH_DPI, draw_func=rte.draw_tracks) as tiles:
+                    clip = rte.calc_basemap_clip()
+                    svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
+                    with TileRenderer(rte.pdf_destination, rte.calc_basemap_clip(), 'pdf', rte.HIGH_DPI) as tiles:
                         await websocket.send_json({"type": "image",
                                                    "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
                                                    "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
-                                                   "imagesize": {"x": tiles.image_size[0], "y": tiles.image_size[1]}
+                                                   "imagesize": {"x": tiles.image_size[0], "y": tiles.image_size[1]},
+                                                   "svg_overlay": svgrenderer.get_svg(),
                                                    })
                         for (x, y) in tiles.get_tile_order():
                             image = tiles.get_tile(x, y)
@@ -375,8 +384,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     rte.add_track(msg.get('filename'), msg.get('color', '#0000FF'), base64.b64decode(msg.get('data')))
                     _vfrroutes.set(session_id, rte)
+                    clip = rte.calc_basemap_clip()
+                    svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
                     await websocket.send_text(json.dumps({
                         "type": "tracks",
+                        "svg_overlay": svgrenderer.get_svg(),
                         "tracks": [{
                             "name": trk.fname,
                             "color": trk.color,
@@ -388,8 +400,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     rte.update_tracks(msg.get('tracks'))
                     _vfrroutes.set(session_id, rte)
+                    clip = rte.calc_basemap_clip()
+                    svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
                     await websocket.send_text(json.dumps({
                         "type": "tracks",
+                        "svg_overlay": svgrenderer.get_svg(),
                         "tracks": [{
                             "name": trk.fname,
                             "color": trk.color,

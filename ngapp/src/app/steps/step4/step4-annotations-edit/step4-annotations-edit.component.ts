@@ -6,6 +6,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Subscription } from 'rxjs';
+import { MatButtonModule } from '@angular/material/button';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
@@ -22,6 +23,7 @@ import { MathEditComponent } from '../../../components/mathedit/math-edit/math-e
         FlexLayoutModule,
         FormsModule,
         MatCheckboxModule,
+        MatButtonModule,
         MapEditComponent,
         MathEditComponent,
         HeaderComponent,
@@ -56,6 +58,9 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
     constructor(public router: Router, private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
             if (msg.type === "annotations") {
+                if (msg['svg_overlay'] && msg['svg_overlay']!=='-') {
+                    this.mapedit.setSVG(msg['svg_overlay']);
+                }
                 this.legs = msg['annotations'].map((leg: any) => {
                     return {
                         name: leg.name,
@@ -103,9 +108,10 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
         this.mapedit.drawOverlayTransformed();
     }
 
-    updateAnnotations() {
+    updateAnnotations(withSVG: boolean = false) {
         this.imgsrv.send({
             type: 'update-annotations',
+            with_svg: withSVG,
             annotations: this.legs.map((leg: AnnLeg) => {
                 return {
                     name: leg.name,
