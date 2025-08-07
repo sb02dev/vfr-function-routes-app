@@ -49,6 +49,8 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     private pendingMeta: any = null;
     private tileSize: { x: number, y: number } = { x: 0, y: 0 };
     private tileCount: { x: number, y: number } = { x: 0, y: 0 };
+    private tileRange: { x: [number, number], y: [number, number] } = { x: [0, 0], y: [0, 0] };
+    private tileCrop: { x0: number, y0: number, x1: number, y1: number } = { x0: 0, y0: 0, x1: 0, y1: 0 };
     private imageSize: { x: number, y: number } = { x: 0, y: 0 };
 
     // pan and zoom variables
@@ -75,10 +77,12 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 this.tileSize = msg['tilesize'];
                 this.tileCount = msg['tilecount'];
                 this.imageSize = msg['imagesize'];
+                this.tileRange = msg['tilerange']
+                this.tileCrop = msg['tilecrop'];
                 // setup the SVG container
                 this.setSVG(msg['svg_overlay']);
-                // zoom to fit
-                this.zoomToAll();
+                // zoom to fit - delayed because for some reason this is not always done
+                setTimeout(() => { this.zoomToAll(); }, 500); 
                 // redraw with no image
                 this.drawBackgroundTransformed();
             } else if (msg.type === 'tile') {
@@ -344,15 +348,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
             // clear it
             offctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // draw tiles
-            /*for (let xi = 0; xi < this.tileCount.x; xi++) {
-                for (let yi = 0; yi < this.tileCount.y; yi++) {
-                    await this.drawTileTransformed(xi, yi, offscreen, offctx);
-                    // flip to visible
-                    ctx.drawImage(offscreen, 0, 0);
-                }
-            }*/
-            
             // get tile order (center first)
             const orderedTiles = this.getTileOrder();
 
@@ -402,9 +397,15 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         if (myGen !== this.drawGeneration) return; // cancel if outdated
         
         // calculate coordinates
-        const [x0, y0] = [xi * this.tileSize.x, yi * this.tileSize.y];
-        const [x1, y1] = [(xi + 1) * this.tileSize.x, (yi + 1) * this.tileSize.y]; // TODO: last tile may be smaller
-        const [imx0, imy0] = this.getImage2CanvasCoords(x0, y0);
+        let [x0, y0] = [
+            (xi - this.tileRange.x[0]) * this.tileSize.x - this.tileCrop.x0,
+            (yi - this.tileRange.y[0]) * this.tileSize.y - this.tileCrop.y0
+        ];
+        let [x1, y1] = [
+            (xi - this.tileRange.x[0] + 1) * this.tileSize.x - this.tileCrop.x0,
+            (yi - this.tileRange.y[0] + 1) * this.tileSize.y - this.tileCrop.y0
+        ];
+        let [imx0, imy0] = this.getImage2CanvasCoords(x0, y0);
         let [imx1, imy1] = this.getImage2CanvasCoords(x1, y1);
         // draw only if it is in viewport
         if ((imx0 <= canvas.width && imx1 >= 0) && (imy0 <= canvas.height && imy1 >= 0)) {
@@ -421,14 +422,50 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                     return; 
                 }
 
+                let [sx, sy, sw, sh] = [0, 0, bitmap.width, bitmap.height]; // initiate with no crop
+
                 if ((bitmap.width != this.tileSize.x) || (bitmap.height != this.tileSize.y)) {
-                    const [x1_, y1_] = [x0 + bitmap.width - 1, y0 + bitmap.height - 1];
-                    [imx1, imy1] = this.getImage2CanvasCoords(x1_, y1_);
+                    // tile is smaller than the default size (last in the row/column)
+                    [x1, y1] = [x0 + sw - 1, y0 + sh - 1];
                 }
+
+                // we have to crop the left side of the tile
+                if (xi == this.tileRange.x[0] && this.tileCrop.x0 != 0) {
+                    x0 += this.tileCrop.x0; // tile will shift right
+                    sx += this.tileCrop.x0; // we will start from this x coord in the tile image
+                    sw -= this.tileCrop.x0; // we will use this many pixels horizontally from the tile image
+                }
+
+                // we have to crop the top side of the tile
+                if (yi == this.tileRange.y[0] && this.tileCrop.y0 != 0) {
+                    y0 += this.tileCrop.y0; // tile will shift down
+                    sy += this.tileCrop.y0; // we will start from this y coord in the tile image
+                    sh -= this.tileCrop.y0; // we will use this many pixels vertically from the tile image
+                }
+
+                // we have to crop the right side of the tile
+                if (xi == this.tileRange.x[1]-1 && this.tileCrop.x1 != 0) {
+                    x1 -= this.tileCrop.x1; // tile's right side will shift left
+                    sw -= this.tileCrop.x1; // we will use this many pixels horizontally from the tile image
+                }
+
+                // we have to crop the bottom side of the tile
+                if (yi == this.tileRange.y[1]-1 && this.tileCrop.y1 != 0) {
+                    y1 -= this.tileCrop.y1; // tile's right side will shift left
+                    sh -= this.tileCrop.y1; // we will use this many pixels horizontally from the tile image
+                }
+
+                // recalculate the pan/zoom on the destination coordinates
+                [imx0, imy0] = this.getImage2CanvasCoords(x0, y0);
+                [imx1, imy1] = this.getImage2CanvasCoords(x1, y1);
 
                 // console.log(`(${xi},${yi}) => (${imx0},${imy0})-(${imx1},${imy1}) x (${bitmap.width}, ${bitmap.height})`);
 
-                ctx.drawImage(bitmap, imx0, imy0, imx1 - imx0, imy1 - imy0);
+                ctx.drawImage(
+                    bitmap,
+                    sx, sy, sw, sh,
+                    imx0, imy0, imx1 - imx0, imy1 - imy0
+                );
                 bitmap.close(); // free GPU memory
 
             }
@@ -436,8 +473,8 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     }
 
     private getTileOrder(): { xi: number, yi: number, dist: number }[] {
-        const cx = this.tileCount.x / 2;
-        const cy = this.tileCount.y / 2;
+        const cx = (this.tileRange.x[1] + this.tileRange.x[0]) / 2;
+        const cy = (this.tileRange.y[1] + this.tileRange.y[0]) / 2;
 
         const tiles: { xi: number, yi: number, dist: number }[] = [];
         for (let xi = 0; xi < this.tileCount.x; xi++) {

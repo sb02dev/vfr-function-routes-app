@@ -3,13 +3,18 @@ Tile rendering capabilities
 """
 import io
 import math
-from typing import Callable, Iterator, Optional, Literal, Union
+from typing import Callable, Iterator, NamedTuple, Optional, Literal, Union
 import matplotlib
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt
 import PIL
 import pymupdf
 
+from .projutils import PointXY
+
+
+SimpleRect = NamedTuple('SimpleRect', [('p0', PointXY), ('p1', PointXY)])
+PointXYInt = NamedTuple('PointXYInt', [('x', int), ('y', int)])
 
 class TileRenderer:
     """
@@ -20,86 +25,105 @@ class TileRenderer:
     """
     def __init__(self,
                  pdf_fname: str,
-                 crop_rect: tuple[tuple[float, float], tuple[float, float]],
-                 crop_rect_source: Literal['pdf', 'pdf_margins', 'target'],
+                 page_num: int,
+                 pdf_margins: SimpleRect,
                  dpi: float,
-                 tile_size: tuple[float, float] = (512, 512),
-                 draw_func: Optional[Callable] = None
+                 tile_size: PointXY = PointXY(512, 512),
                  ):
         # save parameters
-        self.pdf_fname = pdf_fname
-        self.crop_rect = crop_rect
-        self.crop_rect_source = crop_rect_source
-        self.dpi = dpi
-        self.tile_size: tuple[float, float] = tile_size
-        self._draw_func = draw_func
-        # init state variables
-        self._pdf_document: pymupdf.Document = None
-        self.image_size: tuple[int, int] = None
-        self._clip: pymupdf.Rect = None
-        self.tile_count: tuple[int, int] = None
+        self.pdf_fname: str = pdf_fname
+        self.page_num = page_num
+        self.pdf_margins: SimpleRect = pdf_margins
+        self.dpi: float = dpi
+        self.tile_size: PointXY = tile_size
         self._fig = None
 
-    def __enter__(self) -> 'TileRenderer':
-        """
-        Sets up the environment to generate tiles.
-        """
         # open pdf
-        self._pdf_document = pymupdf.open(self.pdf_fname)
-        page = self._pdf_document[0]
+        self._pdf_document: pymupdf.Document = pymupdf.open(self.pdf_fname)
+        self._page = self._pdf_document[self.page_num]
 
-        # calculate crop_rect
-        scale = 1/72*self.dpi
-        scaled_crop_rect = self.crop_rect
-        if self.crop_rect_source == 'pdf_margins':
-            page_rect = page.rect  # the page rectangle
-            scaled_crop_rect = ((self.crop_rect[0][0], self.crop_rect[0][1]),
-                                (page_rect.width - self.crop_rect[1][0], page_rect.height - self.crop_rect[1][1]))
-        elif self.crop_rect_source == 'target':
-            scaled_crop_rect = ((self.crop_rect[0][0]/scale, self.crop_rect[0][1]/scale),
-                                (self.crop_rect[1][0]/scale, self.crop_rect[1][1]/scale))
-        self._clip = pymupdf.Rect(scaled_crop_rect[0][0],
-                                 scaled_crop_rect[0][1],
-                                 scaled_crop_rect[1][0],
-                                 scaled_crop_rect[1][1])  # the area we want
-
-        # calculate tile numbers
-        self.image_size = (self._clip.width * scale, self._clip.height * scale)
-        self.tile_count = (math.ceil(self.image_size[0] / self.tile_size[0]),
-                           math.ceil(self.image_size[1] / self.tile_size[1]))
+        # calculate image and tile sizes
+        self._page_rect = self._page.rect
+        self._crop_rect = pymupdf.Rect(
+            (self._page_rect.x0 + self.pdf_margins.p0.x),
+            (self._page_rect.y0 + self.pdf_margins.p0.y),
+            (self._page_rect.x1 - self.pdf_margins.p1.x),
+            (self._page_rect.y1 - self.pdf_margins.p1.y)
+        )
+        self._scale = 1 / 72 * self.dpi
+        self.image_size: PointXYInt = PointXYInt((self._crop_rect.x1 - self._crop_rect.x0) * self._scale,
+                                                (self._crop_rect.y1 - self._crop_rect.y0) * self._scale)
+        self.tile_count: PointXYInt  = PointXYInt(math.ceil(self.image_size.x / self.tile_size.x),
+                                                  math.ceil(self.image_size.y / self.tile_size.y))
         
-        # if we have a draw_func, call it
-        if self._draw_func:
-            self._fig = self._draw_func()
 
-
-        # return
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        # close the pdf file
+    def __del__(self):
+        self._pdf_document.close()
         self._pdf_document = None
-        if self._fig:
-            plt.close(self._fig)
+
+
+    def get_tile_list_for_area(self, crop_rect: SimpleRect) -> tuple[list[PointXYInt], SimpleRect, PointXY, tuple[float, float, float, float]]:
+        """
+        Get a list of tiles needed for a given area along with the neccessary cropping (in pixels).
+
+        Parameters:
+            crop_rect: SimpleRect
+                The area desired in PDF coordinates (72 dpi)
+        """
+        # list the tiles neccessary
+        tile_size_pdf = PointXY(self.tile_size.x / self._scale, self.tile_size.y / self._scale)
+        tile_x0 = math.floor((crop_rect.p0.x - self.pdf_margins.p0.x) / tile_size_pdf.x)
+        tile_x1 = math.ceil((crop_rect.p1.x - self.pdf_margins.p0.x) / tile_size_pdf.x)
+        tile_y0 = math.floor((crop_rect.p0.y - self.pdf_margins.p0.y) / tile_size_pdf.y)
+        tile_y1 = math.ceil((crop_rect.p1.y - self.pdf_margins.p0.y) / tile_size_pdf.y)
+
+        tile_list: list[PointXYInt] = [
+            PointXYInt(tx, ty)
+            for ty in range(tile_y0, tile_y1)
+            for tx in range(tile_x0, tile_x1)
+        ]
+
+        ordered_tile_list = list(self.get_tile_order(tile_list, (tile_x1 + tile_x0)/2, (tile_y1 + tile_y0)/2))
+
+        # calculate right and bottom to handle the edge case when the last tile is shorter
+        tileright = min(self._crop_rect.x1, self._crop_rect.x0 + tile_x1 * tile_size_pdf.x)
+        tilebottom = min(self._crop_rect.y1, self._crop_rect.y0 + tile_y1 * tile_size_pdf.y)
+
+        # calculate the region to be cropped
+        crop_pdf = SimpleRect(PointXY(max(0, (crop_rect.p0.x - self._crop_rect.x0) - tile_x0 * tile_size_pdf.x),
+                                      max(0, (crop_rect.p0.y - self._crop_rect.y0) - tile_y0 * tile_size_pdf.y)),
+                              PointXY(max(0, tileright - crop_rect.p1.x),
+                                      max(0, tilebottom - crop_rect.p1.y)))
+
+        cropping: SimpleRect = SimpleRect(PointXYInt(crop_pdf.p0.x * self._scale,
+                                                     crop_pdf.p0.y * self._scale),
+                                          PointXYInt(crop_pdf.p1.x * self._scale,
+                                                     crop_pdf.p1.y * self._scale))
+
+        # calculate the cropped image size
+        image_size: PointXYInt = PointXYInt((crop_rect.p1.x - crop_rect.p0.x) * self._scale,
+                                            (crop_rect.p1.y - crop_rect.p0.y) * self._scale)
+
+
+        # put it together in the return value
+        return ordered_tile_list, cropping, image_size, [tile_x0, tile_x1, tile_y0, tile_y1]
+
 
     def get_tile(self, x: int, y: int, return_format: Literal['buf', 'image'] = 'buf') -> Union[bytes, PIL.Image]:
         """
         Get the tile at the xth row yth column as a PNG bytes array
         """
         # calculate the clip coordinates
-        page = self._pdf_document[0]
-        scale = 1/72*self.dpi
-        ((mx0, my0), (mx1, my1)) = ((self._clip.x0, self._clip.y0), (self._clip.x1, self._clip.y1))
         x_pixels = x * self.tile_size[0]
         y_pixels = y * self.tile_size[1]
         clip = pymupdf.Rect(
-            mx0 + x_pixels/scale,
-            my0 + y_pixels/scale,
-            min(mx1, mx0 + (x_pixels + self.tile_size[0] - 1)/scale),
-            min(my1, my0 + (y_pixels + self.tile_size[1] - 1)/scale)
+            self._crop_rect.x0 + x_pixels/self._scale,
+            self._crop_rect.y0 + y_pixels/self._scale,
+            min(self._crop_rect.x1, self._crop_rect.x0 + (x_pixels + self.tile_size.x - 1)/self._scale),
+            min(self._crop_rect.y1, self._crop_rect.y0 + (y_pixels + self.tile_size.y - 1)/self._scale)
         )
 
-        pixmap: pymupdf.Pixmap = page.get_pixmap(clip=clip, dpi=self.dpi)
+        pixmap: pymupdf.Pixmap = self._page.get_pixmap(clip=clip, dpi=self.dpi)
 
         if not self._fig:
             # only background: just get the image
@@ -114,10 +138,10 @@ class TileRenderer:
         fig = self._fig
         self._fig.set_size_inches((c/self.dpi for c in [bg_img.width, bg_img.height]))
         ax = fig.get_axes()[0]
-        ax.set_xlim(x*self.tile_size[0],
-                    min(self.image_size[0]-1, (x+1)*self.tile_size[0]-1))
-        ax.set_ylim(min(self.image_size[1]-1, (y+1)*self.tile_size[1]-1),
-                    y*self.tile_size[1])
+        ax.set_xlim(x*self.tile_size.x,
+                    min(self.image_size.x-1, (x+1)*self.tile_size.x-1))
+        ax.set_ylim(min(self.image_size.y-1, (y+1)*self.tile_size.y-1),
+                    y*self.tile_size.y)
         buf = io.BytesIO()
         fig.savefig(buf, format='png', bbox_inches="tight", pad_inches=0, dpi=self.dpi, transparent=True)
         buf.seek(0)
@@ -135,26 +159,35 @@ class TileRenderer:
         return buf.getvalue()
 
 
-    def get_tile_order(self) -> Iterator[tuple[int, int]]:
+    def get_tile_order(self, in_tiles = Optional[list[PointXYInt]], center_x: float = None, center_y: float = None) -> Iterator[PointXYInt]:
         """
         Get a list of tile coordinates ordered by priority (closer to center)
         """            
-        cx = self.tile_count[0] / 2
-        cy = self.tile_count[1] / 2
+        cx = self.tile_count.x / 2 if not center_x else center_x;
+        cy = self.tile_count.y / 2 if not center_y else center_y;
 
-        tiles: list[tuple[int, int, float]] = []
-
-        for xi in range(self.tile_count[0]):
-            for yi in range(self.tile_count[1]):
-                dx = xi + 0.5 - cx
-                dy = yi + 0.5 - cy
-                dist = math.sqrt(dx * dx + dy * dy)
-                tiles.append((xi, yi, dist))
+        if in_tiles:
+            tiles: list[tuple[PointXYInt, float]] = [
+                (t, math.sqrt(
+                    (t.x + 0.5 - cx)*(t.x + 0.5 - cx) +
+                    (t.y + 0.5 - cy)*(t.y + 0.5 - cy))
+                )
+                for t in in_tiles
+            ]
+        else:
+            tiles: list[tuple[PointXYInt, float]] = [
+                (PointXYInt(xi, yi), math.sqrt(
+                    (xi + 0.5 - cx)*(xi + 0.5 - cx) +
+                    (yi + 0.5 - cy)*(yi + 0.5 - cy))
+                 )
+                for xi in range(self.tile_count[0])
+                for yi in range(self.tile_count[1])
+            ]
 
         # sort by distance from center(smallest first)
-        tiles.sort(key=lambda item: item[2])
+        tiles.sort(key=lambda item: item[1])
         for item in tiles:
-            yield (item[0], item[1])
+            yield item[0]
 
 
 class SVGRenderer():
