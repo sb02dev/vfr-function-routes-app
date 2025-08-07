@@ -3,6 +3,7 @@ Tile rendering capabilities
 """
 import io
 import math
+import os
 from typing import Callable, Iterator, NamedTuple, Optional, Literal, Union
 import matplotlib
 matplotlib.use("Agg")
@@ -24,6 +25,8 @@ class TileRenderer:
 
     """
     def __init__(self,
+                 tileset_name: str,
+                 datafolder: str,
                  pdf_fname: str,
                  page_num: int,
                  pdf_margins: SimpleRect,
@@ -31,6 +34,8 @@ class TileRenderer:
                  tile_size: PointXY = PointXY(512, 512),
                  ):
         # save parameters
+        self.tileset_name = tileset_name
+        self.datafolder = datafolder
         self.pdf_fname: str = pdf_fname
         self.page_num = page_num
         self.pdf_margins: SimpleRect = pdf_margins
@@ -39,7 +44,7 @@ class TileRenderer:
         self._fig = None
 
         # open pdf
-        self._pdf_document: pymupdf.Document = pymupdf.open(self.pdf_fname)
+        self._pdf_document: pymupdf.Document = pymupdf.open(os.path.join(self.datafolder, self.pdf_fname))
         self._page = self._pdf_document[self.page_num]
 
         # calculate image and tile sizes
@@ -113,6 +118,16 @@ class TileRenderer:
         """
         Get the tile at the xth row yth column as a PNG bytes array
         """
+        # check cache
+        tile_id = self._get_tile_id(x, y)
+        tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
+        if os.path.isfile(tilecache_fname):
+            if return_format=='image':
+                return PIL.Image.open(tilecache_fname)
+            with open(tilecache_fname, "rb") as f:
+                return f.read()
+            
+
         # calculate the clip coordinates
         x_pixels = x * self.tile_size[0]
         y_pixels = y * self.tile_size[1]
@@ -127,9 +142,13 @@ class TileRenderer:
 
         if not self._fig:
             # only background: just get the image
+            buf = pixmap.tobytes("png")
+            with open(tilecache_fname, "wb") as f:
+                f.write(buf)
             if return_format=='buf':
-                return pixmap.tobytes("jpg", 85)
-            return PIL.Image.open(io.BytesIO(pixmap.tobytes("png"))).convert("RGBA")    
+                return buf
+            bufio = io.BytesIO(buf)
+            return PIL.Image.open(bufio).convert("RGBA")
 
         # get the image as a Pillow Image object
         bg_img: PIL.Image = PIL.Image.open(io.BytesIO(pixmap.tobytes("png"))).convert("RGBA")
@@ -149,12 +168,15 @@ class TileRenderer:
 
         # composite the two images
         final_img = PIL.Image.alpha_composite(bg_img, overlay_img).convert("RGB")
-        if return_format=='image':
+        buf = io.BytesIO()
+        final_img.save(buf, 'png')
+        buf.seek(0)
+        with open(tilecache_fname, "wb") as f:
+            f.write(buf.getvalue())
+        if return_format == 'image':
             return final_img
 
         # return as jpg buffer
-        buf = io.BytesIO()
-        final_img.save(buf, 'jpeg', quality=85)
         buf.seek(0)
         return buf.getvalue()
 
@@ -188,6 +210,10 @@ class TileRenderer:
         tiles.sort(key=lambda item: item[1])
         for item in tiles:
             yield item[0]
+
+    
+    def _get_tile_id(self, x: int, y: int) -> str:
+        return f"tilecache_{self.tileset_name}_{self.dpi}DPI_x{x}_y{y}"
 
 
 class SVGRenderer():

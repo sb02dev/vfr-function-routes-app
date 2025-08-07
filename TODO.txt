@@ -1,9 +1,6 @@
 v0.2
-- frontend side tile cache
+- tile cache
   - frontend caches tiles and requests only what it does not have, signals when finished
-  - only 2 TileRenderer on the server (what memory footprint? they may be open at all times?),
-    maybe a 3rd only for the final render (because that has a different resolution)
-- server side tile cache
 - session management
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
@@ -50,6 +47,9 @@ v0.2
   + high resolution tiles are rendered according to fixed grid (this is
     needed for uniform map tiles)
   + frontend clips on the side to avoid larger maps shown than requested
+  + bugfix: doc generation was not updated to fixed grid
++ tile cache
+  + server caches to disk and checks before creating
 
 
 v0.1:

@@ -53,7 +53,7 @@ from .projutils import (
     parse_latex_with_constants
 )
 from .docxutils import add_formula_par
-from .rendering import TileRenderer
+from .rendering import SimpleRect, TileRenderer
 
 OPENWEATHER_ENDPOINT = "https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={OPENWEATHER_APIKEY}"
 MAGDEV_ENDPOINT = "https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1={lat}&lon1={lon}&startYear={when.year}&startMonth={when.month}&startDay={when.day}&resultFormat=json&key={MAGDEV_APIKEY}"
@@ -1233,12 +1233,20 @@ class VFRFunctionRoute:
 
     def calc_basemap(self):
         # clip the image
-        with TileRenderer(self.pdf_destination, self.calc_basemap_clip(), 'pdf', self.DOC_DPI) as tiles:
-            composite = PIL.Image.new("RGBA", [int(s) for s in tiles.image_size], (0, 0, 0, 0))
-            for x in range(tiles.tile_count[0]):
-                for y in range(tiles.tile_count[1]) :
-                    tile = tiles.get_tile(x, y, return_format='image')
-                    composite.paste(tile, (x*tiles.tile_size[0], y*tiles.tile_size[1]))
+        margins = SimpleRect(PointXY(self.PDF_MARGINS[0][0], self.PDF_MARGINS[0][1]),
+                             PointXY(self.PDF_MARGINS[1][0], self.PDF_MARGINS[1][1]),)
+        clip = self.calc_basemap_clip()
+        ((x0, y0), (x1, y1)) = clip
+        area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
+        tiles = TileRenderer("hungarymap", self.workfolder, self.PDF_FILE, 0, margins, self.DOC_DPI)
+        tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
+        composite = PIL.Image.new("RGBA", [int(s) for s in image_size], (0, 0, 0, 0))
+        for p in tile_list:
+            tile = tiles.get_tile(p.x, p.y, return_format='image')
+            # we need to shift the images, other cropping not needed (its outside anyway)
+            x = int((p.x - tile_range[0])*tiles.tile_size[0] - crop.p0.x)
+            y = int((p.y - tile_range[2])*tiles.tile_size[1] - crop.p0.y)
+            composite.paste(tile, (x, y))
         return composite
             
             

@@ -161,7 +161,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
                                          PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer(rte.pdf_destination, 0, margins, rte.LOW_DPI)
+                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.LOW_DPI)
                     area = SimpleRect(PointXY(tiles._crop_rect.x0, tiles._crop_rect.y0),
                                       PointXY(tiles._crop_rect.x1, tiles._crop_rect.y1))
                     tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
@@ -220,7 +220,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
                                          PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer(rte.pdf_destination, 0, margins, rte.HIGH_DPI)
+                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.HIGH_DPI)
                     ((x0, y0), (x1, y1)) = rte.calc_basemap_clip()
                     area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
                     tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
@@ -278,7 +278,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
                                          PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer(rte.pdf_destination, 0, margins, rte.HIGH_DPI)
+                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.HIGH_DPI)
                     ((x0, y0), (x1, y1)) = rte.calc_basemap_clip()
                     area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
                     tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
@@ -341,7 +341,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
                     margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
                                          PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer(rte.pdf_destination, 0, margins, rte.HIGH_DPI)
+                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.HIGH_DPI)
                     ((x0, y0), (x1, y1)) = clip
                     area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
                     tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
@@ -400,7 +400,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
                     margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
                                          PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer(rte.pdf_destination, 0, margins, rte.HIGH_DPI)
+                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.HIGH_DPI)
                     ((x0, y0), (x1, y1)) = clip
                     area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
                     tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
