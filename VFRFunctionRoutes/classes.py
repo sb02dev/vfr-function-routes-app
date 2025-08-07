@@ -804,9 +804,9 @@ class VFRFunctionRoute:
         if size:
             figsize = fig.get_size_inches()
             dpi = min(size[0] / figsize[0], size[1] / figsize[1])
-        fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0, dpi=dpi)
+        fig.savefig(buf, format="png", dpi=dpi, transparent=True)
         buf.seek(0)
-        return buf.getvalue()
+        return buf
 
 
     def draw_annotations(self):
@@ -1178,23 +1178,30 @@ class VFRFunctionRoute:
         
         # initialize map
         fig = plt.figure()
-        fig.set_size_inches((c/self.HIGH_DPI for c in bg_img.size))
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
         fig.add_axes(ax)
         
         # draw the map parts
-        ax.imshow(bg_img)
         for l in self.legs:
             l.draw(ax)
         for t in self.tracks:
             t.draw(ax)
         
-        # save and return the image
-        image = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
+        # render the overlay
+        fig.set_size_inches((c/self.HIGH_DPI for c in [bg_img.width, bg_img.height]))
+        ax.set_xlim(0, bg_img.size[0])
+        ax.set_ylim(0, bg_img.size[1])
+        overlay_pngbuf = self._get_image_from_figure(fig, dpi=self.HIGH_DPI)
+        overlay_img = PIL.Image.open(overlay_pngbuf)
         plt.close(fig)
 
-        return image
+        # return the composited
+        composited = PIL.Image.alpha_composite(bg_img.convert('RGBA'), overlay_img.convert('RGBA'))
+        buf = io.BytesIO()
+        composited.save(buf, 'png')
+        buf.seek(0)
+        return buf.getvalue()
         
 
     def calc_basemap_clip(self):

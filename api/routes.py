@@ -123,7 +123,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 _vfrroutes.set(session_id, rte)
             elif msgtype == 'load':
                 rte = VFRFunctionRoute.fromJSON(
-                    msg.get('data'), 
+                    msg.get('data'),
                     session=requests.Session(),
                     workfolder=os.path.join(rootpath, "data"),
                     outfolder=os.path.join(rootpath, "output"),

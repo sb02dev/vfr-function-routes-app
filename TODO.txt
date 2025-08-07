@@ -1,10 +1,21 @@
 v0.2
 - memory optimizations for final image generation
+  + background not drawn with matplotlib, but composited with PIL
+  - background done with tiling (for tiles: bg_img.paste(get_tile(0, 0), (0, 0)))
+- frontend side tile cache
+  - overlay rendered into svg, frontend has 3 layers: map (canvas, tiles),
+    server_overlay (svg), client_overlay (canvas); figure released immediately by
+    SVGRenderer
+  - high resolution tiles are rendered according to fixed grid, frontend clips on the side
+    to avoid larger maps than requested
+  - frontend caches tiles and requests only what it does not have, signals when finished
+  - only 2 TileRenderer on the server (what memory footprint? they may be open at all times?),
+    maybe a 3rd only for the final render
 - session management
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
   - caching of states per session to disk on each modification
-  - session_id is always sent in http and ws requests (retreived from localStorage)
+- progress indication while waiting for server
 - extend map drawing with logging
 - bugfix: map-info width and horizontal scrolling
 - bugfix: readonly mathedit does not show formula
@@ -15,7 +26,6 @@ v0.2
 - annotations: more precise bubble estimation
 - annotations: bubbles can be moved with mouse
 - mobile friendly (responsive + touch controls)
-- progress indication while waiting for server
 + landing page
 + memory optimizations for low-res map
   + separate data sending from image sending
@@ -26,6 +36,7 @@ v0.2
 + bugfix: LOW_DPI dependent tiles coordinates
 + no contextmanagers for figures
 + session management: time to live for sessions in the session store (api/routes.py:_vfrroutes)
++ session management: session_id is always sent in http and ws requests (retreived from localStorage)
 + the same memory optimizations for waypoints map
 + bugfix: the last tiles (in a row, in a column) are stretched (of course: they are smaller, but this
   is not considered)

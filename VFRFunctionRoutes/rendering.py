@@ -78,7 +78,6 @@ class TileRenderer:
         # close the pdf file
         self._pdf_document = None
         if self._fig:
-            print("release fig")
             plt.close(self._fig)
 
     def get_tile(self, x: int, y: int) -> bytes:
@@ -119,7 +118,6 @@ class TileRenderer:
         buf.seek(0)
         overlay_img = PIL.Image.open(buf).convert("RGBA")
         # composite the two images
-        print(f"({x},{y}): ({overlay_img.width}, {overlay_img.height}) <?> ({bg_img.width}, {bg_img.height})")
         final_img = PIL.Image.alpha_composite(bg_img, overlay_img).convert("RGB")
         # return as jpg
         buf = io.BytesIO()
