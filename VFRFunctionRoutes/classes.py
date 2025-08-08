@@ -372,13 +372,13 @@ class VFRAnnotation:
         wind_corrs = self.wind_corrections(headings=seghdgs)
         wind_corr = wind_corrs[-1] if wind_corrs else None
         mag_dev = self.magnetic_deviation(self._leg._route.dof)
-        s_seglen = f"\nhossz: {seglen/1852:.1f}NM\nidő: {math.floor(segtime):3d}:{math.floor((segtime-math.floor(segtime))*60):02d}" + \
+        s_seglen = f"\ndist: {seglen/1852:.1f}NM\ntime: {math.floor(segtime):3d}:{math.floor((segtime-math.floor(segtime))*60):02d}" + \
                    f" / {math.floor(segtime_wind):3d}:{math.floor((segtime_wind-math.floor(segtime_wind))*60):02d}"
         if self._leg.annotations.index(self) == 0:
             s_seglen = ""
         calc_time = time.perf_counter_ns() - start
 
-        ax.annotate(f'{self.name}\nirány: ${self.headings[-1]:.0f}\\degree${mag_dev:+.0f}(M){wind_corr:+.0f}(W:{self.wind_speed:.0f}/{self.wind_dir:.0f}){s_seglen}',
+        ax.annotate(f'{self.name}\ntrack: ${self.headings[-1]:.0f}\\degree${mag_dev:+.0f}(M){wind_corr:+.0f}(W:{self.wind_speed:.0f}/{self.wind_dir:.0f}){s_seglen}',
                     xy=(xy.x, xy.y), xycoords='data',
                     xytext=(self.ofs[0], self.ofs[1]), textcoords='offset points',
                     size=5.5, va="center",
