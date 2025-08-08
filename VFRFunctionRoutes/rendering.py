@@ -214,6 +214,12 @@ class TileRenderer:
     
     def _get_tile_id(self, x: int, y: int) -> str:
         return f"tilecache_{self.tileset_name}_{self.dpi}DPI_x{x}_y{y}"
+    
+    @staticmethod
+    def rect_to_simplerect(rect: pymupdf.Rect) -> SimpleRect:
+        return SimpleRect(PointXY(rect.x0, rect.y0),
+                          PointXY(rect.x1, rect.y1))
+
 
 
 class SVGRenderer():
@@ -221,7 +227,7 @@ class SVGRenderer():
     Renders overlays (no map background) with Matplotlib into svg byte arrays
     """
     def __init__(self,
-                 crop_rect: tuple[tuple[float, float], tuple[float, float]],
+                 crop_rect: SimpleRect,
                  crop_rect_source: Literal['pdf', 'target'],
                  dpi: float,
                  original_dpi: float,
@@ -233,11 +239,11 @@ class SVGRenderer():
         self._draw_func = draw_func
         # calculate image size
         if crop_rect_source == 'pdf':
-            self.image_size = ((crop_rect[1][0]-crop_rect[0][0]) / 72 * self.dpi,
-                               (crop_rect[1][1]-crop_rect[0][1]) / 72 * self.dpi)
+            self.image_size = PointXY((crop_rect.p1.x-crop_rect.p0.x) / 72 * self.dpi,
+                                      (crop_rect.p1.y-crop_rect.p0.y) / 72 * self.dpi)
         elif crop_rect_source == 'target':
-            self.image_size = ((crop_rect[1][0]-crop_rect[0][0]),
-                               (crop_rect[1][1]-crop_rect[0][1]))
+            self.image_size = PointXY((crop_rect.p1.x-crop_rect.p0.x),
+                                      (crop_rect.p1.y-crop_rect.p0.y))
 
     
     def get_svg(self):
@@ -246,8 +252,8 @@ class SVGRenderer():
 
         fig.set_size_inches((c/self.odpi for c in self.image_size))
         ax=fig.get_axes()[0]
-        ax.set_xlim(0, self.image_size[0])
-        ax.set_ylim(self.image_size[1], 0)
+        ax.set_xlim(0, self.image_size.x)
+        ax.set_ylim(self.image_size.y, 0)
 
         buf=io.StringIO()
         fig.savefig(buf, format='svg', dpi=self.dpi, transparent=True)

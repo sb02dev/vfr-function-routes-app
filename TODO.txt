@@ -1,6 +1,4 @@
 v0.2
-- tile cache
-  - frontend caches tiles and requests only what it does not have, signals when finished
 - session management
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
@@ -50,6 +48,7 @@ v0.2
   + bugfix: doc generation was not updated to fixed grid
 + tile cache
   + server caches to disk and checks before creating
+  + change to http get for tiles, frontend uses http cache for tiles
 
 
 v0.1:

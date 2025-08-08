@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, EventEmitter, Input, NgZone, OnDestroy, Output, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
 import { MatIconModule } from "@angular/material/icon";
 import { CommonModule } from '@angular/common';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
@@ -8,6 +8,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { ImageEditMessage } from '../../../models/image-edit-msg';
+import { TileService } from '../../../services/tile.service';
 
 @Component({
     selector: 'app-map-edit',
@@ -25,7 +26,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
 
     // the message subscriptions
     subs: Subscription;
-    binary_subs: Subscription;
 
     // inputs and events
     @Input() panelWidth: string = '50px';
@@ -45,8 +45,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     public svgContent: SafeHtml = '';
 
     // tile related
-    private tileCache = new Map<string, string>();
-    private pendingMeta: any = null;
+    private tilesetParams!: { tilesetName: string, dpi: number };
     private tileSize: { x: number, y: number } = { x: 0, y: 0 };
     private tileCount: { x: number, y: number } = { x: 0, y: 0 };
     private tileRange: { x: [number, number], y: [number, number] } = { x: [0, 0], y: [0, 0] };
@@ -64,46 +63,25 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     selectedPoint: number | null = null;
 
 
-    constructor(private imgsrv: ImageEditService, private zone: NgZone, private sanitizer: DomSanitizer) {
-        this.subs = imgsrv.channel.subscribe((msg: ImageEditMessage) => {
-            if (msg.type === 'image') {
+    constructor(private imgsrv: ImageEditService, private tilesvc: TileService, private sanitizer: DomSanitizer) {
+        this.subs = this.imgsrv.channel.subscribe((msg: ImageEditMessage) => {
+            if (msg.type === 'tiled-image') {
                 // we have an image header, get ready to receive the image tiles
-                // clear the tilecache and release the URLs
-                this.tileCache.forEach((key: string, url: string) => {
-                    URL.revokeObjectURL(url);
-                });
-                this.tileCache.clear();
                 // save the image data (tilesize & tilecount)
+                this.tilesetParams = { tilesetName: msg['tilesetname'], dpi: msg['dpi'] };
                 this.tileSize = msg['tilesize'];
                 this.tileCount = msg['tilecount'];
                 this.imageSize = msg['imagesize'];
                 this.tileRange = msg['tilerange']
                 this.tileCrop = msg['tilecrop'];
                 // setup the SVG container
-                this.setSVG(msg['svg_overlay']);
+                if (msg['additional_data'] && msg['additional_data']['svg_overlay']) {
+                    this.setSVG(msg['additional_data']['svg_overlay']);
+                }
                 // zoom to fit - delayed because for some reason this is not always done
                 setTimeout(() => { this.zoomToAll(); }, 500); 
                 // redraw with no image
                 this.drawBackgroundTransformed();
-            } else if (msg.type === 'tile') {
-                // we have a tile header, get ready to receive the tile image data
-                this.pendingMeta = msg;
-            }
-        });
-        this.binary_subs = imgsrv.binary_channel.subscribe((blob: Blob) => {
-            // we have a tile data, put it to tilecache
-            if (this.pendingMeta?.type === 'tile') {
-                // save image to cache
-                const key = `${this.pendingMeta.x},${this.pendingMeta.y}`;
-                const url = URL.createObjectURL(blob);
-                this.tileCache.set(key, url);
-                // get references and clear canvas
-                const canvas = this.bgCanvasRef.nativeElement;
-                const ctx = canvas.getContext('2d')!;
-                // draw just this tile
-                this.drawTileTransformed(this.pendingMeta.x, this.pendingMeta.y, canvas, ctx, this.drawGeneration);
-                // clear meta
-                this.pendingMeta = null;
             }
         });
     }
@@ -157,7 +135,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         // stop observers
         this.bgResize.disconnect();
         this.subs.unsubscribe();
-        this.binary_subs.unsubscribe();
     }
 
     resetView() {
@@ -409,19 +386,9 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         let [imx1, imy1] = this.getImage2CanvasCoords(x1, y1);
         // draw only if it is in viewport
         if ((imx0 <= canvas.width && imx1 >= 0) && (imy0 <= canvas.height && imy1 >= 0)) {
-            const key = `${xi},${yi}`;
-            const tileurl = this.tileCache.get(key);
-            if (tileurl) {
-                const resp = await fetch(tileurl);
-                if (myGen !== this.drawGeneration) return; // cancel if outdated
-                const blob = await resp.blob();
-                if (myGen !== this.drawGeneration) return; // cancel if outdated
-                const bitmap = await createImageBitmap(blob);
-                if (myGen !== this.drawGeneration) { // cancel if outdated
-                    bitmap.close();
-                    return; 
-                }
-
+            const bitmap = await this.tilesvc.getTile(this.tilesetParams.tilesetName, this.tilesetParams.dpi, xi, yi);
+            if (myGen !== this.drawGeneration) return; // cancel if outdated
+            if (bitmap) {
                 let [sx, sy, sw, sh] = [0, 0, bitmap.width, bitmap.height]; // initiate with no crop
 
                 if ((bitmap.width != this.tileSize.x) || (bitmap.height != this.tileSize.y)) {
@@ -466,7 +433,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                     sx, sy, sw, sh,
                     imx0, imy0, imx1 - imx0, imy1 - imy0
                 );
-                bitmap.close(); // free GPU memory
 
             }
         }
@@ -477,8 +443,8 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         const cy = (this.tileRange.y[1] + this.tileRange.y[0]) / 2;
 
         const tiles: { xi: number, yi: number, dist: number }[] = [];
-        for (let xi = 0; xi < this.tileCount.x; xi++) {
-            for (let yi = 0; yi < this.tileCount.y; yi++) {
+        for (let xi = this.tileRange.x[0]; xi < this.tileRange.x[1]; xi++) {
+            for (let yi = this.tileRange.y[0]; yi < this.tileRange.y[1]; yi++) {
                 const dx = xi + 0.5 - cx;
                 const dy = yi + 0.5 - cy;
                 const dist = Math.sqrt(dx * dx + dy * dy);

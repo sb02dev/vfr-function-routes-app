@@ -576,12 +576,12 @@ class VFRFunctionRoute:
       PointLonLat(16.5, 46.0): PointXY(155.83, 1639.36),
       PointLonLat(21.0, 46.0): PointXY(2133.00, 1658.6),
     } # I don't see any possibility to do this automatically
-    PDF_MARGINS = ((79.0, 110.1), (79.05, 139.0)) #(('left', 'top'), ('right', 'bottom'))
+    PDF_MARGINS = SimpleRect(PointXY(79.0, 110.1), PointXY(79.05, 139.0)) #(('left', 'top'), ('right', 'bottom'))
     HIGH_DPI = int(os.getenv("HIGH_DPI", "600"))
     LOW_DPI = int(os.getenv("LOW_DPI", "72"))
     DOC_DPI = int(os.getenv("DOC_DPI", "200"))
-    TILESIZE_X = int(os.getenv("TILESIZE_X", 512))
-    TILESIZE_Y = int(os.getenv("TILESIZE_Y", 512))
+    TILESIZE_X = int(os.getenv("TILESIZE_X", "512"))
+    TILESIZE_Y = int(os.getenv("TILESIZE_Y", "512"))
     TILESIZE = (TILESIZE_X, TILESIZE_Y)
 
     
@@ -755,7 +755,7 @@ class VFRFunctionRoute:
         page = self._pdf_document[0]
         rect = page.rect  # the page rectangle
         m = self.PDF_MARGINS
-        clip = pymupdf.Rect(m[0][0], m[0][1], rect.width-m[1][0], rect.height-m[1][1])  # the area we want
+        clip = pymupdf.Rect(m.p0.x, m.p0.y, rect.width-m.p1.x, rect.height-m.p1.y)  # the area we want
 
         # calculate tile numbers
         scale = 1/72*self.LOW_DPI
@@ -897,7 +897,7 @@ class VFRFunctionRoute:
         page = pdf_document[0]
         rect = page.rect  # the page rectangle
         m = self.PDF_MARGINS
-        clip = pymupdf.Rect(m[0][0], m[0][1], rect.width-m[1][0], rect.height-m[1][1])  # the area we want
+        clip = pymupdf.Rect(m.p0.x, m.p0.y, rect.width-m.p1.x, rect.height-m.p1.y)  # the area we want
         pdfimage_cropcheck = page.get_pixmap(clip=clip)
         pilimage_cropcheck = PIL.Image.open(io.BytesIO(pdfimage_cropcheck.tobytes("png")))
         fig, ax = plt.subplots()
@@ -940,10 +940,10 @@ class VFRFunctionRoute:
         page = pdf_document[0]
         rect = page.rect  # the page rectangle
         m = self.PDF_MARGINS
-        clip = pymupdf.Rect(m[0][0]+x0,
-                            m[0][1]+y0,
-                            m[0][0]+x1,  # rect.width-m[1][0]
-                            m[0][1]+y1,  # rect.height-m[1][1]
+        clip = pymupdf.Rect(m.p0.x+x0,
+                            m.p0.y+y0,
+                            m.p0.x+x1,  # rect.width-m[1][0]
+                            m.p0.y+y1,  # rect.height-m[1][1]
                            )
         print(rect, clip)
         pdfimage_cropcheck = page.get_pixmap(clip=clip, dpi=self.HIGH_DPI)
@@ -1205,7 +1205,7 @@ class VFRFunctionRoute:
         return buf.getvalue()
         
 
-    def calc_basemap_clip(self):
+    def calc_basemap_clip(self) -> SimpleRect:
         # calc clip coordinates from the appropriate lon-lat corners
         lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
         # adjust for non-rectangle because of projection type
@@ -1228,18 +1228,13 @@ class VFRFunctionRoute:
                                 (x1/self.LOW_DPI*72, y1/self.LOW_DPI*72))
         ((xm, ym), (_, _)) = self.PDF_MARGINS
         ((x0, y0), (x1, y1)) = ((xm+x0, ym+y0), (xm+x1, ym+y1))
-        return ((x0, y0), (x1, y1))
+        return SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
 
 
     def calc_basemap(self):
         # clip the image
-        margins = SimpleRect(PointXY(self.PDF_MARGINS[0][0], self.PDF_MARGINS[0][1]),
-                             PointXY(self.PDF_MARGINS[1][0], self.PDF_MARGINS[1][1]),)
-        clip = self.calc_basemap_clip()
-        ((x0, y0), (x1, y1)) = clip
-        area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
-        tiles = TileRenderer("hungarymap", self.workfolder, self.PDF_FILE, 0, margins, self.DOC_DPI)
-        tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
+        tiles = TileRenderer("hungarymap", self.workfolder, self.PDF_FILE, 0, self.PDF_MARGINS, self.DOC_DPI)
+        tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(self.calc_basemap_clip())
         composite = PIL.Image.new("RGBA", [int(s) for s in image_size], (0, 0, 0, 0))
         for p in tile_list:
             tile = tiles.get_tile(p.x, p.y, return_format='image')

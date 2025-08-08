@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+from http import HTTPStatus
 import time
 import json
 import io
@@ -7,9 +8,8 @@ import base64
 import os
 from typing import Optional, Union
 import uuid
-from VFRFunctionRoutes.projutils import PointXY
-from VFRFunctionRoutes.rendering import SimpleRect
-from fastapi import APIRouter, WebSocket
+from fastapi import APIRouter, HTTPException, Response, WebSocket
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -18,11 +18,28 @@ import requests
 
 from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, TileRenderer, SVGRenderer  # pylint: disable=no-name-in-module
 from VFRFunctionRoutes.classes import VFRCoordSystem, VFRRouteState  # pylint: disable=no-name-in-module
+from VFRFunctionRoutes.projutils import PointXY
+from VFRFunctionRoutes.rendering import SimpleRect
 
 
 rootpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 routes = APIRouter()
+
+tilerenderers = {
+    'low': TileRenderer("hungarymap",
+                        os.path.join(rootpath, "data"),
+                        VFRFunctionRoute.PDF_FILE,
+                        0,
+                        VFRFunctionRoute.PDF_MARGINS,
+                        VFRFunctionRoute.LOW_DPI),
+    'high': TileRenderer("hungarymap",
+                         os.path.join(rootpath, "data"),
+                         VFRFunctionRoute.PDF_FILE,
+                         0,
+                         VFRFunctionRoute.PDF_MARGINS,
+                         VFRFunctionRoute.HIGH_DPI),
+}
 
 
 class SessionStore:
@@ -67,6 +84,50 @@ async def cleanup_loop():
     while True:
         _vfrroutes.cleanup()
         await asyncio.sleep(60)  # run every minute
+
+
+async def send_tiled_image_header(websocket: WebSocket, renderer: TileRenderer, area: SimpleRect, additional_data: dict = {}):
+    tile_list, crop, image_size, tile_range = renderer.get_tile_list_for_area(area)
+    await websocket.send_json({"type": "tiled-image",
+                               "tilesetname": renderer.tileset_name,
+                               "dpi": renderer.dpi,
+                               "tilesize": {"x": renderer.tile_size[0], "y": renderer.tile_size[1]},
+                               "tilecount": {"x": renderer.tile_count[0], "y": renderer.tile_count[1]},
+                               "imagesize": {"x": image_size[0], "y": image_size[1]},
+                               "tilecrop": {"x0": crop.p0.x, "y0": crop.p0.y, "x1": crop.p1.x, "y1": crop.p1.y},
+                               "tilerange": {"x": tile_range[0:2], "y": tile_range[2:4]},
+                               "additional_data": additional_data,
+                              })
+
+
+@routes.get("/tile/{tileset_name}/{dpi}/{x}/{y}",
+            responses={
+                200: {
+                    "content": {"image/png": {}}
+                }
+            },
+            response_class=Response)
+async def get_tile(tileset_name: str, dpi: int, x: int, y:int):
+    matching_renderers = [r for k, r in tilerenderers.items() if r.tileset_name==tileset_name and r.dpi==dpi]
+    if len(matching_renderers)>1:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, 
+                            f"Multiple renderers matched ({tileset_name}, {dpi})", 
+                            {"X-Error": "Multiple renderers matched"}
+                           )
+    if len(matching_renderers)==0:
+        raise HTTPException(HTTPStatus.BAD_REQUEST,
+                            f"No renderers matched ({tileset_name}, {dpi})", 
+                            {"X-Error": "No renderers matched"}
+                           )
+    renderer = matching_renderers[0]
+    image = renderer.get_tile(x, y)
+    return Response(content=image,
+                    media_type="image/png",
+                    headers={
+                        "Cache-Control": "public, max-age=2592000, immutable", # 30 days
+                        "ETag": f"tilecache-{tileset_name}-{dpi}-{x}-{y}",
+                        "Last-Modified": datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+                    })
 
 
 
@@ -159,23 +220,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype == 'get-low-res-map':
                 if rte:
-                    margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
-                                         PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.LOW_DPI)
-                    area = SimpleRect(PointXY(tiles._crop_rect.x0, tiles._crop_rect.y0),
-                                      PointXY(tiles._crop_rect.x1, tiles._crop_rect.y1))
-                    tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
-                    await websocket.send_json({"type": "image",
-                                                "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
-                                                "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
-                                                "imagesize": {"x": image_size[0], "y": image_size[1]},
-                                                "tilecrop": {"x0": crop.p0.x, "y0": crop.p0.y, "x1": crop.p1.x, "y1": crop.p1.y},
-                                                "tilerange": {"x": tile_range[0:2], "y": tile_range[2:4]},
-                                               })
-                    for p in tile_list:
-                        image = tiles.get_tile(p.x, p.y)
-                        await websocket.send_json({"type": "tile", "x": p.x, "y": p.y})
-                        await websocket.send_bytes(image)
+                    renderer = tilerenderers["low"]
+                    await send_tiled_image_header(websocket, renderer, TileRenderer.rect_to_simplerect(renderer._crop_rect))
 
             elif msgtype=='set-area-of-interest':
                 if rte:
@@ -218,23 +264,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype == 'get-waypoints-map':
                 if rte:
-                    margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
-                                         PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.HIGH_DPI)
-                    ((x0, y0), (x1, y1)) = rte.calc_basemap_clip()
-                    area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
-                    tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
-                    await websocket.send_json({"type": "image",
-                                               "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
-                                               "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
-                                               "imagesize": {"x": image_size[0], "y": image_size[1]},
-                                               "tilecrop": {"x0": crop.p0.x, "y0": crop.p0.y, "x1": crop.p1.x, "y1": crop.p1.y},
-                                               "tilerange": {"x": tile_range[0:2], "y": tile_range[2:4]},
-                                              })
-                    for p in tile_list:
-                        image = tiles.get_tile(p.x, p.y)
-                        await websocket.send_json({"type": "tile", "x": p.x, "y": p.y})
-                        await websocket.send_bytes(image)
+                    await send_tiled_image_header(websocket, tilerenderers["high"], rte.calc_basemap_clip())
 
             elif msgtype=='update-wps':
                 if rte:
@@ -276,23 +306,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype == 'get-legs-map':
                 if rte:
-                    margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
-                                         PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.HIGH_DPI)
-                    ((x0, y0), (x1, y1)) = rte.calc_basemap_clip()
-                    area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
-                    tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
-                    await websocket.send_json({"type": "image",
-                                               "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
-                                               "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
-                                               "imagesize": {"x": image_size[0], "y": image_size[1]},
-                                               "tilecrop": {"x0": crop.p0.x, "y0": crop.p0.y, "x1": crop.p1.x, "y1": crop.p1.y},
-                                               "tilerange": {"x": tile_range[0:2], "y": tile_range[2:4]},
-                                               })
-                    for p in tile_list:
-                        image = tiles.get_tile(p.x, p.y)
-                        await websocket.send_json({"type": "tile", "x": p.x, "y": p.y})
-                        await websocket.send_bytes(image)
+                    await send_tiled_image_header(websocket, tilerenderers["high"], rte.calc_basemap_clip())
 
             elif msgtype=='update-legs':
                 if rte:
@@ -339,24 +353,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     clip = rte.calc_basemap_clip()
                     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
-                    margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
-                                         PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.HIGH_DPI)
-                    ((x0, y0), (x1, y1)) = clip
-                    area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
-                    tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
-                    await websocket.send_json({"type": "image",
-                                               "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
-                                               "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
-                                               "imagesize": {"x": image_size[0], "y": image_size[1]},
-                                               "tilecrop": {"x0": crop.p0.x, "y0": crop.p0.y, "x1": crop.p1.x, "y1": crop.p1.y},
-                                               "tilerange": {"x": tile_range[0:2], "y": tile_range[2:4]},
-                                               "svg_overlay": svgrenderer.get_svg(),
-                                               })
-                    for p in tile_list:
-                        image = tiles.get_tile(p.x, p.y)
-                        await websocket.send_json({"type": "tile", "x": p.x, "y": p.y})
-                        await websocket.send_bytes(image)
+                    await send_tiled_image_header(websocket,
+                                                  tilerenderers["high"],
+                                                  clip, {
+                                                    "svg_overlay": svgrenderer.get_svg(),
+                                                  }
+                                                 )
 
             elif msgtype=='update-annotations':
                 if rte:
@@ -398,24 +400,12 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     clip = rte.calc_basemap_clip()
                     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
-                    margins = SimpleRect(PointXY(rte.PDF_MARGINS[0][0], rte.PDF_MARGINS[0][1]),
-                                         PointXY(rte.PDF_MARGINS[1][0], rte.PDF_MARGINS[1][1]),)
-                    tiles = TileRenderer("hungarymap", rte.workfolder, rte.PDF_FILE, 0, margins, rte.HIGH_DPI)
-                    ((x0, y0), (x1, y1)) = clip
-                    area = SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
-                    tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(area)
-                    await websocket.send_json({"type": "image",
-                                               "tilesize": {"x": tiles.tile_size[0], "y": tiles.tile_size[1]},
-                                               "tilecount": {"x": tiles.tile_count[0], "y": tiles.tile_count[1]},
-                                               "imagesize": {"x": image_size[0], "y": image_size[1]},
-                                               "tilecrop": {"x0": crop.p0.x, "y0": crop.p0.y, "x1": crop.p1.x, "y1": crop.p1.y},
-                                               "tilerange": {"x": tile_range[0:2], "y": tile_range[2:4]},
-                                               "svg_overlay": svgrenderer.get_svg(),
-                                               })
-                    for p in tile_list:
-                        image = tiles.get_tile(p.x, p.y)
-                        await websocket.send_json({"type": "tile", "x": p.x, "y": p.y})
-                        await websocket.send_bytes(image)
+                    await send_tiled_image_header(websocket,
+                                                  tilerenderers["high"],
+                                                  clip, {
+                                                    "svg_overlay": svgrenderer.get_svg(),
+                                                  }
+                                                 )
 
             elif msgtype == 'load-track':
                 if rte:
