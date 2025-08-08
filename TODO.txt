@@ -50,7 +50,7 @@ v0.2
   + server caches to disk and checks before creating
   + change to http get for tiles, frontend uses http cache for tiles
 + bugfix: map download needed to be put at an earlier stage
-
++ bugfix: api endpoint rewrote by angular to /frontend/api/..., changed to absolute url
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 
