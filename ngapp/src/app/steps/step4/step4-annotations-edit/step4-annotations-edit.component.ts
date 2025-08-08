@@ -43,7 +43,7 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
     leg_matrix: number[][] = [];
     leg_invmatrix: number[][] = [];
     leg_points: { x: number, y: number }[] = [];
-    private _showBubbles: boolean = true;
+    private _showBubbles: boolean = false;
     set showBubbles(value: boolean) {
         this._showBubbles = value;
         this.mapedit.drawOverlayTransformed();
@@ -108,10 +108,9 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
         this.mapedit.drawOverlayTransformed();
     }
 
-    updateAnnotations(withSVG: boolean = false) {
+    updateAnnotations() {
         this.imgsrv.send({
             type: 'update-annotations',
-            with_svg: withSVG,
             annotations: this.legs.map((leg: AnnLeg) => {
                 return {
                     name: leg.name,

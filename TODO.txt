@@ -1,18 +1,22 @@
-v0.2
-- session management
-  - caching of states per session to disk on each modification
-  - limit the session connections based on available memory (or number of open sessions)
-  - visual feedback if no connection available
 - progress indication while waiting for server
+- speed is modifiable in step 6
 - bugfix: map-info width and horizontal scrolling
 - bugfix: readonly mathedit does not show formula
 - mobile friendly (responsive + touch controls)
 - edit "function_range" on leg page
+- session management
+  - caching of states per session to disk on each modification
+  - limit the session connections based on available memory (or number of open sessions)
+  - visual feedback if no connection available
 - order constraint points by func_x automatically
 - annotations: more precise bubble estimation
 - annotations: bubbles can be moved with mouse
 - save to cloud
 - extend map drawing with logging
+
+v0.3
+
+v0.2
 + landing page
 + memory optimizations for low-res map
   + separate data sending from image sending
@@ -53,6 +57,8 @@ v0.2
 + mapedit: moving amount is not decreasing when scaled
 + annotations: during edit, no realtime data is downloaded, only during final generation
 + sample route is loaded from file instead of generating it in code (also tracks are included)
++ annotations: text overlay refreshed automatically after every edit (1-1,5s delay is tolerable)
+  and default to not show (wrongly) estimated bubbles
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 

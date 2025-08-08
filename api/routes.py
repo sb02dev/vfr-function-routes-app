@@ -372,7 +372,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
                     await websocket.send_text(json.dumps({
                         "type": "annotations",
-                        "svg_overlay": svgrenderer.get_svg() if msg.get("with_svg", False) else '-',
+                        "svg_overlay": svgrenderer.get_svg(),
                         "annotations": [{
                                     "name": leg.name,
                                     "function_name": leg.function_name,
