@@ -26,6 +26,9 @@ rootpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 routes = APIRouter()
 
+global_requests_session = requests.Session()
+VFRFunctionRoute.download_map(global_requests_session, os.path.join(rootpath, 'data'))
+
 tilerenderers = {
     'low': TileRenderer("hungarymap",
                         os.path.join(rootpath, "data"),
@@ -175,7 +178,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     msg.get("name", "Untitled route"),
                     msg.get("speed", 90),
                     d,
-                    session = requests.Session(),
+                    session = global_requests_session,
                     workfolder=os.path.join(rootpath, "data"),
                     outfolder=os.path.join(rootpath, "output"),
                     tracksfolder=os.path.join(rootpath, "tracks")
@@ -187,7 +190,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype == 'load':
                 rte = VFRFunctionRoute.fromJSON(
                     msg.get('data'),
-                    session=requests.Session(),
+                    session=global_requests_session,
                     workfolder=os.path.join(rootpath, "data"),
                     outfolder=os.path.join(rootpath, "output"),
                     tracksfolder=os.path.join(rootpath, "tracks")
@@ -514,14 +517,13 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
 def default_route():
     import math
-    sess = requests.Session()
     rgen = VFRFunctionRoute(
         "LHFH--Lovasberény--Császár--Nyergesújfalu--LHFH",
         100,
         # datetime.datetime(2025, 6, 9, 7, 0, tzinfo=datetime.timezone.utc),
         datetime.datetime.now(datetime.timezone.utc) +
         datetime.timedelta(days=2),
-        session=sess,
+        session=global_requests_session,
         workfolder=os.path.join(rootpath, "data"),
         outfolder=os.path.join(rootpath, "output"),
         tracksfolder=os.path.join(rootpath, "data")

@@ -611,7 +611,7 @@ class VFRFunctionRoute:
             'top-left': VFRPoint(18.5, 47.5, VFRCoordSystem.LONLAT, self),
             'bottom-right': VFRPoint(19.5, 47.0, VFRCoordSystem.LONLAT, self)
         }
-        self.download_map()
+        self.pdf_destination = VFRFunctionRoute.download_map(self._session, self.workfolder)
         self.calc_extents()
         self.calc_transformations()
         
@@ -728,14 +728,16 @@ class VFRFunctionRoute:
         # TODO: obtain live data (from internet)
         self._state = VFRRouteState.FINALIZED
         
-        
-    def download_map(self):
+
+    @classmethod    
+    def download_map(cls, session, workfolder):
         """Downloads map as pdf from internet if not already exists as a file."""
-        self.pdf_destination = os.path.join(self.workfolder, type(self).PDF_FILE)
-        if not os.path.isfile(self.pdf_destination):
-            response = self._session.get(type(self).PDF_URL)
-            with open(self.pdf_destination, 'wb') as pdf_file:
+        pdf_destination = os.path.join(workfolder, cls.PDF_FILE)
+        if not os.path.isfile(pdf_destination):
+            response = session.get(cls.PDF_URL)
+            with open(pdf_destination, 'wb') as pdf_file:
                 pdf_file.write(response.content)
+        return pdf_destination
 
 
     def get_lowres_map_tilesetup(self) -> tuple[tuple[int, int], tuple[float, float], tuple[int, int]]:

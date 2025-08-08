@@ -49,6 +49,7 @@ v0.2
 + tile cache
   + server caches to disk and checks before creating
   + change to http get for tiles, frontend uses http cache for tiles
++ bugfix: map download needed to be put at an earlier stage
 
 
 v0.1:
