@@ -1,19 +1,18 @@
 v0.2
 - session management
+  - caching of states per session to disk on each modification
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
-  - caching of states per session to disk on each modification
 - progress indication while waiting for server
-- extend map drawing with logging
 - bugfix: map-info width and horizontal scrolling
 - bugfix: readonly mathedit does not show formula
-- mapedit: moving amount is not decreasing when scaled
+- mobile friendly (responsive + touch controls)
 - edit "function_range" on leg page
 - order constraint points by func_x automatically
-- save to cloud
 - annotations: more precise bubble estimation
 - annotations: bubbles can be moved with mouse
-- mobile friendly (responsive + touch controls)
+- save to cloud
+- extend map drawing with logging
 + landing page
 + memory optimizations for low-res map
   + separate data sending from image sending
@@ -51,6 +50,7 @@ v0.2
   + change to http get for tiles, frontend uses http cache for tiles
 + bugfix: map download needed to be put at an earlier stage
 + bugfix: api endpoint rewrote by angular to /frontend/api/..., changed to absolute url
++ mapedit: moving amount is not decreasing when scaled
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 

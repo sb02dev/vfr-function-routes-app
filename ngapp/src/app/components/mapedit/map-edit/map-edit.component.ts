@@ -209,11 +209,15 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 const dy = e.offsetY - this.panStart.y;
                 this.panStart = { x: e.offsetX, y: e.offsetY };
 
+                const canvas: HTMLCanvasElement = this.bgCanvasRef.nativeElement;
                 const [xmin, xmax] = this.xlim;
                 const [ymin, ymax] = this.ylim;
+                const xscale = canvas.width / (xmax - xmin);
+                const yscale = canvas.height / (ymax - ymin);
+                const scale = Math.min(xscale, yscale);
 
-                const deltaX = dx;
-                const deltaY = dy;
+                const deltaX = dx / scale;
+                const deltaY = dy / scale;
 
                 this.xlim = [xmin - deltaX, xmax - deltaX];
                 this.ylim = [ymin - deltaY, ymax - deltaY];
