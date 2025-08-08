@@ -52,6 +52,7 @@ v0.2
 + bugfix: api endpoint rewrote by angular to /frontend/api/..., changed to absolute url
 + mapedit: moving amount is not decreasing when scaled
 + annotations: during edit, no realtime data is downloaded, only during final generation
++ sample route is loaded from file instead of generating it in code (also tracks are included)
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 

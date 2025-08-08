@@ -1,0 +1,5333 @@
+{
+  "name": "LHFH--Lovasber\u00e9ny--Cs\u00e1sz\u00e1r--Nyerges\u00fajfalu--LHFH",
+  "speed": 100,
+  "dof": "2025-08-10T07:00:00+00:00",
+  "state": "FINALIZED",
+  "step1": {
+    "area_of_interest": {
+      "top-left": {
+        "x": 18.05268767493478,
+        "y": 47.770130324899284,
+        "coord_system": "LONLAT"
+      },
+      "bottom-right": {
+        "x": 19.021069644306213,
+        "y": 47.28705538442129,
+        "coord_system": "LONLAT"
+      }
+    }
+  },
+  "step2": {
+    "waypoints": [
+      [
+        "LHFH",
+        {
+          "x": 18.912424867046774,
+          "y": 47.48950030173632,
+          "coord_system": "LONLAT"
+        }
+      ],
+      [
+        "Lovasber\u00e9ny",
+        {
+          "x": 18.55314689455907,
+          "y": 47.31145066437747,
+          "coord_system": "LONLAT"
+        }
+      ],
+      [
+        "Cs\u00e1sz\u00e1r",
+        {
+          "x": 18.13993451767051,
+          "y": 47.50100085714328,
+          "coord_system": "LONLAT"
+        }
+      ]
+    ]
+  },
+  "step3": {
+    "legs": [
+      {
+        "name": "LHFH -- Lovasber\u00e9ny",
+        "function_name": "\\sqrt[3]{{x}}",
+        "function_range": "$x=0$ at Lovasber\u00e9ny, $x=1.5$ at LHFH",
+        "points": [
+          {
+            "p": {
+              "x": 18.912424867046774,
+              "y": 47.48950030173632,
+              "coord_system": "LONLAT"
+            },
+            "x": 1.5
+          },
+          {
+            "p": {
+              "x": 18.55314689455907,
+              "y": 47.31145066437747,
+              "coord_system": "LONLAT"
+            },
+            "x": 0
+          }
+        ]
+      },
+      {
+        "name": "Lovasber\u00e9ny -- Cs\u00e1sz\u00e1r",
+        "function_name": "\\frac{1}{e^x}",
+        "function_range": "$x=\\pi$ at Lovasber\u00e9ny, $x=-\\frac{\\pi}{2}$ at Cs\u00e1sz\u00e1r",
+        "points": [
+          {
+            "p": {
+              "x": 18.55314689455907,
+              "y": 47.31145066437747,
+              "coord_system": "LONLAT"
+            },
+            "x": 3.141592653589793
+          },
+          {
+            "p": {
+              "x": 18.13993451767051,
+              "y": 47.50100085714328,
+              "coord_system": "LONLAT"
+            },
+            "x": -1.5707963267948966
+          }
+        ]
+      },
+      {
+        "name": "Cs\u00e1sz\u00e1r -- LHFH",
+        "function_name": "\\sin\\left(x\\right)",
+        "function_range": "$x=0$ at Cs\u00e1sz\u00e1r, $x=\\pi$ at LHFH, $x=\\frac{\\pi}{2}$ at Nyerges\u00fajfalu",
+        "points": [
+          {
+            "p": {
+              "x": 18.13993451767051,
+              "y": 47.50100085714328,
+              "coord_system": "LONLAT"
+            },
+            "x": 0
+          },
+          {
+            "p": {
+              "x": 18.54614123145077,
+              "y": 47.7612944935143,
+              "coord_system": "LONLAT"
+            },
+            "x": 1.5707963267948966
+          },
+          {
+            "p": {
+              "x": 18.912424867046774,
+              "y": 47.48950030173632,
+              "coord_system": "LONLAT"
+            },
+            "x": 3.141592653589793
+          }
+        ]
+      }
+    ]
+  },
+  "step4": {
+    "annotations": [
+      [
+        {
+          "name": "START",
+          "x": 1.5,
+          "ofs": [
+            -120,
+            10
+          ]
+        },
+        {
+          "name": "Etyek",
+          "x": 0.8,
+          "ofs": [
+            20,
+            -25
+          ]
+        },
+        {
+          "name": "Alcs\u00fatdoboz",
+          "x": 0.3,
+          "ofs": [
+            25,
+            -45
+          ]
+        },
+        {
+          "name": "V\u00e9rtesacsa",
+          "x": 0.12,
+          "ofs": [
+            35,
+            -75
+          ]
+        },
+        {
+          "name": "Lovasber\u00e9ny",
+          "x": 0,
+          "ofs": [
+            -90,
+            25
+          ]
+        }
+      ],
+      [
+        {
+          "name": "Lovasber\u00e9ny",
+          "x": 3.141592653589793,
+          "ofs": [
+            -30,
+            -35
+          ]
+        },
+        {
+          "name": "Z\u00e1molyi v\u00edzt",
+          "x": 2.141592653589793,
+          "ofs": [
+            -80,
+            -30
+          ]
+        },
+        {
+          "name": "Csber/Malm\u00e1s",
+          "x": 0.14159265358979312,
+          "ofs": [
+            -100,
+            -40
+          ]
+        },
+        {
+          "name": "M\u00f3r",
+          "x": -0.7584073464102068,
+          "ofs": [
+            -100,
+            -20
+          ]
+        },
+        {
+          "name": "Cs\u00e1sz\u00e1r",
+          "x": -1.5707963267948966,
+          "ofs": [
+            -90,
+            -40
+          ]
+        }
+      ],
+      [
+        {
+          "name": "Cs\u00e1sz\u00e1r",
+          "x": 0,
+          "ofs": [
+            -80,
+            40
+          ]
+        },
+        {
+          "name": "Sz\u00e1kszend",
+          "x": 0.15,
+          "ofs": [
+            10,
+            0
+          ]
+        },
+        {
+          "name": "M1",
+          "x": 0.5,
+          "ofs": [
+            -110,
+            20
+          ]
+        },
+        {
+          "name": "Tata",
+          "x": 0.7,
+          "ofs": [
+            -60,
+            40
+          ]
+        },
+        {
+          "name": "Dsztmikl",
+          "x": 0.93,
+          "ofs": [
+            0,
+            -80
+          ]
+        },
+        {
+          "name": "L\u00e1batlan",
+          "x": 1.35,
+          "ofs": [
+            -40,
+            30
+          ]
+        },
+        {
+          "name": "Nyerges\u00fajfalu",
+          "x": 1.6,
+          "ofs": [
+            20,
+            30
+          ]
+        },
+        {
+          "name": "Csolnok",
+          "x": 2.25,
+          "ofs": [
+            -110,
+            -20
+          ]
+        },
+        {
+          "name": "Tinnye",
+          "x": 2.57,
+          "ofs": [
+            -25,
+            60
+          ]
+        },
+        {
+          "name": "Telki",
+          "x": 2.9,
+          "ofs": [
+            -33,
+            80
+          ]
+        },
+        {
+          "name": "END",
+          "x": 3.141592653589793,
+          "ofs": [
+            -140,
+            60
+          ]
+        }
+      ]
+    ]
+  },
+  "step5": {
+    "tracks": [
+      {
+        "name": "LHBS Buda\u00f6rs - M\u00f3r 202402280729.gpx",
+        "color": "#9013fe",
+        "points": [
+          {
+            "x": 18.98558,
+            "y": 47.45074,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.98558,
+            "y": 47.45074,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.98517,
+            "y": 47.45076,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.98436,
+            "y": 47.45081,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.98405,
+            "y": 47.45083,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.98299,
+            "y": 47.45091,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9826,
+            "y": 47.45095,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.98006,
+            "y": 47.45119,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.97784,
+            "y": 47.45143,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.97784,
+            "y": 47.45143,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.97558,
+            "y": 47.45164,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.97558,
+            "y": 47.45164,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9737,
+            "y": 47.45182,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.97322,
+            "y": 47.45187,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.97078,
+            "y": 47.45216,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.96931,
+            "y": 47.45235,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.96832,
+            "y": 47.45249,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.96635,
+            "y": 47.45279,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.96635,
+            "y": 47.45279,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.96536,
+            "y": 47.45297,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9653,
+            "y": 47.45298,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9653,
+            "y": 47.45298,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.96375,
+            "y": 47.45329,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.96182,
+            "y": 47.45369,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.96182,
+            "y": 47.45369,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.96132,
+            "y": 47.45378,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.95886,
+            "y": 47.4541,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.95813,
+            "y": 47.45417,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.95813,
+            "y": 47.45417,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.95686,
+            "y": 47.45424,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.95436,
+            "y": 47.45428,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.95436,
+            "y": 47.45428,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.95192,
+            "y": 47.45445,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.95046,
+            "y": 47.45463,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.94946,
+            "y": 47.45477,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.94746,
+            "y": 47.45508,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.94647,
+            "y": 47.45526,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.94597,
+            "y": 47.45535,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.94549,
+            "y": 47.45545,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.94451,
+            "y": 47.45568,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9426,
+            "y": 47.45617,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.94166,
+            "y": 47.45644,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.94166,
+            "y": 47.45644,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93989,
+            "y": 47.45703,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93945,
+            "y": 47.45719,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93819,
+            "y": 47.45772,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93778,
+            "y": 47.45792,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93737,
+            "y": 47.45812,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93616,
+            "y": 47.4588,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93537,
+            "y": 47.4593,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93537,
+            "y": 47.4593,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93459,
+            "y": 47.45982,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93346,
+            "y": 47.46064,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93211,
+            "y": 47.46185,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93211,
+            "y": 47.46185,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9318,
+            "y": 47.46217,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.93044,
+            "y": 47.46382,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92969,
+            "y": 47.46486,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92919,
+            "y": 47.46556,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92795,
+            "y": 47.46728,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92769,
+            "y": 47.46762,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92665,
+            "y": 47.46902,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92613,
+            "y": 47.46975,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92534,
+            "y": 47.47086,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92456,
+            "y": 47.47198,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9243,
+            "y": 47.47236,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92405,
+            "y": 47.47273,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92405,
+            "y": 47.47273,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9228,
+            "y": 47.47464,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92181,
+            "y": 47.47616,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92156,
+            "y": 47.47653,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92035,
+            "y": 47.47841,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92035,
+            "y": 47.47841,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91964,
+            "y": 47.47956,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91918,
+            "y": 47.48032,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91825,
+            "y": 47.48182,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91802,
+            "y": 47.48218,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91688,
+            "y": 47.48401,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91616,
+            "y": 47.48511,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91563,
+            "y": 47.48582,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91563,
+            "y": 47.48582,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91423,
+            "y": 47.48709,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91423,
+            "y": 47.48709,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91382,
+            "y": 47.48736,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91338,
+            "y": 47.48762,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91338,
+            "y": 47.48762,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91144,
+            "y": 47.48843,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91144,
+            "y": 47.48843,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90981,
+            "y": 47.48878,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90925,
+            "y": 47.48884,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9081,
+            "y": 47.48888,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9081,
+            "y": 47.48888,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9052,
+            "y": 47.48864,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90287,
+            "y": 47.48833,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90229,
+            "y": 47.48825,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.89931,
+            "y": 47.48785,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.89634,
+            "y": 47.48744,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.89634,
+            "y": 47.48744,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.89516,
+            "y": 47.48726,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.8934,
+            "y": 47.48696,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.89044,
+            "y": 47.4864,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88923,
+            "y": 47.48616,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88799,
+            "y": 47.48593,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88737,
+            "y": 47.48581,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88419,
+            "y": 47.48527,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88094,
+            "y": 47.48468,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88094,
+            "y": 47.48468,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87759,
+            "y": 47.48414,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87421,
+            "y": 47.4838,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87352,
+            "y": 47.48376,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87081,
+            "y": 47.48366,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.86744,
+            "y": 47.48362,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.86481,
+            "y": 47.48362,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.86416,
+            "y": 47.48363,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.86088,
+            "y": 47.48364,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.85762,
+            "y": 47.48369,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.85437,
+            "y": 47.48376,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.85113,
+            "y": 47.48383,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84788,
+            "y": 47.48393,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84461,
+            "y": 47.48405,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84134,
+            "y": 47.4842,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84002,
+            "y": 47.48426,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.83801,
+            "y": 47.48437,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.83801,
+            "y": 47.48437,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.83467,
+            "y": 47.48463,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.83131,
+            "y": 47.48491,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.82796,
+            "y": 47.48524,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.82465,
+            "y": 47.48556,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.82132,
+            "y": 47.48561,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.82132,
+            "y": 47.48561,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.81804,
+            "y": 47.48536,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.81482,
+            "y": 47.48495,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.81482,
+            "y": 47.48495,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.81156,
+            "y": 47.48454,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.80829,
+            "y": 47.48414,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.805,
+            "y": 47.48373,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.8017,
+            "y": 47.48326,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.79844,
+            "y": 47.48277,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.79519,
+            "y": 47.48229,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.79196,
+            "y": 47.48183,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.79066,
+            "y": 47.48165,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.78871,
+            "y": 47.48138,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.78543,
+            "y": 47.48096,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.78214,
+            "y": 47.48059,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.77886,
+            "y": 47.48025,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.77559,
+            "y": 47.47987,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.77365,
+            "y": 47.47958,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.77236,
+            "y": 47.47935,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.76917,
+            "y": 47.47872,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.76602,
+            "y": 47.478,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.76602,
+            "y": 47.478,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.76292,
+            "y": 47.47722,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.7598,
+            "y": 47.47644,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.75668,
+            "y": 47.47566,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.75358,
+            "y": 47.47483,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.75053,
+            "y": 47.47394,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74751,
+            "y": 47.47303,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.7463,
+            "y": 47.47266,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74448,
+            "y": 47.47211,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74266,
+            "y": 47.47154,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74145,
+            "y": 47.47117,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.73903,
+            "y": 47.4704,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.73544,
+            "y": 47.46923,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.73307,
+            "y": 47.46841,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72956,
+            "y": 47.46712,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72664,
+            "y": 47.46603,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72373,
+            "y": 47.46493,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72085,
+            "y": 47.46381,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72085,
+            "y": 47.46381,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.718,
+            "y": 47.46268,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.71512,
+            "y": 47.46158,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.71223,
+            "y": 47.46049,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.70992,
+            "y": 47.45961,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.70642,
+            "y": 47.45827,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.7035,
+            "y": 47.45719,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.70055,
+            "y": 47.45616,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.69875,
+            "y": 47.45557,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.69755,
+            "y": 47.45518,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.69393,
+            "y": 47.45404,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.69091,
+            "y": 47.45311,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.68789,
+            "y": 47.45218,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.68487,
+            "y": 47.45125,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.68244,
+            "y": 47.4505,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67881,
+            "y": 47.44936,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67643,
+            "y": 47.44855,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67586,
+            "y": 47.44834,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67297,
+            "y": 47.44724,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67071,
+            "y": 47.4463,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66959,
+            "y": 47.44582,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66792,
+            "y": 47.44507,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66738,
+            "y": 47.44482,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66466,
+            "y": 47.44351,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66201,
+            "y": 47.44215,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6594,
+            "y": 47.44073,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65687,
+            "y": 47.43928,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65535,
+            "y": 47.4384,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65435,
+            "y": 47.4378,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65185,
+            "y": 47.43631,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65135,
+            "y": 47.43601,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.64935,
+            "y": 47.4348,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.64684,
+            "y": 47.43327,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6443,
+            "y": 47.43177,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.64172,
+            "y": 47.43032,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63912,
+            "y": 47.42888,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63653,
+            "y": 47.42745,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63653,
+            "y": 47.42745,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63395,
+            "y": 47.42603,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63136,
+            "y": 47.42461,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.62877,
+            "y": 47.42318,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.62623,
+            "y": 47.42171,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.62374,
+            "y": 47.4202,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.62131,
+            "y": 47.41866,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.62083,
+            "y": 47.41835,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61895,
+            "y": 47.41707,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61803,
+            "y": 47.41642,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61667,
+            "y": 47.41543,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61444,
+            "y": 47.41374,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61224,
+            "y": 47.41204,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61007,
+            "y": 47.41032,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60796,
+            "y": 47.40859,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60628,
+            "y": 47.40719,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60375,
+            "y": 47.40508,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60207,
+            "y": 47.40365,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60166,
+            "y": 47.40329,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.5996,
+            "y": 47.4015,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.59756,
+            "y": 47.39971,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.59555,
+            "y": 47.3979,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.59355,
+            "y": 47.39609,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.59156,
+            "y": 47.39426,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.59156,
+            "y": 47.39426,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.58962,
+            "y": 47.39241,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.58775,
+            "y": 47.39053,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.58739,
+            "y": 47.39016,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.58597,
+            "y": 47.38863,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.58424,
+            "y": 47.38669,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.5826,
+            "y": 47.38471,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.5817,
+            "y": 47.38349,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.58113,
+            "y": 47.38266,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.5798,
+            "y": 47.38058,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57839,
+            "y": 47.37852,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57694,
+            "y": 47.37647,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57606,
+            "y": 47.37523,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57547,
+            "y": 47.37441,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57432,
+            "y": 47.37277,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57261,
+            "y": 47.3703,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57117,
+            "y": 47.36824,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56972,
+            "y": 47.36618,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56819,
+            "y": 47.36412,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.5666,
+            "y": 47.36204,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56505,
+            "y": 47.35999,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56474,
+            "y": 47.35958,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56353,
+            "y": 47.35795,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56234,
+            "y": 47.35632,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56057,
+            "y": 47.35387,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55915,
+            "y": 47.35182,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55805,
+            "y": 47.35017,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55623,
+            "y": 47.34722,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55501,
+            "y": 47.3451,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55477,
+            "y": 47.34467,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55384,
+            "y": 47.34297,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55284,
+            "y": 47.34081,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55266,
+            "y": 47.34036,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55202,
+            "y": 47.3386,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55136,
+            "y": 47.33636,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55079,
+            "y": 47.3341,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55027,
+            "y": 47.33181,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54986,
+            "y": 47.32953,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54955,
+            "y": 47.32818,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54929,
+            "y": 47.32728,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54832,
+            "y": 47.3251,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54781,
+            "y": 47.32425,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54692,
+            "y": 47.32302,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.5455,
+            "y": 47.32146,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54511,
+            "y": 47.32109,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54293,
+            "y": 47.31938,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54246,
+            "y": 47.31907,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54043,
+            "y": 47.3179,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53879,
+            "y": 47.31711,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53764,
+            "y": 47.31663,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53464,
+            "y": 47.31557,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53341,
+            "y": 47.31522,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53341,
+            "y": 47.31522,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53153,
+            "y": 47.31473,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.52838,
+            "y": 47.31398,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.52524,
+            "y": 47.31324,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.52212,
+            "y": 47.31251,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.51899,
+            "y": 47.31176,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.51586,
+            "y": 47.311,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.51271,
+            "y": 47.31023,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.5102,
+            "y": 47.30963,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.50957,
+            "y": 47.30948,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.50644,
+            "y": 47.30873,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.50334,
+            "y": 47.30797,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.50025,
+            "y": 47.30719,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.49715,
+            "y": 47.30643,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.49401,
+            "y": 47.30574,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4908,
+            "y": 47.30512,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.48756,
+            "y": 47.30459,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.48625,
+            "y": 47.3044,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4843,
+            "y": 47.30412,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.48365,
+            "y": 47.30404,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.48104,
+            "y": 47.3037,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.47779,
+            "y": 47.3033,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.47454,
+            "y": 47.30293,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.47128,
+            "y": 47.30256,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.46801,
+            "y": 47.30218,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.46475,
+            "y": 47.30179,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.46151,
+            "y": 47.30139,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.46151,
+            "y": 47.30139,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.45828,
+            "y": 47.30097,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.45505,
+            "y": 47.30054,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.45182,
+            "y": 47.30007,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4486,
+            "y": 47.29953,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4454,
+            "y": 47.29893,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.44222,
+            "y": 47.29834,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.439,
+            "y": 47.29786,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.43705,
+            "y": 47.29762,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.43576,
+            "y": 47.2975,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.43251,
+            "y": 47.29722,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.42925,
+            "y": 47.297,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.42595,
+            "y": 47.29681,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.42262,
+            "y": 47.29662,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4193,
+            "y": 47.2964,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.41604,
+            "y": 47.29612,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4128,
+            "y": 47.29574,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.41215,
+            "y": 47.29565,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.40957,
+            "y": 47.29528,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4063,
+            "y": 47.29477,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.40304,
+            "y": 47.29427,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.39981,
+            "y": 47.2938,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.39656,
+            "y": 47.29343,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.39394,
+            "y": 47.29318,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.38998,
+            "y": 47.29291,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.38864,
+            "y": 47.29287,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3873,
+            "y": 47.29287,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.38664,
+            "y": 47.29288,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.38332,
+            "y": 47.29303,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.38132,
+            "y": 47.29321,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.38001,
+            "y": 47.29337,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.37675,
+            "y": 47.29386,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.37356,
+            "y": 47.29449,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.37167,
+            "y": 47.29493,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3698,
+            "y": 47.2954,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36672,
+            "y": 47.29623,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36369,
+            "y": 47.29714,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36308,
+            "y": 47.29733,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36069,
+            "y": 47.29812,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.35775,
+            "y": 47.29917,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3566,
+            "y": 47.29961,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.35489,
+            "y": 47.3003,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.35264,
+            "y": 47.30126,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34931,
+            "y": 47.30273,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34651,
+            "y": 47.30395,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34373,
+            "y": 47.30519,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34206,
+            "y": 47.30593,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34095,
+            "y": 47.30643,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.33815,
+            "y": 47.30764,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.33532,
+            "y": 47.30882,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.33249,
+            "y": 47.30997,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.32965,
+            "y": 47.31113,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.32685,
+            "y": 47.31233,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.32407,
+            "y": 47.31358,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3213,
+            "y": 47.31484,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3213,
+            "y": 47.31484,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31855,
+            "y": 47.31612,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31582,
+            "y": 47.31742,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31315,
+            "y": 47.31876,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31053,
+            "y": 47.32014,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3095,
+            "y": 47.32072,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.30799,
+            "y": 47.32161,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.30601,
+            "y": 47.32283,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.30361,
+            "y": 47.32441,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.30219,
+            "y": 47.32537,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3008,
+            "y": 47.32634,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.29851,
+            "y": 47.32797,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.29625,
+            "y": 47.32962,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.29403,
+            "y": 47.3313,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.29228,
+            "y": 47.33268,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.28968,
+            "y": 47.33478,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.28794,
+            "y": 47.33617,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.28575,
+            "y": 47.33789,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.28531,
+            "y": 47.33822,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.2831,
+            "y": 47.3399,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.28086,
+            "y": 47.34157,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.2786,
+            "y": 47.34324,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.27635,
+            "y": 47.34492,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.27411,
+            "y": 47.34662,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.27188,
+            "y": 47.3483,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.26962,
+            "y": 47.34995,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.2687,
+            "y": 47.35061,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.2673,
+            "y": 47.35157,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.26495,
+            "y": 47.35319,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.26257,
+            "y": 47.35484,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.26069,
+            "y": 47.35618,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.25787,
+            "y": 47.35823,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.25555,
+            "y": 47.35993,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.25324,
+            "y": 47.36163,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.25141,
+            "y": 47.363,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.25095,
+            "y": 47.36334,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.24871,
+            "y": 47.36503,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.24648,
+            "y": 47.3667,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.24425,
+            "y": 47.36839,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.24205,
+            "y": 47.37011,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23985,
+            "y": 47.37185,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23766,
+            "y": 47.37357,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23593,
+            "y": 47.37496,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23551,
+            "y": 47.37531,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23509,
+            "y": 47.37567,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23509,
+            "y": 47.37567,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23344,
+            "y": 47.3771,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23148,
+            "y": 47.37891,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.22958,
+            "y": 47.38073,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.22768,
+            "y": 47.38258,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.22576,
+            "y": 47.38448,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.22383,
+            "y": 47.3864,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.2218,
+            "y": 47.38831,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.22053,
+            "y": 47.38943,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21966,
+            "y": 47.39018,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21753,
+            "y": 47.39205,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21548,
+            "y": 47.39397,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21361,
+            "y": 47.39601,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21291,
+            "y": 47.39685,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21291,
+            "y": 47.39685,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21187,
+            "y": 47.39813,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21154,
+            "y": 47.39854,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21022,
+            "y": 47.40025,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20868,
+            "y": 47.4024,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20779,
+            "y": 47.40371,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20722,
+            "y": 47.40457,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20584,
+            "y": 47.40672,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20538,
+            "y": 47.40746,
+            "coord_system": "LONLAT"
+          }
+        ]
+      },
+      {
+        "name": "Cs\u00e1sz\u00e1r - LHFH Farkashegy 202402280808.gpx",
+        "color": "#4a90e2",
+        "points": [
+          {
+            "x": 18.17122,
+            "y": 47.46672,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17122,
+            "y": 47.46672,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17122,
+            "y": 47.46672,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17078,
+            "y": 47.46745,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16951,
+            "y": 47.46953,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16823,
+            "y": 47.47159,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16692,
+            "y": 47.47366,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16555,
+            "y": 47.47577,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16417,
+            "y": 47.47788,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16276,
+            "y": 47.48001,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16134,
+            "y": 47.48214,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16134,
+            "y": 47.48214,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15996,
+            "y": 47.48426,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15861,
+            "y": 47.48638,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.1573,
+            "y": 47.48849,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15605,
+            "y": 47.49061,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15505,
+            "y": 47.49278,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15473,
+            "y": 47.49367,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15433,
+            "y": 47.49501,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15384,
+            "y": 47.49727,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15373,
+            "y": 47.49818,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15369,
+            "y": 47.49864,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15366,
+            "y": 47.49955,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15366,
+            "y": 47.49955,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15385,
+            "y": 47.50182,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15439,
+            "y": 47.5041,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15452,
+            "y": 47.50455,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15508,
+            "y": 47.50635,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15589,
+            "y": 47.50859,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15677,
+            "y": 47.51082,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15772,
+            "y": 47.51305,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15855,
+            "y": 47.51483,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.15875,
+            "y": 47.51528,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.1598,
+            "y": 47.51752,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16082,
+            "y": 47.51976,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.1618,
+            "y": 47.52199,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16273,
+            "y": 47.52419,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16367,
+            "y": 47.52641,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16465,
+            "y": 47.52864,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16545,
+            "y": 47.53042,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16585,
+            "y": 47.53131,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16663,
+            "y": 47.5331,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16757,
+            "y": 47.53532,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16849,
+            "y": 47.53754,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.16941,
+            "y": 47.53976,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17033,
+            "y": 47.54198,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17124,
+            "y": 47.54421,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17194,
+            "y": 47.54599,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17261,
+            "y": 47.54777,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17293,
+            "y": 47.54867,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17369,
+            "y": 47.55092,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17441,
+            "y": 47.55318,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17514,
+            "y": 47.55548,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17589,
+            "y": 47.55776,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17663,
+            "y": 47.56,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17738,
+            "y": 47.56222,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17816,
+            "y": 47.56444,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17816,
+            "y": 47.56444,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17898,
+            "y": 47.56668,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.17984,
+            "y": 47.56893,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18074,
+            "y": 47.57117,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18167,
+            "y": 47.57339,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18262,
+            "y": 47.57559,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18357,
+            "y": 47.5778,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18443,
+            "y": 47.58002,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18475,
+            "y": 47.58093,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18521,
+            "y": 47.58229,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18611,
+            "y": 47.58503,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18686,
+            "y": 47.58734,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18759,
+            "y": 47.58966,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18826,
+            "y": 47.59198,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18895,
+            "y": 47.59426,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18909,
+            "y": 47.59471,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18966,
+            "y": 47.59655,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.18995,
+            "y": 47.59748,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19041,
+            "y": 47.59888,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19123,
+            "y": 47.60117,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19206,
+            "y": 47.6034,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19292,
+            "y": 47.6056,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19384,
+            "y": 47.60781,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19479,
+            "y": 47.61004,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19572,
+            "y": 47.61228,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19628,
+            "y": 47.6136,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19669,
+            "y": 47.6145,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19778,
+            "y": 47.61669,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19897,
+            "y": 47.61886,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.19971,
+            "y": 47.62015,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20021,
+            "y": 47.62101,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20149,
+            "y": 47.62315,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20278,
+            "y": 47.62528,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20405,
+            "y": 47.62743,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20507,
+            "y": 47.62915,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20532,
+            "y": 47.62958,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20658,
+            "y": 47.63172,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20791,
+            "y": 47.63384,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.20945,
+            "y": 47.63589,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21083,
+            "y": 47.63747,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21119,
+            "y": 47.63786,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21317,
+            "y": 47.63973,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.2145,
+            "y": 47.6408,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21544,
+            "y": 47.64148,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21793,
+            "y": 47.64313,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.21845,
+            "y": 47.64345,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.22005,
+            "y": 47.64436,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.22005,
+            "y": 47.64436,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.22346,
+            "y": 47.64597,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.22527,
+            "y": 47.64665,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.2265,
+            "y": 47.64706,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.2297,
+            "y": 47.64795,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23169,
+            "y": 47.64839,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23302,
+            "y": 47.64863,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23576,
+            "y": 47.64901,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23783,
+            "y": 47.6492,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.23993,
+            "y": 47.64931,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.24203,
+            "y": 47.64932,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.24344,
+            "y": 47.6493,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.247,
+            "y": 47.64924,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.25054,
+            "y": 47.64913,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.25334,
+            "y": 47.649,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.25542,
+            "y": 47.64888,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.25746,
+            "y": 47.64875,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.26086,
+            "y": 47.64849,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.26498,
+            "y": 47.64813,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.26705,
+            "y": 47.64794,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.26843,
+            "y": 47.64781,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.27189,
+            "y": 47.64747,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.27536,
+            "y": 47.64712,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.27888,
+            "y": 47.64672,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.2796,
+            "y": 47.64663,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.28251,
+            "y": 47.64623,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.28612,
+            "y": 47.64567,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.28966,
+            "y": 47.64507,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.29179,
+            "y": 47.64479,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.29321,
+            "y": 47.64467,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.29671,
+            "y": 47.64456,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.29808,
+            "y": 47.64459,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.29945,
+            "y": 47.64467,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.30346,
+            "y": 47.64515,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.30346,
+            "y": 47.64515,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.30673,
+            "y": 47.64584,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.30864,
+            "y": 47.64638,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.30988,
+            "y": 47.64678,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31289,
+            "y": 47.64792,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31462,
+            "y": 47.64869,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31572,
+            "y": 47.64925,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31572,
+            "y": 47.64925,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31829,
+            "y": 47.65078,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.31877,
+            "y": 47.65112,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.32063,
+            "y": 47.65249,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.32291,
+            "y": 47.65424,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.32522,
+            "y": 47.65599,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.32752,
+            "y": 47.65774,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.32984,
+            "y": 47.65949,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.33212,
+            "y": 47.66124,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.33257,
+            "y": 47.6616,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.33436,
+            "y": 47.66302,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3366,
+            "y": 47.66479,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.33886,
+            "y": 47.66653,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34119,
+            "y": 47.66824,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34357,
+            "y": 47.66992,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34594,
+            "y": 47.67162,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34642,
+            "y": 47.67196,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34827,
+            "y": 47.67334,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.34919,
+            "y": 47.67403,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.35058,
+            "y": 47.67507,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.35294,
+            "y": 47.67679,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3553,
+            "y": 47.67852,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.35766,
+            "y": 47.68021,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36004,
+            "y": 47.68186,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36245,
+            "y": 47.68349,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36484,
+            "y": 47.68515,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36628,
+            "y": 47.68616,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36722,
+            "y": 47.68684,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.36956,
+            "y": 47.68855,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3719,
+            "y": 47.69025,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3743,
+            "y": 47.69192,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.37675,
+            "y": 47.69352,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3792,
+            "y": 47.69508,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.38166,
+            "y": 47.69666,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3841,
+            "y": 47.69828,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3841,
+            "y": 47.69828,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3866,
+            "y": 47.69989,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.38917,
+            "y": 47.70148,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3918,
+            "y": 47.70304,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3945,
+            "y": 47.70454,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3972,
+            "y": 47.70601,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.3999,
+            "y": 47.70747,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.40257,
+            "y": 47.70894,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.40311,
+            "y": 47.70923,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.40525,
+            "y": 47.71039,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.40796,
+            "y": 47.71182,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.40961,
+            "y": 47.71266,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.41072,
+            "y": 47.71323,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.41352,
+            "y": 47.71463,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.41632,
+            "y": 47.71603,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.41913,
+            "y": 47.71744,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.42197,
+            "y": 47.71883,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4231,
+            "y": 47.71936,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.42482,
+            "y": 47.72017,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.42773,
+            "y": 47.7215,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.43068,
+            "y": 47.72282,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.43362,
+            "y": 47.72413,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.43658,
+            "y": 47.72544,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.43955,
+            "y": 47.72674,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.44252,
+            "y": 47.72802,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4443,
+            "y": 47.72878,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4455,
+            "y": 47.7293,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.44847,
+            "y": 47.73057,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.4514,
+            "y": 47.73182,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.45427,
+            "y": 47.73308,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.45709,
+            "y": 47.73437,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.45821,
+            "y": 47.7349,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.45989,
+            "y": 47.73569,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.46275,
+            "y": 47.737,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.46507,
+            "y": 47.73803,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.46566,
+            "y": 47.73829,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.46854,
+            "y": 47.7396,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.47137,
+            "y": 47.74097,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.47423,
+            "y": 47.74233,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.47714,
+            "y": 47.74368,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.48009,
+            "y": 47.74503,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.48318,
+            "y": 47.74625,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.48632,
+            "y": 47.7474,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.48632,
+            "y": 47.7474,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.48877,
+            "y": 47.74833,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.49233,
+            "y": 47.74977,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.49527,
+            "y": 47.75096,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.49886,
+            "y": 47.7523,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.50187,
+            "y": 47.75338,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.50249,
+            "y": 47.75359,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.50497,
+            "y": 47.75437,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.50821,
+            "y": 47.75523,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.50821,
+            "y": 47.75523,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.51146,
+            "y": 47.75616,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.51471,
+            "y": 47.75713,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.51799,
+            "y": 47.75799,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.52131,
+            "y": 47.75877,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.52399,
+            "y": 47.75934,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.52466,
+            "y": 47.75947,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.52804,
+            "y": 47.76008,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53141,
+            "y": 47.76066,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53208,
+            "y": 47.76077,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53476,
+            "y": 47.76119,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.53812,
+            "y": 47.76167,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54081,
+            "y": 47.76204,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54487,
+            "y": 47.76258,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54824,
+            "y": 47.76293,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.54824,
+            "y": 47.76293,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55166,
+            "y": 47.76307,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55508,
+            "y": 47.763,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55508,
+            "y": 47.763,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55715,
+            "y": 47.76287,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.55854,
+            "y": 47.76276,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.562,
+            "y": 47.76242,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56475,
+            "y": 47.76202,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56542,
+            "y": 47.7619,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.56882,
+            "y": 47.76115,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57213,
+            "y": 47.76025,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57407,
+            "y": 47.75965,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57533,
+            "y": 47.75924,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.57849,
+            "y": 47.75816,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.58106,
+            "y": 47.75718,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.5817,
+            "y": 47.75693,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.58484,
+            "y": 47.7556,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.58793,
+            "y": 47.75424,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.591,
+            "y": 47.75289,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.59406,
+            "y": 47.75152,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.59713,
+            "y": 47.75012,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.59713,
+            "y": 47.75012,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60023,
+            "y": 47.74871,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60084,
+            "y": 47.74842,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60206,
+            "y": 47.74783,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60325,
+            "y": 47.74722,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60606,
+            "y": 47.74564,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6071,
+            "y": 47.74499,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60812,
+            "y": 47.74432,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.60861,
+            "y": 47.74398,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6109,
+            "y": 47.74225,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61304,
+            "y": 47.74047,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6152,
+            "y": 47.7387,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61745,
+            "y": 47.73695,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61928,
+            "y": 47.73556,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.61973,
+            "y": 47.73522,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.62206,
+            "y": 47.73349,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.62437,
+            "y": 47.73178,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.62664,
+            "y": 47.73005,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.62888,
+            "y": 47.7283,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63103,
+            "y": 47.72652,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63317,
+            "y": 47.72472,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63537,
+            "y": 47.72292,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63537,
+            "y": 47.72292,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63761,
+            "y": 47.72115,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63936,
+            "y": 47.71971,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.63936,
+            "y": 47.71971,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.64181,
+            "y": 47.71747,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.64381,
+            "y": 47.71562,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6458,
+            "y": 47.71377,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.64779,
+            "y": 47.71193,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.64977,
+            "y": 47.71008,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65056,
+            "y": 47.70935,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65175,
+            "y": 47.70824,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65331,
+            "y": 47.70674,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65565,
+            "y": 47.70447,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65763,
+            "y": 47.70258,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.65962,
+            "y": 47.70069,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66164,
+            "y": 47.69878,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66372,
+            "y": 47.69691,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66498,
+            "y": 47.69579,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66582,
+            "y": 47.69504,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6679,
+            "y": 47.69314,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.66999,
+            "y": 47.69124,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67203,
+            "y": 47.68931,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67203,
+            "y": 47.68931,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67393,
+            "y": 47.68731,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6757,
+            "y": 47.68524,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6779,
+            "y": 47.68283,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67913,
+            "y": 47.68169,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.67998,
+            "y": 47.68097,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6822,
+            "y": 47.6792,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.68449,
+            "y": 47.67746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.68686,
+            "y": 47.67573,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.68686,
+            "y": 47.67573,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.68934,
+            "y": 47.67401,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.69193,
+            "y": 47.67236,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.69456,
+            "y": 47.67079,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.6967,
+            "y": 47.6696,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.69722,
+            "y": 47.6693,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.69971,
+            "y": 47.66776,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.70207,
+            "y": 47.66615,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.70433,
+            "y": 47.66449,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.70653,
+            "y": 47.66283,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.70877,
+            "y": 47.66116,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.71108,
+            "y": 47.65944,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.7134,
+            "y": 47.65765,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.71387,
+            "y": 47.65728,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.71571,
+            "y": 47.6558,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.71795,
+            "y": 47.65395,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72018,
+            "y": 47.65212,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72242,
+            "y": 47.65031,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72465,
+            "y": 47.64849,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72686,
+            "y": 47.64667,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72908,
+            "y": 47.64484,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.72996,
+            "y": 47.64413,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.7313,
+            "y": 47.64307,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.73355,
+            "y": 47.64138,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.73584,
+            "y": 47.6397,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.73819,
+            "y": 47.63799,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74065,
+            "y": 47.63624,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74311,
+            "y": 47.63447,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.7455,
+            "y": 47.63274,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74685,
+            "y": 47.63167,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74768,
+            "y": 47.63095,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74968,
+            "y": 47.62912,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.74968,
+            "y": 47.62912,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.75117,
+            "y": 47.62762,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.75334,
+            "y": 47.62533,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.75523,
+            "y": 47.62347,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.75562,
+            "y": 47.6231,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.75777,
+            "y": 47.62136,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.75823,
+            "y": 47.62102,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.76017,
+            "y": 47.61971,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.76215,
+            "y": 47.61844,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.76264,
+            "y": 47.61811,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.76511,
+            "y": 47.61649,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.7677,
+            "y": 47.61489,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.7688,
+            "y": 47.61431,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.77056,
+            "y": 47.61352,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.77364,
+            "y": 47.61236,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.77683,
+            "y": 47.61128,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.78008,
+            "y": 47.61021,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.78206,
+            "y": 47.60957,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.78337,
+            "y": 47.60916,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.78337,
+            "y": 47.60916,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.78669,
+            "y": 47.6081,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.78992,
+            "y": 47.60697,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.79306,
+            "y": 47.60578,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.79612,
+            "y": 47.60452,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.79908,
+            "y": 47.60322,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.80194,
+            "y": 47.60179,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.80302,
+            "y": 47.60117,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.80455,
+            "y": 47.60016,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.80455,
+            "y": 47.60016,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.80681,
+            "y": 47.59833,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.80723,
+            "y": 47.59795,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.80882,
+            "y": 47.59639,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.81072,
+            "y": 47.59443,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.81262,
+            "y": 47.59246,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.81415,
+            "y": 47.59087,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.8161,
+            "y": 47.58891,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.81852,
+            "y": 47.58659,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.81893,
+            "y": 47.58621,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.82057,
+            "y": 47.5847,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.82261,
+            "y": 47.58279,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.82464,
+            "y": 47.58088,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.82669,
+            "y": 47.57896,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.82874,
+            "y": 47.57704,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.83081,
+            "y": 47.57513,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.8329,
+            "y": 47.57323,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.83373,
+            "y": 47.57247,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.835,
+            "y": 47.57133,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.83707,
+            "y": 47.5694,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.8391,
+            "y": 47.56746,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84106,
+            "y": 47.56553,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84299,
+            "y": 47.56358,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84337,
+            "y": 47.56319,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84493,
+            "y": 47.56163,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84694,
+            "y": 47.5597,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84818,
+            "y": 47.55856,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.84903,
+            "y": 47.55781,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.85119,
+            "y": 47.55595,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.85339,
+            "y": 47.55414,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.85558,
+            "y": 47.55237,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.85775,
+            "y": 47.55063,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.85991,
+            "y": 47.54888,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.86205,
+            "y": 47.54712,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.86416,
+            "y": 47.54533,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.86416,
+            "y": 47.54533,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.86623,
+            "y": 47.54353,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.86828,
+            "y": 47.54175,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87032,
+            "y": 47.53996,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87236,
+            "y": 47.53818,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87444,
+            "y": 47.53642,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87486,
+            "y": 47.53607,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87657,
+            "y": 47.53467,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87872,
+            "y": 47.53292,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.87959,
+            "y": 47.53221,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.8809,
+            "y": 47.53115,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88307,
+            "y": 47.52937,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88521,
+            "y": 47.52756,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88736,
+            "y": 47.52577,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.88954,
+            "y": 47.52398,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.89166,
+            "y": 47.52216,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.89374,
+            "y": 47.52033,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.8954,
+            "y": 47.5189,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.89581,
+            "y": 47.51854,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.8979,
+            "y": 47.5168,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.8999,
+            "y": 47.51505,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90162,
+            "y": 47.51323,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90193,
+            "y": 47.51285,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90249,
+            "y": 47.51208,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90302,
+            "y": 47.51131,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90376,
+            "y": 47.51015,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90421,
+            "y": 47.50936,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90462,
+            "y": 47.50856,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90515,
+            "y": 47.50739,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90562,
+            "y": 47.50624,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90578,
+            "y": 47.50586,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90593,
+            "y": 47.50547,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90637,
+            "y": 47.5043,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90652,
+            "y": 47.5039,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90667,
+            "y": 47.50351,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90711,
+            "y": 47.50232,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90741,
+            "y": 47.50152,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90797,
+            "y": 47.49993,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90811,
+            "y": 47.49953,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90878,
+            "y": 47.49754,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90878,
+            "y": 47.49754,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90935,
+            "y": 47.49556,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90956,
+            "y": 47.49477,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.90984,
+            "y": 47.49359,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91021,
+            "y": 47.49169,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91028,
+            "y": 47.49131,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9105,
+            "y": 47.48981,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91059,
+            "y": 47.48907,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91068,
+            "y": 47.48833,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91072,
+            "y": 47.48796,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91076,
+            "y": 47.48759,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9108,
+            "y": 47.48724,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91091,
+            "y": 47.48615,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91104,
+            "y": 47.48474,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91111,
+            "y": 47.48405,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91125,
+            "y": 47.48233,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91133,
+            "y": 47.48131,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91136,
+            "y": 47.48097,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91176,
+            "y": 47.47892,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91185,
+            "y": 47.47859,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91207,
+            "y": 47.4779,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91231,
+            "y": 47.47722,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91231,
+            "y": 47.47722,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91289,
+            "y": 47.47588,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91307,
+            "y": 47.47555,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91347,
+            "y": 47.47492,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91423,
+            "y": 47.47401,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91423,
+            "y": 47.47401,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91521,
+            "y": 47.47323,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91521,
+            "y": 47.47323,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91598,
+            "y": 47.47278,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91638,
+            "y": 47.47258,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91724,
+            "y": 47.47227,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91817,
+            "y": 47.47209,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91817,
+            "y": 47.47209,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91912,
+            "y": 47.47208,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92002,
+            "y": 47.47225,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92002,
+            "y": 47.47225,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92045,
+            "y": 47.4724,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92084,
+            "y": 47.47258,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92153,
+            "y": 47.47307,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92153,
+            "y": 47.47307,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92201,
+            "y": 47.4737,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92201,
+            "y": 47.4737,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92201,
+            "y": 47.4737,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92224,
+            "y": 47.47439,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92228,
+            "y": 47.47476,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92228,
+            "y": 47.47476,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92223,
+            "y": 47.47548,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92215,
+            "y": 47.47584,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92189,
+            "y": 47.47655,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92155,
+            "y": 47.47726,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92073,
+            "y": 47.47864,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.92053,
+            "y": 47.47898,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91961,
+            "y": 47.48066,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91924,
+            "y": 47.4813,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91884,
+            "y": 47.4819,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91864,
+            "y": 47.48218,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91823,
+            "y": 47.48272,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9176,
+            "y": 47.48346,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.9176,
+            "y": 47.48346,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91668,
+            "y": 47.48454,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91634,
+            "y": 47.48494,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91588,
+            "y": 47.48547,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91573,
+            "y": 47.48564,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91513,
+            "y": 47.48622,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91513,
+            "y": 47.48622,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91444,
+            "y": 47.48682,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91387,
+            "y": 47.48735,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91342,
+            "y": 47.48771,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91331,
+            "y": 47.48779,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91331,
+            "y": 47.48779,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91278,
+            "y": 47.48817,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91231,
+            "y": 47.48852,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91184,
+            "y": 47.48881,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91142,
+            "y": 47.4891,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91134,
+            "y": 47.48916,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91099,
+            "y": 47.48932,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91099,
+            "y": 47.48932,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91085,
+            "y": 47.48937,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91082,
+            "y": 47.48938,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91081,
+            "y": 47.48938,
+            "coord_system": "LONLAT"
+          },
+          {
+            "x": 18.91081,
+            "y": 47.48938,
+            "coord_system": "LONLAT"
+          }
+        ]
+      }
+    ]
+  }
+}
