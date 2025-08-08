@@ -10,6 +10,7 @@ from typing_extensions import Self
 import textwrap
 from enum import Enum, auto
 import datetime
+import time
 import os
 import io
 import math
@@ -294,7 +295,7 @@ class VFRAnnotation:
         # only download once
         if not self._weather:
             # download weather at from point
-            if not self.USE_SAMPLE_WEATHER:
+            if not self.USE_SAMPLE_WEATHER and self._leg._route.use_realtime_data:
                 p = VFRPoint(self.x, self._leg.function(self.x), VFRCoordSystem.FUNCTION, self._leg._route, self._leg)
                 p = p.project_point(VFRCoordSystem.LONLAT)
                 response = self._leg._route._session.get(OPENWEATHER_ENDPOINT.format(
@@ -313,16 +314,19 @@ class VFRAnnotation:
         if self._declination:
             return self._declination
         try:
-            p = VFRPoint(self.x, self._leg.function(self.x), VFRCoordSystem.FUNCTION, self._leg._route, self._leg)
-            p = p.project_point(VFRCoordSystem.LONLAT)
-            api_res = self._leg._route._session.get(MAGDEV_ENDPOINT.format(
-                lon = p.lon,
-                lat = p.lat,
-                MAGDEV_APIKEY = MAGDEV_APIKEY,
-                when = when
-            ))
-            api_res = api_res.json()
-            self._declination = api_res["result"][0]["declination"]
+            if not self.USE_SAMPLE_WEATHER and self._leg._route.use_realtime_data:
+                p = VFRPoint(self.x, self._leg.function(self.x), VFRCoordSystem.FUNCTION, self._leg._route, self._leg)
+                p = p.project_point(VFRCoordSystem.LONLAT)
+                api_res = self._leg._route._session.get(MAGDEV_ENDPOINT.format(
+                    lon = p.lon,
+                    lat = p.lat,
+                    MAGDEV_APIKEY = MAGDEV_APIKEY,
+                    when = when
+                ))
+                api_res = api_res.json()
+                self._declination = api_res["result"][0]["declination"]
+            else:
+                self._declination = 6
         except:
             import traceback
             traceback.print_exc()
@@ -358,6 +362,7 @@ class VFRAnnotation:
 
 
     def draw(self, ax: matplotlib.axes.Axes):
+        start = time.perf_counter_ns()
         xy = VFRPoint(self.x, self._leg.function(self.x), VFRCoordSystem.FUNCTION, self._leg._route, self._leg).project_point(VFRCoordSystem.MAPCROP_XY)
         seglen = self.seglen
         segtime = self.segtime
@@ -371,6 +376,8 @@ class VFRAnnotation:
                    f" / {math.floor(segtime_wind):3d}:{math.floor((segtime_wind-math.floor(segtime_wind))*60):02d}"
         if self._leg.annotations.index(self) == 0:
             s_seglen = ""
+        calc_time = time.perf_counter_ns() - start
+
         ax.annotate(f'{self.name}\nirány: ${self.headings[-1]:.0f}\\degree${mag_dev:+.0f}(M){wind_corr:+.0f}(W:{self.wind_speed:.0f}/{self.wind_dir:.0f}){s_seglen}',
                     xy=(xy.x, xy.y), xycoords='data',
                     xytext=(self.ofs[0], self.ofs[1]), textcoords='offset points',
@@ -381,6 +388,8 @@ class VFRAnnotation:
                                     patchA=None,
                                     patchB=None,
                                     relpos=(0.2, 0.5)))
+
+        return calc_time
 
 
 class VFRLeg:
@@ -436,10 +445,14 @@ class VFRLeg:
                 lw=self.lw
                )
         # draw annotations
+        calc_time = 0
         if with_annotations:
             for a in self.annotations:
-                a.draw(ax)
-    
+                calc_time += a.draw(ax)
+
+        return calc_time
+                
+
     
     def calc_function(self):
         try:
@@ -584,6 +597,18 @@ class VFRFunctionRoute:
     TILESIZE_Y = int(os.getenv("TILESIZE_Y", "512"))
     TILESIZE = (TILESIZE_X, TILESIZE_Y)
 
+
+    @property
+    def use_realtime_data(self):
+        return self._use_realtime_data
+    
+    @use_realtime_data.setter
+    def use_realtime_data(self, val):
+        self._use_realtime_data = val
+        for l in self.legs:
+            for a in l.annotations:
+                a._clear_cache()
+
     
     def __init__(self,
                  name: str,
@@ -612,6 +637,7 @@ class VFRFunctionRoute:
             'bottom-right': VFRPoint(19.5, 47.0, VFRCoordSystem.LONLAT, self)
         }
         self.pdf_destination = VFRFunctionRoute.download_map(self._session, self.workfolder)
+        self._use_realtime_data = False
         self.calc_extents()
         self.calc_transformations()
         
@@ -818,8 +844,11 @@ class VFRFunctionRoute:
         ax.set_axis_off()
         fig.add_axes(ax)
 
+        calc_time = 0
         for l in self.legs:
-            l.draw(ax, True)
+            calc_time += l.draw(ax, True)
+
+        print(f'calculation time: {calc_time:15,d}')
         
         return fig
 
@@ -1166,7 +1195,7 @@ class VFRFunctionRoute:
         )
 
 
-    def draw_map(self):
+    def draw_map(self, use_realtime: Optional[bool] = None):
         """Draws a matplotlib based map of the defined route.
         
         Args:
@@ -1175,6 +1204,11 @@ class VFRFunctionRoute:
             The matplotlib axes of the final plot.
         """
         self._ensure_state(VFRRouteState.FINALIZED)
+
+        setRTD = False
+        if use_realtime is not None:
+            if use_realtime!=self.use_realtime_data:
+                oldRTD, self.use_realtime_data, setRTD = self.use_realtime_data, True, True
 
         # draw background
         bg_img = self.calc_basemap()
@@ -1198,6 +1232,9 @@ class VFRFunctionRoute:
         overlay_pngbuf = self._get_image_from_figure(fig, dpi=self.DOC_DPI)
         overlay_img = PIL.Image.open(overlay_pngbuf)
         plt.close(fig)
+
+        if setRTD:
+            self.use_realtime_data = oldRTD
 
         # return the composited
         composited = PIL.Image.alpha_composite(bg_img.convert('RGBA'), overlay_img.convert('RGBA'))
@@ -1263,6 +1300,8 @@ class VFRFunctionRoute:
         """
         self._ensure_state(VFRRouteState.FINALIZED)
         # draw map if we don't have it yet and save the image
+        if not self.use_realtime_data:
+            oldRTD, self.use_realtime_data, setRTD = self.use_realtime_data, True, True
         image = self.draw_map()
         imgname = os.path.join(self.outfolder, self.name+'.png')
         with open(imgname, "wb") as f:
@@ -1340,6 +1379,8 @@ class VFRFunctionRoute:
 
 
         # save it
+        if setRTD:
+            self.use_realtime_data = oldRTD
         if save:
             docname = os.path.join(self.outfolder, self.name+'.docx')
             doc.save(docname)

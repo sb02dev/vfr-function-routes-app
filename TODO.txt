@@ -51,6 +51,7 @@ v0.2
 + bugfix: map download needed to be put at an earlier stage
 + bugfix: api endpoint rewrote by angular to /frontend/api/..., changed to absolute url
 + mapedit: moving amount is not decreasing when scaled
++ annotations: during edit, no realtime data is downloaded, only during final generation
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 

@@ -458,7 +458,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
             elif msgtype=='get-png':
                 if rte:
-                    image = rte.draw_map()
+                    image = rte.draw_map(True)
                     await websocket.send_json({
                         "type": "png",
                         "mime": 'image/png',

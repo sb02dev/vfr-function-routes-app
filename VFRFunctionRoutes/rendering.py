@@ -247,7 +247,12 @@ class SVGRenderer():
 
     
     def get_svg(self):
+
+        import time
+
+        matplotlib.rcParams['svg.fonttype'] = 'none'  # Use text, not curves
     
+        start = time.perf_counter_ns()
         fig=self._draw_func()
 
         fig.set_size_inches((c/self.odpi for c in self.image_size))
@@ -260,6 +265,8 @@ class SVGRenderer():
         buf.seek(0)
 
         plt.close(fig)
+
+        print(f"total time: {time.perf_counter_ns() - start:15,d}")
 
         return buf.getvalue()
 
