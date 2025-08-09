@@ -10,6 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ImageEditService } from '../../../services/image-edit.service';
 import { ImageEditMessage } from '../../../models/image-edit-msg';
 import { TileService } from '../../../services/tile.service';
+import { environment } from '../../../../environments/environment';
 
 @Component({
     selector: 'app-map-edit',
@@ -53,6 +54,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     private tileRange: { x: [number, number], y: [number, number] } = { x: [0, 0], y: [0, 0] };
     private tileCrop: { x0: number, y0: number, x1: number, y1: number } = { x0: 0, y0: 0, x1: 0, y1: 0 };
     private imageSize: { x: number, y: number } = { x: 0, y: 0 };
+    clickTimer: any;
     get dpi() { return this.tilesetParams.dpi }
 
     // pan and zoom variables
@@ -180,55 +182,76 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 this.panStart = { x: e.offsetX, y: e.offsetY };
             }
         } else if (this.selectedTool == 'edit') {
-            if (e.button === 1 || e.button === 0) {  // middle or left
-                this.panStart = { x: e.offsetX, y: e.offsetY };
+            if (this.clickTimer) {
+                clearTimeout(this.clickTimer);
+                this.clickTimer = null;
+                // Handle double-click
+                this.doubleMouseDown(e);
+            } else {
+                this.clickTimer = setTimeout(() => {
+                    this.clickTimer = null;
+                    // Handle single click
+                    this.singleMouseDown(e);
+                }, environment.DOUBLE_CLICK_DELAY); // Adjust the delay to match your double-click threshold
             }
-            const x = e.offsetX
-            const y = e.offsetY;
-            if (e.button == 0) { // left click moves a point
-                this.enumPoints.emit((i: number,
-                                      map_coords: boolean,
-                                      xx: number, yy: number,
-                                      ww: number | undefined = undefined, hh: number | undefined = undefined) => {
-                    let [xp, yp] = [xx, yy];
-                    let [wp, hp] = [ww, hh];
-                    // if parameters are in map coordinates we convert them
-                    if (map_coords) {
-                        [xp, yp] = this.getImage2CanvasCoords(xx, yy);
-                        if (ww && hh) {
-                            const [xp1, yp1] = this.getImage2CanvasCoords(xx + ww, yy + hh);
-                            [wp, hp] = [xp1 - xp, yp1 - yp];
-                        }
+        }
+    }
+
+    private singleMouseDown(e: MouseEvent) {
+        if (e.button === 1 || e.button === 0) { // middle or left
+            this.panStart = { x: e.offsetX, y: e.offsetY };
+        }
+        const x = e.offsetX;
+        const y = e.offsetY;
+        if (e.button == 0) { // left click moves a point
+            this.enumPoints.emit((i: number,
+                map_coords: boolean,
+                xx: number, yy: number,
+                ww: number | undefined = undefined, hh: number | undefined = undefined) => {
+                let [xp, yp] = [xx, yy];
+                let [wp, hp] = [ww, hh];
+                // if parameters are in map coordinates we convert them
+                if (map_coords) {
+                    [xp, yp] = this.getImage2CanvasCoords(xx, yy);
+                    if (ww && hh) {
+                        const [xp1, yp1] = this.getImage2CanvasCoords(xx + ww, yy + hh);
+                        [wp, hp] = [xp1 - xp, yp1 - yp];
                     }
-                    if (!ww && !hh) {
-                        // we got a point
-                        const dist = Math.sqrt((xp - x) ** 2 + (yp - y) ** 2);
-                        if (dist < this.selectionDistance) {
-                            this.selectedPoint = i
-                            this.drawOverlayTransformed();
-                            return false;
-                        } else {
-                            return true;
-                        }
-                    } else {
-                        // we got a rectangle
-                        if ((xp <= x) && (x <= xp + wp!) && (yp <= y) && (y <= yp + hp!)) {
-                            this.selectedPoint = i
-                            this.drawOverlayTransformed();
-                            return false;
-                        } else {
-                            return true;
-                        }
-                    }
-                })
-            } else if (e.button == 1) { // middle click creates a new
-                const [wx, wy] = this.getCanvas2ImageCoords(x, y);
-                this.addPointAt.emit({
-                    x: wx, y: wy, callback: () => {
+                }
+                if (!ww && !hh) {
+                    // we got a point
+                    const dist = Math.sqrt((xp - x) ** 2 + (yp - y) ** 2);
+                    if (dist < this.selectionDistance) {
+                        this.selectedPoint = i;
                         this.drawOverlayTransformed();
+                        return false;
+                    } else {
+                        return true;
                     }
-                });
-            }
+                } else {
+                    // we got a rectangle
+                    if ((xp <= x) && (x <= xp + wp!) && (yp <= y) && (y <= yp + hp!)) {
+                        this.selectedPoint = i;
+                        this.drawOverlayTransformed();
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
+            });
+        }
+    }
+
+    doubleMouseDown(e: MouseEvent) {
+        const x = e.offsetX;
+        const y = e.offsetY;
+        if (e.button == 0) { // left double-click creates a new point
+            const [wx, wy] = this.getCanvas2ImageCoords(x, y);
+            this.addPointAt.emit({
+                x: wx, y: wy, callback: () => {
+                    this.drawOverlayTransformed();
+                }
+            });
         }
     }
 

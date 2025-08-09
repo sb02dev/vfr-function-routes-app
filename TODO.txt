@@ -1,4 +1,3 @@
-- double-click instead of middle button
 - bugfix: multiple constraint points, not editable?
 - mobile friendly (responsive + touch controls)
 - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds
@@ -73,6 +72,7 @@ v0.2
 + annotations: bubbles can be moved with mouse
 + add tooltips to buttons, no tooltip for app-header
 + remove unneccessary info (XY in map info panel)
++ double-click instead of middle button
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 
