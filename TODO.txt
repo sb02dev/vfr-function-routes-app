@@ -1,5 +1,6 @@
 - progress indication while waiting for server
 - speed is modifiable in step 6
+- annotations: bubbles can be moved with mouse
 - bugfix: map-info width and horizontal scrolling
 - bugfix: readonly mathedit does not show formula
 - mobile friendly (responsive + touch controls)
@@ -9,8 +10,6 @@
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
 - order constraint points by func_x automatically
-- annotations: more precise bubble estimation
-- annotations: bubbles can be moved with mouse
 - save to cloud
 - extend map drawing with logging
 
@@ -60,6 +59,7 @@ v0.2
 + annotations: text overlay refreshed automatically after every edit (1-1,5s delay is tolerable)
   and default to not show (wrongly) estimated bubbles
 + annotations: text is english + bugfix of prev commit
++ annotations: more precise bubble estimation
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 

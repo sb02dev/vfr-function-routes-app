@@ -271,31 +271,40 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
                     ctx.strokeStyle = l == this.leg_index ? "red" : "blue";
                     ctx.stroke();
 
-                    // draw corners and names
+                    // draw points and bubbles
                     for (let i = 0; i < ann.length; i++) {
                         const mappt = this.applyTransformationMatrix({ x: ann[i].func_x, y: func(ann[i].func_x) }, leg.matrix_func2cropmap);
                         const [x, y] = this.mapedit.getImage2CanvasCoords(mappt.x, mappt.y);
                         ctx.beginPath();
-                        ctx.fillStyle = (l == this.leg_index) ? ((i == this.mapedit.selectedPoint)) ? "green" : "red" : "blue";
+                        ctx.fillStyle = (l == this.leg_index) ? (i == this.mapedit.selectedPoint) ? "green" : "red" : "blue";
                         ctx.arc(x, y, 12, 0, 2 * Math.PI);
                         ctx.fill();
                         if (this._showBubbles) {
-                            const tx = x + ann[i].ofs_x;
-                            const ty = y + ann[i].ofs_y;
+                            const tmapx = mappt.x + ann[i].ofs_x * this.mapedit.dpi / 72;
+                            const tmapy = mappt.y - ann[i].ofs_y * this.mapedit.dpi / 72;
+                            const scale = this.mapedit.getScale();
+                            const scale_display = {
+                                x: scale.x * 4,
+                                y: scale.y * 4
+                            };
                             ctx.font = "12px serif";
-                            const bubsize = this.estimateBubbleSize(12, 4, 30);
-                            this.drawBubble(ctx, tx, ty, bubsize.width, bubsize.height, ann[i].name, 12);
+                            const bubsize = this.estimateBubbleSize(10, (i == 0) ? 2 : 4, 30);
+                            const bubsize_scaled = {
+                                width: bubsize.width * scale_display.x,
+                                height: bubsize.height * scale_display.y
+                            };
+                            const [tx, ty] = this.mapedit.getImage2CanvasCoords(tmapx, tmapy)
+                            //const [tx, ty] = [x + ann[i].ofs_x, y - ann[i].ofs_y];
+                            this.drawBubble(
+                                ctx,
+                                tx, ty - bubsize_scaled.height / 2,
+                                bubsize_scaled.width, bubsize_scaled.height,
+                                ann[i].name,
+                                12 * scale_display.x
+                            );
                         }
                     }
 
-                    /*/ draw extra point
-                    if (this.extrapoint != null) {
-                        const [x, y] = this.mapedit.getImage2CanvasCoords(this.extrapoint[0], this.extrapoint[1]);
-                        ctx.beginPath();
-                        ctx.fillStyle = "purple";
-                        ctx.arc(x, y, 12, 0, 2 * Math.PI);
-                        ctx.fill();
-                    }//*/
                 }
             }
         }
@@ -303,7 +312,7 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
 
 
     private estimateBubbleSize(fontSize: number, numLines: number, maxChars: number): { width: number; height: number } {
-        const charWidth = 0.6 * fontSize;      // average char width
+        const charWidth = 0.58 * fontSize;      // average char width
         const lineHeight = 1.2 * fontSize;     // line spacing
         const padding = 0.5 * fontSize;        // bubble margin
 

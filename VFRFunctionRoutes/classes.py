@@ -378,16 +378,16 @@ class VFRAnnotation:
             s_seglen = ""
         calc_time = time.perf_counter_ns() - start
 
-        ax.annotate(f'{self.name}\ntrack: ${self.headings[-1]:.0f}\\degree${mag_dev:+.0f}(M){wind_corr:+.0f}(W:{self.wind_speed:.0f}/{self.wind_dir:.0f}){s_seglen}',
-                    xy=(xy.x, xy.y), xycoords='data',
-                    xytext=(self.ofs[0], self.ofs[1]), textcoords='offset points',
-                    size=5.5, va="center",
-                    bbox=dict(boxstyle="round", fc=self.BACKGROUND_COLOR, ec="none"),
-                    arrowprops=dict(arrowstyle="wedge,tail_width=1.",
-                                    fc=self.BACKGROUND_COLOR, ec="none",
-                                    patchA=None,
-                                    patchB=None,
-                                    relpos=(0.2, 0.5)))
+        ann = ax.annotate(f'{self.name}\ntrack: ${self.headings[-1]:.0f}\\degree${mag_dev:+.0f}(M){wind_corr:+.0f}(W:{self.wind_speed:.0f}/{self.wind_dir:.0f}){s_seglen}',
+                          xy=(xy.x, xy.y), xycoords='data',
+                          xytext=(self.ofs[0], self.ofs[1]), textcoords='offset points',
+                          size=5.5, va="center",
+                          bbox=dict(boxstyle="round", fc=self.BACKGROUND_COLOR, ec="none"),
+                          arrowprops=dict(arrowstyle="wedge,tail_width=1.",
+                                          fc=self.BACKGROUND_COLOR, ec="none",
+                                          patchA=None,
+                                          patchB=None,
+                                          relpos=(0.2, 0.5)))
 
         return calc_time
 

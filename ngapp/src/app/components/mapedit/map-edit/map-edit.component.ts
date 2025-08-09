@@ -51,6 +51,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     private tileRange: { x: [number, number], y: [number, number] } = { x: [0, 0], y: [0, 0] };
     private tileCrop: { x0: number, y0: number, x1: number, y1: number } = { x0: 0, y0: 0, x1: 0, y1: 0 };
     private imageSize: { x: number, y: number } = { x: 0, y: 0 };
+    get dpi() { return this.tilesetParams.dpi }
 
     // pan and zoom variables
     private xlim: [number, number] = [0, 4];
@@ -499,6 +500,15 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         const yscale = canvas.height / (ymax - ymin);
 
         return [x / xscale + xmin, y / yscale + ymin];
+    }
+
+    getScale(): { x: number, y: number } {
+        const canvas: HTMLCanvasElement = this.bgCanvasRef.nativeElement;
+        const [xmin, xmax] = this.xlim;
+        const [ymin, ymax] = this.ylim;
+        const xscale = canvas.width / (xmax - xmin);
+        const yscale = canvas.height / (ymax - ymin);
+        return { x: xscale, y: yscale };
     }
 
 }
