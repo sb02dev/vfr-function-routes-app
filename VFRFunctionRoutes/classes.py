@@ -1337,7 +1337,7 @@ class VFRFunctionRoute:
             tab.autofit = True
             tab.allow_autofit = True
             tab.style = "Colorful Shading Accent 1"
-            for i, hdr in enumerate(["Name", "Hdg", "Mag", "WC", "Length", "Time", "Tme(WC)", "Wind"]):
+            for i, hdr in enumerate(["Name", "Hdg", "Mag", "WCA", "Length", "Time", "Tme(WC)", "Wind"]):
                 tab.rows[0].cells[i].text = hdr
 
             # TODO: leg table rows (per annotations)
