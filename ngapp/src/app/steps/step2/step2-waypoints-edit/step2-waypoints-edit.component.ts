@@ -107,10 +107,10 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
         });
     }
 
-    enumPoints(enumerate: (i: number, x: number, y: number) => boolean) {
+    enumPoints(enumerate: (i: number, map_coords: boolean, x: number, y: number, w: number | undefined, h: number | undefined) => boolean) {
         for (var i = 0; i < this.waypoints.length; i++) {
             const wp = this.waypoints[i];
-            if (!enumerate(i, wp.x, wp.y)) {
+            if (!enumerate(i, true, wp.x, wp.y, undefined, undefined)) {
                 break;
             }
         }

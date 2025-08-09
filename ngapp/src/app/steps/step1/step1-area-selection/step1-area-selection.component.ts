@@ -69,12 +69,12 @@ export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
         this.setAreaOfInterest();
     }
 
-    enumPoints(enumerate: (i: number, x: number, y: number) => boolean) {
+    enumPoints(enumerate: (i: number, map_coords: boolean, x: number, y: number, w: number | undefined, h: number | undefined) => boolean) {
         const [sx, sy, sw, sh] = this.rect;
         const xys = [[sx, sy], [sx + sw, sy], [sx + sw, sy + sh], [sx, sy + sh]];
         for (var i = 0; i < xys.length; i++) {
             const xy = xys[i];
-            if (!enumerate(i, xy[0], xy[1])) {
+            if (!enumerate(i, true, xy[0], xy[1], undefined, undefined)) {
                 break;
             }
         }

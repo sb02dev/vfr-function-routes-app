@@ -73,6 +73,15 @@
                     }
                 ]
             },
+            "devbuild": {
+                "baseHref": "/frontend/",
+                "fileReplacements": [
+                    {
+                        "replace": "src/environments/environment.ts",
+                        "with": "src/environments/environment.devbuild.ts"
+                    }
+                ]
+            },
             "development": {
               "optimization": false,
               "extractLicenses": false,

@@ -30,9 +30,9 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     // inputs and events
     @Input() panelWidth: string = '50px';
     @Output() drawOverlay = new EventEmitter();
-    @Output() enumPoints = new EventEmitter<(i: number, x: number, y: number) => boolean>();
+    @Output() enumPoints = new EventEmitter<(i: number, map_coords: boolean, x: number, y: number, w: number | undefined, h: number | undefined) => boolean>();
     @Output() addPointAt = new EventEmitter<{ x: number, y: number, callback: () => void }>();
-    @Output() movePointTo = new EventEmitter<{ i: number, x: number, y: number, callback: () => void }>();
+    @Output() movePointTo = new EventEmitter<{ i: number, ex: number, ey: number, dx: number, dy: number, x: number, y: number, callback: () => void }>();
     @Output() finalizePoints = new EventEmitter();
 
     // canvas and tool selection
@@ -178,18 +178,45 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 this.panStart = { x: e.offsetX, y: e.offsetY };
             }
         } else if (this.selectedTool == 'edit') {
+            if (e.button === 1 || e.button === 0) {  // middle or left
+                this.panStart = { x: e.offsetX, y: e.offsetY };
+            }
             const x = e.offsetX
             const y = e.offsetY;
             if (e.button == 0) { // left click moves a point
-                this.enumPoints.emit((i: number, xx: number, yy: number) => {
-                    const [xp, yp] = this.getImage2CanvasCoords(xx, yy);
-                    const dist = Math.sqrt((xp - x) ** 2 + (yp - y) ** 2);
-                    if (dist < this.selectionDistance) {
-                        this.selectedPoint = i
-                        this.drawOverlayTransformed();
-                        return false;
+                this.enumPoints.emit((i: number,
+                                      map_coords: boolean,
+                                      xx: number, yy: number,
+                                      ww: number | undefined = undefined, hh: number | undefined = undefined) => {
+                    let [xp, yp] = [xx, yy];
+                    let [wp, hp] = [ww, hh];
+                    // if parameters are in map coordinates we convert them
+                    if (map_coords) {
+                        [xp, yp] = this.getImage2CanvasCoords(xx, yy);
+                        if (ww && hh) {
+                            const [xp1, yp1] = this.getImage2CanvasCoords(xx + ww, yy + hh);
+                            [wp, hp] = [xp1 - xp, yp1 - yp];
+                        }
+                    }
+                    if (!ww && !hh) {
+                        // we got a point
+                        const dist = Math.sqrt((xp - x) ** 2 + (yp - y) ** 2);
+                        if (dist < this.selectionDistance) {
+                            this.selectedPoint = i
+                            this.drawOverlayTransformed();
+                            return false;
+                        } else {
+                            return true;
+                        }
                     } else {
-                        return true;
+                        // we got a rectangle
+                        if ((xp <= x) && (x <= xp + wp!) && (yp <= y) && (y <= yp + hp!)) {
+                            this.selectedPoint = i
+                            this.drawOverlayTransformed();
+                            return false;
+                        } else {
+                            return true;
+                        }
                     }
                 })
             } else if (e.button == 1) { // middle click creates a new
@@ -228,10 +255,17 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 this.drawOverlayTransformed();
             }
         } else if (this.selectedTool == 'edit') {
-            if (this.selectedPoint !== null) {
+            if (this.selectedPoint !== null && this.panStart) {
+                const dx = e.offsetX - this.panStart.x;
+                const dy = e.offsetY - this.panStart.y;
+                this.panStart = { x: e.offsetX, y: e.offsetY };
                 const [x, y] = this.getCanvas2ImageCoords(e.offsetX, e.offsetY);
                 this.movePointTo.emit({
                     i: this.selectedPoint,
+                    ex: e.offsetX,
+                    ey: e.offsetY,
+                    dx: dx,
+                    dy: dy,
                     x: x,
                     y: y,
                     callback: () => this.drawOverlayTransformed(),
@@ -244,6 +278,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         if (this.selectedTool == 'panzoom') {
             this.panStart = null;
         } else if (this.selectedTool == 'edit') {
+            this.panStart = null;
             this.selectedPoint = null;
             this.drawOverlayTransformed();
             this.finalizePoints.emit();

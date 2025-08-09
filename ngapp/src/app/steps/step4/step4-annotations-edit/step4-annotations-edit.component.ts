@@ -132,27 +132,68 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
         this.updateAnnotations();
     }
 
-    enumPoints(enumerate: (i: number, x: number, y: number) => boolean) {
-        for (var i = 1; i < this.legs[this.leg_index].annotations.length - 1; i++) {
-            // we don't enumerate the first and last (because those are edited in the previous step)
-            const ann = this.legs[this.leg_index].annotations[i];
-            const mappt = this.applyTransformationMatrix({ x: ann.func_x, y: this.leg_func(ann.func_x) }, this.leg_matrix);
-            if (!enumerate(i, mappt.x, mappt.y)) {
-                break;
+    enumPoints(enumerate: (i: number, map_coords: boolean, x: number, y: number, w: number | undefined, h: number | undefined) => boolean) {
+        if (!this._showBubbles) {
+            // enumerate the points
+            for (var i = 1; i < this.legs[this.leg_index].annotations.length - 1; i++) {
+                // we don't enumerate the first and last (because those are edited in the previous step)
+                const ann = this.legs[this.leg_index].annotations[i];
+                const mappt = this.applyTransformationMatrix({ x: ann.func_x, y: this.leg_func(ann.func_x) }, this.leg_matrix);
+                if (!enumerate(i, true, mappt.x, mappt.y, undefined, undefined)) {
+                    break;
+                }
+            }
+        } else {
+            // enumerate the bubbles
+            const leg = this.legs[this.leg_index]
+            for (var i = 0; i < leg.annotations.length; i++) {
+                const ann = leg.annotations[i];
+                let func = (x: number) => this.legs[this.leg_index].function_mathjs_compiled?.evaluate({ x: x });
+                const mappt = this.applyTransformationMatrix({ x: ann.func_x, y: func(ann.func_x) }, leg.matrix_func2cropmap);
+                const ctx = this.mapedit.overlayCanvasRef.nativeElement.getContext('2d')!;
+                const rect = this.getBubbleRectangle(
+                    mappt.x, mappt.y,
+                    ann.ofs_x, ann.ofs_y,
+                    (i == 0) ? 2 : 4,
+                    ctx
+                );
+                if (!enumerate(i, false, rect.x, rect.y, rect.w, rect.h)) {
+                    break;
+                }
             }
         }
     }
 
-    movePointTo(event: { i: number, x: number, y: number, callback: () => void }) {
-        // calculate function point closest to x,y
-        const { index: minidx, point: minpt, point_func: minptfunc } = this.calcMinimumPoint(event);
-        const x = minptfunc.x;
-        // check if still between the point before and after
-        const prev_x = this.legs[this.leg_index].annotations[event.i - 1].func_x;
-        const next_x = this.legs[this.leg_index].annotations[event.i + 1].func_x;
-        if ((x > prev_x && x < next_x) || (x > next_x && x < prev_x)) {
-            // change point
-            this.legs[this.leg_index].annotations[event.i].func_x = x;
+    movePointTo(event: { i: number, ex:number, ey: number, dx:number, dy: number, x: number, y: number, callback: () => void }) {
+        const leg = this.legs[this.leg_index]
+        const ann = leg.annotations[event.i];
+        let func = (x: number) => leg.function_mathjs_compiled?.evaluate({ x: x });
+        if (!this._showBubbles) {
+            // calculate function point closest to x,y
+            const { index: minidx, point: minpt, point_func: minptfunc } = this.calcMinimumPoint(event);
+            const x = minptfunc.x;
+            // check if still between the point before and after
+            const prev_x = leg.annotations[event.i - 1].func_x;
+            const next_x = leg.annotations[event.i + 1].func_x;
+            if ((x > prev_x && x < next_x) || (x > next_x && x < prev_x)) {
+                // change point
+                ann.func_x = x;
+                event.callback();
+            }
+        } else {
+            // get original text screen position
+            const mappt = this.applyTransformationMatrix({ x: ann.func_x, y: func(ann.func_x) }, leg.matrix_func2cropmap);
+            const [tmapx, tmapy] = [mappt.x + ann.ofs_x * this.mapedit.dpi / 72, mappt.y - ann.ofs_y * this.mapedit.dpi / 72];
+            const [tx, ty] = this.mapedit.getImage2CanvasCoords(tmapx, tmapy);
+
+            // convert the mouse move amount to offset change
+            const [newtx, newty] = [tx + event.dx, ty + event.dy];
+            const [newmapx, newmapy] = this.mapedit.getCanvas2ImageCoords(newtx, newty);
+            const newofsx = (newmapx - mappt.x) / this.mapedit.dpi * 72;
+            const newofsy = (mappt.y - newmapy) / this.mapedit.dpi * 72;
+
+            // do the change
+            [ann.ofs_x, ann.ofs_y] = [newofsx, newofsy];
             event.callback();
         }
     }
@@ -162,30 +203,32 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
     }
 
     addPointAt(event: { x: number, y: number, callback: () => void }) {
-        const anns = this.legs[this.leg_index].annotations;
-        // calculate function point closest to x,y
-        const { index: minidx, point: minpt, point_func: minptfunc } = this.calcMinimumPoint(event);
-        const x = minptfunc.x;
-        // find the two neighbours (i.e. the index)
-        let index = anns.length - 1;
-        for (let i = 0; i < anns.length - 1; i++) {
-            const prev_x = anns[i].func_x;
-            const next_x = anns[i + 1].func_x;
-            if ((x > prev_x && x < next_x) || (x > next_x && x < prev_x)) {
-                index = i + 1;
-                break;
+        if (!this._showBubbles) {
+            const anns = this.legs[this.leg_index].annotations;
+            // calculate function point closest to x,y
+            const { index: minidx, point: minpt, point_func: minptfunc } = this.calcMinimumPoint(event);
+            const x = minptfunc.x;
+            // find the two neighbours (i.e. the index)
+            let index = anns.length - 1;
+            for (let i = 0; i < anns.length - 1; i++) {
+                const prev_x = anns[i].func_x;
+                const next_x = anns[i + 1].func_x;
+                if ((x > prev_x && x < next_x) || (x > next_x && x < prev_x)) {
+                    index = i + 1;
+                    break;
+                }
             }
+            // insert new annotation
+            anns.splice(index, 0, {
+                name: 'xxx',
+                func_x: x,
+                ofs_x: 0,
+                ofs_y: 0,
+            });
+            event.callback();
+            // send to server
+            this.updateAnnotations();
         }
-        // insert new annotation
-        anns.splice(index, 0, {
-            name: 'xxx',
-            func_x: x,
-            ofs_x: 0,
-            ofs_y: 0,
-        });
-        event.callback();
-        // send to server
-        this.updateAnnotations();
     }
 
     change(prop: string, index: number, event: any) {
@@ -276,30 +319,23 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
                         const mappt = this.applyTransformationMatrix({ x: ann[i].func_x, y: func(ann[i].func_x) }, leg.matrix_func2cropmap);
                         const [x, y] = this.mapedit.getImage2CanvasCoords(mappt.x, mappt.y);
                         ctx.beginPath();
-                        ctx.fillStyle = (l == this.leg_index) ? (i == this.mapedit.selectedPoint) ? "green" : "red" : "blue";
+                        ctx.fillStyle = (l == this.leg_index) ? ((i == this.mapedit.selectedPoint) && !this._showBubbles) ? "green" : "red" : "blue";
                         ctx.arc(x, y, 12, 0, 2 * Math.PI);
                         ctx.fill();
                         if (this._showBubbles) {
-                            const tmapx = mappt.x + ann[i].ofs_x * this.mapedit.dpi / 72;
-                            const tmapy = mappt.y - ann[i].ofs_y * this.mapedit.dpi / 72;
-                            const [tx, ty] = this.mapedit.getImage2CanvasCoords(tmapx, tmapy)
-                            const scale = this.mapedit.getScale();
-                            const scale_display = {
-                                x: scale.x * this.mapedit.dpi / 150, // why 150?
-                                y: scale.y * this.mapedit.dpi / 150  // why not 72?
-                            };
-                            ctx.font = "12px serif";
-                            const bubsize = this.estimateBubbleSize(10, (i == 0) ? 2 : 4, 30);
-                            const bubsize_scaled = {
-                                width: bubsize.width * scale_display.x,
-                                height: bubsize.height * scale_display.y
-                            };
+                            const rect = this.getBubbleRectangle(
+                                mappt.x, mappt.y,
+                                ann[i].ofs_x, ann[i].ofs_y,
+                                (i == 0) ? 2 : 4,
+                                ctx
+                            );
                             this.drawBubble(
                                 ctx,
-                                tx, ty - bubsize_scaled.height / 2,
-                                bubsize_scaled.width, bubsize_scaled.height,
+                                rect.x, rect.y,
+                                rect.w, rect.h,
                                 ann[i].name,
-                                12 * scale_display.x
+                                12 * this.mapedit.getScale().x,
+                                (l == this.leg_index) && ((i == this.mapedit.selectedPoint) && this._showBubbles)
                             );
                         }
                     }
@@ -309,6 +345,31 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
         }
     }
 
+
+    private getBubbleRectangle(mapx: number, mapy: number,
+                               ofs_x: number, ofs_y: number,
+                               text_lines: number,
+                               ctx: CanvasRenderingContext2D) {
+        const tmapx = mapx + ofs_x * this.mapedit.dpi / 72;
+        const tmapy = mapy - ofs_y * this.mapedit.dpi / 72;
+        const [tx, ty] = this.mapedit.getImage2CanvasCoords(tmapx, tmapy);
+        const scale = this.mapedit.getScale();
+        const scale_display = {
+            x: scale.x * this.mapedit.dpi / 150, // why 150?
+            y: scale.y * this.mapedit.dpi / 150 // why not 72?
+        };
+        ctx.font = "12px serif";
+        const bubsize = this.estimateBubbleSize(10, text_lines, 30);
+        const bubsize_scaled = {
+            width: bubsize.width * scale_display.x,
+            height: bubsize.height * scale_display.y
+        };
+        const rect = {
+            x: tx, y: ty - bubsize_scaled.height / 2,
+            w: bubsize_scaled.width, h: bubsize_scaled.height
+        };
+        return rect;
+    }
 
     private estimateBubbleSize(fontSize: number, numLines: number, maxChars: number): { width: number; height: number } {
         const charWidth = 0.58 * fontSize;      // average char width
@@ -328,13 +389,19 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
         width: number,
         height: number,
         text: string,
-        fontSize: number = 14
+        fontSize: number = 14,
+        selected: boolean
     ) {
         ctx.save(); // save state
 
         // Bubble background
-        ctx.fillStyle = "rgba(135, 206, 250, 0.5)"; // semi-transparent lightblue
-        ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";     // darker border
+        if (!selected) {
+            ctx.fillStyle = "rgba(135, 206, 250, 0.5)"; // semi-transparent lightblue
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.8)";     // darker border
+        } else {
+            ctx.fillStyle = "rgba(20, 145, 223, 0.5)"; // semi-transparent lightblue
+            ctx.strokeStyle = "rgba(243, 12, 12, 0.8)";     // darker border
+        }
         ctx.lineWidth = 2;
 
         this.drawRoundedRect(ctx, x, y, width, height, 3);

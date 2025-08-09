@@ -143,11 +143,11 @@ export class Step3LegsEditComponent implements AfterViewInit, OnDestroy {
     }
 
 
-    enumPoints(enumerate: (i: number, x: number, y: number) => boolean) {
+    enumPoints(enumerate: (i: number, map_coords: boolean, x: number, y: number, w: number | undefined, h: number | undefined) => boolean) {
         for (var i = 1; i < this.legs[this.leg_index].points.length - 1; i++) {
             // we don't enumerate the first and last (because those are edited in the previous step)
             const lp = this.legs[this.leg_index].points[i];
-            if (!enumerate(i, lp.x, lp.y)) {
+            if (!enumerate(i, true, lp.x, lp.y, undefined, undefined)) {
                 break;
             }
         }
