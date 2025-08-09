@@ -282,10 +282,11 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
                         if (this._showBubbles) {
                             const tmapx = mappt.x + ann[i].ofs_x * this.mapedit.dpi / 72;
                             const tmapy = mappt.y - ann[i].ofs_y * this.mapedit.dpi / 72;
+                            const [tx, ty] = this.mapedit.getImage2CanvasCoords(tmapx, tmapy)
                             const scale = this.mapedit.getScale();
                             const scale_display = {
-                                x: scale.x * 4,
-                                y: scale.y * 4
+                                x: scale.x * this.mapedit.dpi / 150, // why 150?
+                                y: scale.y * this.mapedit.dpi / 150  // why not 72?
                             };
                             ctx.font = "12px serif";
                             const bubsize = this.estimateBubbleSize(10, (i == 0) ? 2 : 4, 30);
@@ -293,8 +294,6 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
                                 width: bubsize.width * scale_display.x,
                                 height: bubsize.height * scale_display.y
                             };
-                            const [tx, ty] = this.mapedit.getImage2CanvasCoords(tmapx, tmapy)
-                            //const [tx, ty] = [x + ann[i].ofs_x, y - ann[i].ofs_y];
                             this.drawBubble(
                                 ctx,
                                 tx, ty - bubsize_scaled.height / 2,
