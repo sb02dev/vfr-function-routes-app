@@ -1,5 +1,5 @@
 <app-header [step-index]="5"
-            title="Add Tracks" 
+            header_title="Add Tracks" 
             tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
                      In Edit mode you can do nothing.
                      In the table on the right you can add (from local .gpx files) and delete routes and change their colours.">
@@ -27,12 +27,13 @@
         <tr *ngFor="let t of tracks; index as i">
             <td>{{t.name}}</td>
             <td>
-                <div mat-button (click)="openColorPicker(i)" [style.background]="t.color" style="width:20px;height:20px;cursor: pointer;"></div>
+                <div mat-button (click)="openColorPicker(i)" [style.background]="t.color" style="width:20px;height:20px;cursor: pointer;"
+                     matTooltip="Change color of the track" matTooltipShowDelay="500"></div>
             </td>
             <td>{{t.num_points}}</td>
             <td>
                 <span class="row-buttons">
-                    <a (click)="deleteTrack(i)">
+                    <a (click)="deleteTrack(i)" matTooltip="Delete track" matTooltipShowDelay="500">
                         <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
                     </a>
                 </span>

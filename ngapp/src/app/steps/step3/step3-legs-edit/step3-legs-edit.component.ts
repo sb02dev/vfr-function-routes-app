@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from "@angular/material/icon";
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
@@ -15,13 +16,14 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
     selector: 'app-step3-legs-edit',
     standalone: true,
     imports: [
-    CommonModule,
-    HeaderComponent,
-    MapEditComponent,
-    MatIconModule,
-    FlexLayoutModule,
-    MathEditComponent
-],
+        CommonModule,
+        MatIconModule,
+        MatTooltipModule,
+        FlexLayoutModule,
+        MapEditComponent,
+        HeaderComponent,
+        MathEditComponent
+    ],
     templateUrl: './step3-legs-edit.component.html',
     styleUrl: './step3-legs-edit.component.css'
 })

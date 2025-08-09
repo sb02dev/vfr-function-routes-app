@@ -3,9 +3,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ImageEditService } from '../../../services/image-edit.service';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
     selector: 'app-header',
@@ -22,7 +22,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 export class HeaderComponent {
 
     @Input('step-index') step_index: number = 0;
-    @Input() title: string = '';
+    @Input() header_title: string = '';
     @Input() tooltip: string = '';
     @Output('before-forward') before_forward = new EventEmitter();
     @Input('last-step') last_step: boolean = false;

@@ -5,6 +5,7 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatButtonModule } from '@angular/material/button';
 import { Subscription } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { ImageEditMessage } from '../../../models/image-edit-msg';
@@ -17,6 +18,7 @@ import { TileService } from '../../../services/tile.service';
         CommonModule,
         MatIconModule,
         MatButtonModule,
+        MatTooltipModule,
         FlexLayoutModule,
     ],
     templateUrl: './map-edit.component.html',

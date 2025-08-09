@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
@@ -24,6 +25,7 @@ import { MathEditComponent } from '../../../components/mathedit/math-edit/math-e
         FormsModule,
         MatCheckboxModule,
         MatButtonModule,
+        MatTooltipModule,
         MapEditComponent,
         MathEditComponent,
         HeaderComponent,

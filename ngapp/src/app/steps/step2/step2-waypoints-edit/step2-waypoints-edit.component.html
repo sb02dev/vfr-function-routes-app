@@ -1,5 +1,5 @@
 <app-header [step-index]="2"
-            title="Create waypoints"
+            header_title="Create waypoints"
             tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
                      In Edit mode you can move waypoints with the left mouse button and create a new one with the middle button.
                      In the table on the right you can edit the waypoint names and reorder or delete them.">
@@ -16,29 +16,29 @@
         <table>
             <thead class="table-header-cell">
                 <td>Name</td>
-                <td>XY</td>
                 <td>Lon/Lat</td>
                 <td>Actions</td>
             </thead>
             <tbody class="table-cell">
                 <tr *ngFor="let wp of waypoints; index as i">
                     <td><input placeholder="name" type="text" [value]="wp.name" (change)="renameWaypoint(i, $event)"></td>
-                    <td>{{wp.x | number:'1.0-0'}} {{wp.y | number:'1.0-0'}}</td>
                     <td [className]="wp.lonlat_valid?'':'lonlat-invalid'">{{wp.lon | number:'1.2-2'}} {{wp.lat |
                         number:'1.2-2'}}</td>
                     <td>
                         <span class="row-buttons">
                             <span class="stacked-buttons">
-                                <a (click)="moveWaypoint(i, true)" [className]="i>0?'':'disabled-button'">
+                                <a (click)="moveWaypoint(i, true)" [className]="i>0?'':'disabled-button'"
+                                   matTooltip="Move waypoint up" matTooltipShowDelay="500" >
                                     <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up"
                                         fontIcon="arrow_drop_up" fontSize="12"></mat-icon>
                                 </a>
-                                <a (click)="moveWaypoint(i, false)" [className]="i<waypoints.length-1?'':'disabled-button'">
+                                <a (click)="moveWaypoint(i, false)" [className]="i<waypoints.length-1?'':'disabled-button'"
+                                   matTooltip="Move waypoint down" matTooltipShowDelay="500">
                                     <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up"
                                         fontIcon="arrow_drop_down" fontSize="12"></mat-icon>
                                 </a>
                             </span>
-                            <a (click)="deleteWaypoint(i)">
+                            <a (click)="deleteWaypoint(i)" matTooltip="Delete waypoint" matTooltipShowDelay="500">
                                 <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
                             </a>
                         </span>

@@ -5,12 +5,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { Subscription } from 'rxjs';
 import { ColorSketchModule } from 'ngx-color/sketch';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { ColorPickerDialogComponent } from '../../../components/colorpicker/color-picker-dialog/color-picker-dialog.component';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { HeaderComponent } from '../../../components/header/header/header.component';
 import { Track } from '../../../models/track';
 import { MapEditComponent } from '../../../components/mapedit/map-edit/map-edit.component';
 import { ImageEditService } from '../../../services/image-edit.service';
-import { ColorPickerDialogComponent } from '../../../components/colorpicker/color-picker-dialog/color-picker-dialog.component';
 
 @Component({
     selector: 'app-step5-add-tracks',
@@ -19,6 +20,7 @@ import { ColorPickerDialogComponent } from '../../../components/colorpicker/colo
         CommonModule,
         MatIconModule,
         MatButtonModule,
+        MatTooltipModule,
         ColorSketchModule,
         MatDialogModule,
         HeaderComponent,

@@ -10,6 +10,7 @@ import { ImageEditService } from '../../../services/image-edit.service';
 import { Waypoint } from '../../../models/waypoint';
 import { HeaderComponent } from "../../../components/header/header/header.component";
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
     selector: 'app-step2-waypoints-edit',
@@ -18,6 +19,7 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
         CommonModule,
         MatButtonModule,
         MatIconModule,
+        MatTooltipModule,
         FlexLayoutModule,
         HeaderComponent,
         MapEditComponent

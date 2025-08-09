@@ -1,12 +1,12 @@
 <app-header [step-index]="1" 
-            title="Set area of interest"
+            header_title="Set area of interest"
             (before-forward)="stepForward()"
             tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
                      In Edit mode you can move the corners of the area with the left mouse button.
                      In the table on the right you see the latitude-longitude values of the corners.">
 </app-header>
 <app-map-edit
-    panelWidth="350px"
+    panelWidth="250px"
     (drawOverlay)="drawOverlayTransformed($event)"
     (enumPoints)="enumPoints($event)"
     (movePointTo)="movePointTo($event)"
@@ -16,18 +16,15 @@
         <table>
             <thead class="table-header-cell">
                 <td>Point</td>
-                <td>XY</td>
                 <td>Lon/Lat</td>
             </thead>
             <tbody class="table-cell">
                 <tr>
                     <td>Top-Left</td>
-                    <td>{{rect[0] | number:'1.0-0'}} {{rect[1] | number:'1.0-0'}}</td>
                     <td>{{lonlat[0] | number:'1.2-2'}} {{lonlat[1]  | number:'1.2-2'}}</td>
                 </tr>
                 <tr>
                     <td>Bottom-Right</td>
-                    <td>{{rect[0] + rect[2] | number:'1.0-0'}} {{rect[1] + rect[3]| number:'1.0-0'}}</td>
                     <td>{{lonlat[2] | number:'1.2-2'}} {{lonlat[3] | number:'1.2-2'}}</td>
                 </tr>
             </tbody>

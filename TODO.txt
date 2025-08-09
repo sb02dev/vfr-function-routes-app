@@ -1,3 +1,4 @@
+- bugfix: multiple constraint points, not editable?
 - progress indication while waiting for server
 - give visual feedback if no route is open on the server for the
   current session
@@ -13,6 +14,7 @@
 - order constraint points by func_x automatically
 - save to cloud
 - extend map drawing with logging
+- multiple maps (from multiple countries)
 
 v0.3
 
@@ -62,6 +64,8 @@ v0.2
 + annotations: text is english + bugfix of prev commit
 + annotations: more precise bubble estimation
 + annotations: bubbles can be moved with mouse
++ add tooltips to buttons, no tooltip for app-header
++ remove unneccessary info (XY in map info panel)
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 

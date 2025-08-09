@@ -1,11 +1,17 @@
 <section fxLayout="row" class="page-content">
     <div class="map-controls" fxLayout="column">
-        <a mat-icon-button (click)="resetView()"><mat-icon aria-hidden="false" aria-label="Reset view" fontIcon="home"></mat-icon></a>
-        <a mat-icon-button (click)="zoomToAll()"><mat-icon aria-hidden="false" aria-label="Reset view" fontIcon="zoom_out_map"></mat-icon></a>
-        <a mat-icon-button [class]="selectedTool=='panzoom'?'mat-tonal-button':''" (click)="selectedTool='panzoom'">
+        <a mat-icon-button (click)="resetView()" matTooltip="Reset view (top-left, 100% zoom)" matTooltipPosition="right" matTooltipShowDelay="500">
+            <mat-icon aria-hidden="false" aria-label="Reset view" fontIcon="home"></mat-icon>
+        </a>
+        <a mat-icon-button (click)="zoomToAll()" matTooltip="Zoom to fit view" matTooltipPosition="right" matTooltipShowDelay="500">
+            <mat-icon aria-hidden="false" aria-label="Reset view" fontIcon="zoom_out_map"></mat-icon>
+        </a>
+        <a mat-icon-button [class]="selectedTool=='panzoom'?'mat-tonal-button':''" (click)="selectedTool='panzoom'"
+           matTooltip="Pan and zoom tool" matTooltipPosition="right" matTooltipShowDelay="500">
             <mat-icon aria-hidden="false" aria-label="Pan/Zoom" fontIcon="pan_tool"></mat-icon>
         </a>
-        <a mat-icon-button [class]="selectedTool=='edit'?'mat-tonal-button':''" (click)="selectedTool='edit'">
+        <a mat-icon-button [class]="selectedTool=='edit'?'mat-tonal-button':''" (click)="selectedTool='edit'"
+           matTooltip="Point or bubble select/move/create tool" matTooltipPosition="right" matTooltipShowDelay="500">
             <mat-icon aria-hidden="false" aria-label="Edit" fontIcon="edit"></mat-icon>
         </a>
     </div>
