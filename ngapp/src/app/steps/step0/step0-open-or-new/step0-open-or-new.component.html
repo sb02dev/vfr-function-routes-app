@@ -14,6 +14,11 @@
         <a mat-raised-button (click)="createRoute()">Create a route</a>
         &nbsp;
         <a mat-raised-button (click)="loadSample()">Sample route</a>
+        &nbsp;
+        <a mat-raised-button [matMenuTriggerFor]="publishedRoutes">Load published route</a>
+        <mat-menu #publishedRoutes="matMenu">   
+            <button *ngFor="let rname of publishedRouteList; index as i" mat-menu-item (click)="publishedRoute(i)">{{rname}}</button>
+        </mat-menu>
     </div>
     <form [formGroup]="form" fxLayout="column" class="spacing">
         <h1>Data of new route:</h1>

@@ -16,7 +16,6 @@
 - session management
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
-- save to cloud / user management(?)
 - multiple maps (from multiple countries)
 - consider place-name based waypoint selection (based on a public database)
 
@@ -76,6 +75,7 @@ v0.2
 + calculation of final map size: area of interest never decreased, but
   increased if some function point would go outside
 + bugfix: extent calculation directly after load (matrix and function does not exist yet)
++ save to cloud
 
 
 v0.1:

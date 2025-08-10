@@ -9,6 +9,7 @@ environment.dev*.ts
 data/
 output/
 tracks/
+routes/
 
 
 # VirtualEnv files

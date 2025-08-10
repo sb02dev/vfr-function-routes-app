@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -6,12 +6,15 @@ import { MatInputModule } from '@angular/material/input';
 import { MatCardModule } from '@angular/material/card';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatCommonModule, provideNativeDateAdapter } from '@angular/material/core';
+import { MatMenuModule } from '@angular/material/menu';
 import { Router } from '@angular/router';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { HeaderComponent } from '../../../components/header/header/header.component';
+import { Subscription } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'ANNOTATIONS', 'FINALIZED'];
 
@@ -26,6 +29,7 @@ const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'AN
         MatCardModule,
         MatDatepickerModule,
         MatCommonModule,
+        MatMenuModule,
         ReactiveFormsModule,
         CommonModule,
         HeaderComponent
@@ -34,11 +38,16 @@ const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'AN
     templateUrl: './step0-open-or-new.component.html',
     styleUrl: './step0-open-or-new.component.css'
 })
-export class Step0OpenOrNewComponent {
+export class Step0OpenOrNewComponent implements AfterViewInit, OnDestroy {
+
+    subs: Subscription;
+
     @ViewChild('file_selector') file_selector!: ElementRef<HTMLInputElement>;
     form: FormGroup;
 
-    constructor(public router: Router, private fb: FormBuilder, private imgsrv: ImageEditService) {
+    publishedRouteList: string[] = [];
+
+    constructor(public router: Router, private fb: FormBuilder, private imgsrv: ImageEditService, private snackbar: MatSnackBar) {
         this.form = this.fb.group({
             rteName: [null, Validators.required],
             speed: [90, Validators.required],
@@ -51,6 +60,29 @@ export class Step0OpenOrNewComponent {
             "dof": new Date(2025, 8, 1, 7, 0),
             "tof": "07:00"
         });
+        this.subs = imgsrv.channel.subscribe((msg) => {
+            if (msg.type === 'published-routes') {
+                this.publishedRouteList = msg['routes'];
+            } else if (msg.type === 'load-result') {
+                if (msg['result'] === 'success') {
+                    this.snackbar.open('Route loaded', undefined, { duration: 5000, panelClass: 'snackbar-success' });
+                    // now we can go to the first step
+                    if (msg['step']) {
+                        this.router.navigateByUrl(`/step${msg['step']}`);
+                    } else {
+                        this.router.navigateByUrl('/step1');
+                    }
+                } else if (msg['result'] === 'failed') {
+                    this.snackbar.open('Load of route failed', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+                }
+            }
+        });
+    }
+    ngOnDestroy(): void {
+        this.subs.unsubscribe();
+    }
+    ngAfterViewInit(): void {
+        this.imgsrv.send({ type: 'get-published-routes' });
     }
 
 
@@ -70,11 +102,6 @@ export class Step0OpenOrNewComponent {
                     });
                     break; // don't upload multiple files
                 };
-                // jump to its current step
-                const rte = JSON.parse(fstr);
-                const sstep = rte['state'];
-                const step = steps.indexOf(sstep)+1;
-                this.router.navigateByUrl(`/step${step}`)
             }
         }
         fs.click()
@@ -92,8 +119,6 @@ export class Step0OpenOrNewComponent {
             speed: val.speed,
             dof: dof
         })
-        // jump to its current step (first)
-        this.router.navigateByUrl('/step1');
     }
 
 
@@ -102,6 +127,13 @@ export class Step0OpenOrNewComponent {
         this.imgsrv.send({
             type: 'sample'
         })
-        this.router.navigateByUrl('/step1');
+    }
+
+    publishedRoute(index: number) {
+        // load sample route and go to its current step (last)
+        this.imgsrv.send({
+            type: 'load-published',
+            fname: this.publishedRouteList[index],
+        })
     }
 }  

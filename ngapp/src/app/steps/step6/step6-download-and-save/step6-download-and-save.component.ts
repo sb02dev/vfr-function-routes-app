@@ -6,6 +6,7 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subscription } from 'rxjs';
 
 import { HeaderComponent } from '../../../components/header/header/header.component';
@@ -38,7 +39,7 @@ export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
 
     private pendingMeta: any = null;
 
-    constructor(private imgsrv: ImageEditService) {
+    constructor(private imgsrv: ImageEditService, private snackbar: MatSnackBar) {
         this.subs = imgsrv.channel.subscribe((msg) => {
             if (msg.type === 'docx' || msg.type === 'png') {                
                 this.pendingMeta = msg;
@@ -48,6 +49,14 @@ export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
             } else if (msg.type === 'dof') {
                 this.dof = new Date(msg['dof']);
                 this.tof = ("00" + this.dof.getUTCHours()).slice(-2) + ":" + ("00" + this.dof.getUTCMinutes()).slice(-2) + ":" + ("00" + this.dof.getUTCSeconds()).slice(-2);
+            } else if (msg.type === 'save-to-cloud-result') {
+                if (msg['result'] === 'success') {
+                    this.snackbar.open(`Route saved on server (name: ${msg['fname']})`, undefined, { duration: 5000, panelClass: 'snackbar-success' });
+                } else if (msg['result'] === 'failed') {
+                    this.snackbar.open('Save of route on server failed', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+                } else if (msg['result'] === 'no-route') {
+                    this.snackbar.open('No route open on server', undefined, { duration: 3000, panelClass: 'snackbar-warning' });
+                }
             }
         });
         this.binary_subs = imgsrv.binary_channel.subscribe((msg: Blob) => {
@@ -79,6 +88,7 @@ export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
     downloadVFR() { this.imgsrv.send({ type: 'get-vfr' }); }
     downloadGPX() { this.imgsrv.send({ type: 'get-gpx' }); }
     downloadPNG() { this.imgsrv.send({ type: 'get-png' }); }
+    saveToServer() { this.imgsrv.send({ type: 'save-to-cloud' }); }
 
     private base64ToBlob(base64: string, mime: string): Blob {
         const byteChars = atob(base64);

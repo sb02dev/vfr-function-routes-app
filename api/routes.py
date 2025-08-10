@@ -169,35 +169,63 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             ################################################
             # Step 0: Initialize a VFRFunctionRoute object #
             ################################################
+            elif msgtype == 'get-published-routes':
+                routefiles = [f for f in os.listdir(os.path.join(rootpath, "routes")) if os.path.isfile(os.path.join(rootpath, "routes", f)) and f.endswith('.vfr')]
+                await websocket.send_json({"type": "published-routes", "routes": routefiles})
             elif msgtype=='create':
-                dv = msg.get("dof", None)
-                if dv:
-                    d = datetime.datetime.fromisoformat(dv)
-                else:
-                    d = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)
-                rte = VFRFunctionRoute(
-                    msg.get("name", "Untitled route"),
-                    msg.get("speed", 90),
-                    d,
-                    session = global_requests_session,
-                    workfolder=os.path.join(rootpath, "data"),
-                    outfolder=os.path.join(rootpath, "output"),
-                    tracksfolder=os.path.join(rootpath, "tracks")
-                )
-                _vfrroutes.set(session_id, rte)
+                try:
+                    dv = msg.get("dof", None)
+                    if dv:
+                        d = datetime.datetime.fromisoformat(dv)
+                    else:
+                        d = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)
+                    rte = VFRFunctionRoute(
+                        msg.get("name", "Untitled route"),
+                        msg.get("speed", 90),
+                        d,
+                        session = global_requests_session,
+                        workfolder=os.path.join(rootpath, "data"),
+                        outfolder=os.path.join(rootpath, "output"),
+                        tracksfolder=os.path.join(rootpath, "tracks")
+                    )
+                    _vfrroutes.set(session_id, rte)
+                    await websocket.send_json({"type": "load-result", "result": "success"})
+                except:
+                    await websocket.send_json({"type": "load-result", "result": "failed"})
             elif msgtype=='sample':
-                rte = default_route()
-                _vfrroutes.set(session_id, rte)
+                try:
+                    rte = default_route()
+                    _vfrroutes.set(session_id, rte)
+                    await websocket.send_json({"type": "load-result", "result": "success"})
+                except:
+                    await websocket.send_json({"type": "load-result", "result": "failed"})
             elif msgtype == 'load':
-                rte = VFRFunctionRoute.fromJSON(
-                    msg.get('data'),
-                    session=global_requests_session,
-                    workfolder=os.path.join(rootpath, "data"),
-                    outfolder=os.path.join(rootpath, "output"),
-                    tracksfolder=os.path.join(rootpath, "tracks")
-                )
+                try:
+                    rte = VFRFunctionRoute.fromJSON(
+                        msg.get('data'),
+                        session=global_requests_session,
+                        workfolder=os.path.join(rootpath, "data"),
+                        outfolder=os.path.join(rootpath, "output"),
+                        tracksfolder=os.path.join(rootpath, "tracks")
+                    )
 
-                _vfrroutes.set(session_id, rte)
+                    _vfrroutes.set(session_id, rte)
+                    await websocket.send_json({"type": "load-result", "result": "success", "step": rte._state.value})
+                except:
+                    await websocket.send_json({"type": "load-result", "result": "failed"})
+            elif msgtype=='load-published':
+                try:
+                    with open(os.path.join(rootpath, "routes", msg["fname"]), 'rt', encoding='utf8') as f:
+                        rte = VFRFunctionRoute.fromJSON(''.join(f.readlines()),
+                                                        global_requests_session,
+                                                        workfolder=os.path.join(rootpath, "data"),
+                                                        outfolder=os.path.join(rootpath, "output"),
+                                                        tracksfolder=os.path.join(rootpath, "data")
+                                                        )
+                    _vfrroutes.set(session_id, rte)
+                    await websocket.send_json({"type": "load-result", "result": "success", "step": rte._state.value})
+                except:
+                    await websocket.send_json({"type": "load-result", "result": "failed"})
 
             #######################################################
             # Step 1: mark an 'area of interest' on a low-res map #
@@ -503,6 +531,24 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         "type": "dof",
                         "dof":  rte.dof.isoformat(),
                     }))
+
+            elif msgtype == 'save-to-cloud':
+                if rte:
+                    try:
+                        fname = f"{rte.name}.vfr"
+                        cnt = 0
+                        while os.path.isfile(os.path.join(rootpath, 'routes', fname)):
+                            fname = f"{rte.name}-{cnt:04d}.vfr"
+                            cnt += 1
+                        with open(os.path.join(rootpath, 'routes', fname), "wt", encoding='utf8') as f:
+                            f.write(rte.toJSON())
+                        await websocket.send_json({"type": "save-to-cloud-result",
+                                                   "result": "success",
+                                                   "fname": fname})
+                    except:
+                        await websocket.send_json({"type": "save-to-cloud-result", "result": "fail"})
+                else:
+                    await websocket.send_json({"type": "save-to-cloud-result", "result": "no-route"})
 
 
 

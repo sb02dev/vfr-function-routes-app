@@ -31,6 +31,7 @@ COPY --from=frontend /app/frontend/browser ./frontend/browser
 RUN mkdir data
 RUN mkdir output
 RUN mkdir tracks
+RUN mkdir routes
 
 # Expose port
 EXPOSE 8080
