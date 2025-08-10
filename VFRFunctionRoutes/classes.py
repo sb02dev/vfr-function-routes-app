@@ -428,12 +428,20 @@ class VFRLeg:
         
         
     def get_extent(self) -> ExtentLonLat:
-        return _get_extent_from_points([PointLonLat(p.lon, p.lat) for p, x in self.points])
+        x = np.linspace(min([x for p, x in self.points]),
+                        max([x for p, x in self.points]),
+                        100
+                       )
+        psrc = [VFRPoint(x, self.function(x), VFRCoordSystem.FUNCTION, self._route, self) for x in x]
+        ps = [p.project_point(VFRCoordSystem.LONLAT) for p in psrc]
+        pll = [PointLonLat(p.lon, p.lat) for p in ps] + \
+              [PointLonLat(p.lon, p.lat) for p, x in self.points]
+        return _get_extent_from_points(pll)
         
         
     def draw(self, ax, with_annotations: bool = True):
         # draw planned track
-        x = np.linspace(min([x for p, x in self.points]), 
+        x = np.linspace(min([x for p, x in self.points]),
                         max([x for p, x in self.points]),
                         100
                        )
@@ -1144,28 +1152,31 @@ class VFRFunctionRoute:
                 distance of minimum and maximum longitudinal coordinates.
                 Default is equal to horizontal margin.
         """
-        lat0, lat1, lon0, lon1 = (0, 0, 0, 0)
-        if self._state==VFRRouteState.INITIATED:
-            self.extent=ExtentLonLat(18.5, 47.0, 19.5, 47.5) # just a default around Budapest
-        elif self._state in [VFRRouteState.AREAOFINTEREST, VFRRouteState.WAYPOINTS]:
-            lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
-                                        self.area_of_interest["bottom-right"].lat,
-                                        self.area_of_interest["top-left"].lon,
-                                        self.area_of_interest["bottom-right"].lon)
-            self.extent = ExtentLonLat(
-                min(lon0, lon1),
-                min(lat0, lat1),
-                max(lon0, lon1),
-                max(lat0, lat1)
-            )
+        lat0, lat1, lon0, lon1 = (self.area_of_interest["top-left"].lat,
+                                    self.area_of_interest["bottom-right"].lat,
+                                    self.area_of_interest["top-left"].lon,
+                                    self.area_of_interest["bottom-right"].lon)
+        AOI = ExtentLonLat(
+            min(lon0, lon1),
+            min(lat0, lat1),
+            max(lon0, lon1),
+            max(lat0, lat1)
+        )
+        if self._state in [VFRRouteState.INITIATED, VFRRouteState.AREAOFINTEREST, VFRRouteState.WAYPOINTS]:
+            # at this stage we only have area of interest (which is always set, at least to a default)
+            self.extent = AOI
         elif self._state in [VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
+            # get the automatic bounding box
             if len(self.legs)==0 and len(self.tracks)==0:
-                self.extent=ExtentLonLat(18.5, 47.0, 19.5, 47.5) # just a default around Budapest
-                return
-            extent = _get_extent_from_extents(
-                    [l.get_extent() for l in self.legs] +
-                    [t.get_extent() for t in self.tracks]
-                )
+                # no legs, no tracks fall back to waypoints extent
+                extent = _get_extent_from_points([PointLonLat(p.lon, p.lat) for name, p in self.waypoints])
+            else:
+                # we have at least one leg or track, use those (leg points contain waypoints)
+                extent = _get_extent_from_extents(
+                        [l.get_extent() for l in self.legs] +
+                        [t.get_extent() for t in self.tracks]
+                    )
+            # add margins
             if margin_y is None:
                 margin_y = margin_x
             extent_with_margins = ExtentLonLat(
@@ -1174,7 +1185,15 @@ class VFRFunctionRoute:
                     extent.maxlon + (extent.maxlon-extent.minlon)*margin_x,
                     extent.maxlat + (extent.maxlat-extent.minlat)*margin_y
                 )
-            self.extent = extent_with_margins
+            # get the bounding box of the automatic and the manually defined
+            # (i.e. only increase manually given box)
+            extent_or_aoi = ExtentLonLat(
+                min(extent_with_margins.minlon, AOI.minlon),
+                min(extent_with_margins.minlat, AOI.minlat),
+                max(extent_with_margins.maxlon, AOI.maxlon),
+                max(extent_with_margins.maxlat, AOI.maxlat)
+            )
+            self.extent = extent_or_aoi
 
 
     def get_mapxyextent(self) -> ExtentXY:
