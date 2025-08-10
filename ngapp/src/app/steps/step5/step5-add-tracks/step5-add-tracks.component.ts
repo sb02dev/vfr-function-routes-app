@@ -40,7 +40,6 @@ export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
     constructor(private imgsrv: ImageEditService, private dialog: MatDialog) {
         this.subs = imgsrv.channel.subscribe((msg) => {
             if (msg.type === 'tracks') {
-                this.mapedit.drawBackgroundImage(msg['image']);
                 this.tracks = msg['tracks'].map((trk: any) => {
                     return {
                         name: trk.name,

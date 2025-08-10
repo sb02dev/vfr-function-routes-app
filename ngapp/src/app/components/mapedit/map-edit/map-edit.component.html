@@ -16,9 +16,21 @@
         </a>
     </div>
     <div class="map-content">
+        <!-- Background canvas (tiles) -->
         <canvas id="bgCanvas" #bgCanvas></canvas>
+        <!-- SVG overlay container (between the canvases) -->
         <div class="svg-container" #svgContainer [innerHTML]="svgContent"></div>
+        <!-- Foreground canvas frontend drawn points / paths / bubbles -->
         <canvas id="overlayCanvas" #overlayCanvas></canvas>
+        <!-- Invisible capture layer for pointer events (useful for mobile) -->
+        <div #pointerCapture class="pointer-capture"
+             (pointerdown)="onPointerDown($event)"
+             (pointermove)="onPointerMove($event)"
+             (pointerup)="onPointerUp($event)"
+             (pointercancel)="onPointerCancel($event)"
+             (wheel)="onMouseWheel($event)"
+        >
+        </div>
     </div>
     <div class="map-info" [style.width]="panelWidth">
         <ng-content></ng-content>

@@ -3,6 +3,7 @@
 
 # Configuration files with secrets
 .env
+environment.dev*.ts
 
 # Temporary files
 data/

@@ -1,11 +1,11 @@
 - bugfix: multiple constraint points, not editable?
-- mobile friendly (responsive + touch controls)
+- mobile friendly: responsive
 - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds
   and decimal format)
 - progress indication while waiting for server
 - give visual feedback if no route is open on the server for the
   current session
-- bubbles' conent revised/customizable
+- bubbles' content revised/customizable
 - colorpicker default listed colors revised (high contrast)
 - speed is modifiable in step 6
 - bugfix: map-info width and horizontal scrolling
@@ -17,10 +17,9 @@
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
 - order constraint points by func_x automatically
-- save to cloud
-- extend map drawing with logging
+- save to cloud / user management(?)
 - multiple maps (from multiple countries)
-- consider place name based waypoint selection (based on a public database)
+- consider place-name based waypoint selection (based on a public database)
 
 v0.3
 
@@ -73,6 +72,7 @@ v0.2
 + add tooltips to buttons, no tooltip for app-header
 + remove unneccessary info (XY in map info panel)
 + double-click instead of middle button
++ mobile friendly: touch controls
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 

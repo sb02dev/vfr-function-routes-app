@@ -38,14 +38,26 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     @Output() movePointTo = new EventEmitter<{ i: number, ex: number, ey: number, dx: number, dy: number, x: number, y: number, callback: () => void }>();
     @Output() finalizePoints = new EventEmitter();
 
-    // canvas and tool selection
+    // canvases
     @ViewChild('bgCanvas', { static: true }) bgCanvasRef!: ElementRef<HTMLCanvasElement>;
     @ViewChild('overlayCanvas', { static: true }) overlayCanvasRef!: ElementRef<HTMLCanvasElement>;
     @ViewChild('svgContainer', { static: true }) svgContainer!: ElementRef<HTMLDivElement>;
+    @ViewChild('pointerCapture', { static: true }) pointerCapture!: ElementRef<HTMLDivElement>;
     private bgResize!: ResizeObserver;
-    baseImage: HTMLImageElement | null = null;
-    public selectedTool: string = 'panzoom';
     public svgContent: SafeHtml = '';
+
+    // tool selection
+    public selectedTool: string = 'panzoom';
+
+    // pointer tracking for pan/pinch
+    private pointers = new Map<number, PointerEvent>();
+    private initialPinchDistance = 0;
+    private initialViewAtPinch: any = null;
+    private initialPinchCenter: { x: number, y: number } | null = null;
+    private clickTimer: any;
+    private viewWindow = { x0: 0, y0: 0, x1: 4, y1: 4 }; // we store view window in image-space: x0,y0,x1,y1
+    private panStart: { x: number, y: number } | null = null;
+    private zoomFactor: number = 1.1; // how much to zoom in/out per scroll step
 
     // tile related
     private tilesetParams!: { tilesetName: string, dpi: number };
@@ -54,85 +66,26 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     private tileRange: { x: [number, number], y: [number, number] } = { x: [0, 0], y: [0, 0] };
     private tileCrop: { x0: number, y0: number, x1: number, y1: number } = { x0: 0, y0: 0, x1: 0, y1: 0 };
     private imageSize: { x: number, y: number } = { x: 0, y: 0 };
-    clickTimer: any;
     get dpi() { return this.tilesetParams.dpi }
-
-    // pan and zoom variables
-    private xlim: [number, number] = [0, 4];
-    private ylim: [number, number] = [0, 4];
-    private panStart: { x: number, y: number } | null = null;
-    private zoomFactor: number = 1.1; // how much to zoom in/out per scroll step
 
     // point edit variables
     private selectionDistance: number = 10.;
     selectedPoint: number | null = null;
 
 
+    // ---------- component lifecycle ----------
     constructor(private imgsrv: ImageEditService, private tilesvc: TileService, private sanitizer: DomSanitizer) {
         this.subs = this.imgsrv.channel.subscribe((msg: ImageEditMessage) => {
-            if (msg.type === 'tiled-image') {
-                // we have an image header, get ready to receive the image tiles
-                // save the image data (tilesize & tilecount)
-                this.tilesetParams = { tilesetName: msg['tilesetname'], dpi: msg['dpi'] };
-                this.tileSize = msg['tilesize'];
-                this.tileCount = msg['tilecount'];
-                this.imageSize = msg['imagesize'];
-                this.tileRange = msg['tilerange']
-                this.tileCrop = msg['tilecrop'];
-                // setup the SVG container
-                if (msg['additional_data'] && msg['additional_data']['svg_overlay']) {
-                    this.setSVG(msg['additional_data']['svg_overlay']);
-                }
-                // zoom to fit - delayed because for some reason this is not always done
-                setTimeout(() => { this.zoomToAll(); }, 500); 
-                // redraw with no image
-                this.drawBackgroundTransformed();
-            }
+            this.receiveServerMessage(msg);
         });
     }
     
-
-    public setSVG(svgstr: string) {
-        this.svgContainer.nativeElement.style.width = `${this.imageSize.x}px`;
-        this.svgContainer.nativeElement.style.height = `${this.imageSize.y}px`;
-        this.svgContent = this.sanitizer.bypassSecurityTrustHtml(svgstr ?? '');
-        setTimeout(() => { this.updateSVGTransform(); }, 500);
-    }
-
     ngAfterViewInit(): void {
         // setup resize handlers
         this.bgResize = new ResizeObserver(() => {
-            const w = this.bgCanvasRef.nativeElement.clientWidth;
-            const h = this.bgCanvasRef.nativeElement.clientHeight;
-            // update canvas size or layout
-            this.bgCanvasRef.nativeElement.width = w;
-            this.bgCanvasRef.nativeElement.height = h;
-            this.xlim = [this.xlim[0], this.xlim[0] + w];
-            this.ylim = [this.ylim[0], this.ylim[0] + h];
-            this.overlayCanvasRef.nativeElement.width = w;
-            this.overlayCanvasRef.nativeElement.height = h;
-            // redraw
-            this.drawBackgroundTransformed();
-            this.updateSVGTransform();
-            this.drawOverlayTransformed();
+            this.onScreenResized();
         });
         this.bgResize.observe(this.bgCanvasRef.nativeElement);
-
-        // setup click handlers
-        this.bgCanvasRef.nativeElement.addEventListener('mousedown', e => this.mouseDown(e));
-        this.overlayCanvasRef.nativeElement.addEventListener('mousedown', e => this.mouseDown(e));
-
-        this.bgCanvasRef.nativeElement.addEventListener('mousemove', e => this.mouseMove(e));
-        this.overlayCanvasRef.nativeElement.addEventListener('mousemove', e => this.mouseMove(e));
-
-        this.bgCanvasRef.nativeElement.addEventListener('mouseup', e => this.mouseUp(e));
-        this.overlayCanvasRef.nativeElement.addEventListener('mouseup', e => this.mouseUp(e));
-
-        this.bgCanvasRef.nativeElement.addEventListener('mouseleave', e => this.mouseLeave(e));
-        this.overlayCanvasRef.nativeElement.addEventListener('mouseleave', e => this.mouseLeave(e));
-
-        this.bgCanvasRef.nativeElement.addEventListener('wheel', e => this.mouseWheel(e), { passive: false });
-        this.overlayCanvasRef.nativeElement.addEventListener('wheel', e => this.mouseWheel(e), { passive: false });
 
     }
 
@@ -142,9 +95,44 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         this.subs.unsubscribe();
     }
 
+    
+    // ---------- public property hooks ----------
+    public setSVG(svgstr: string) {
+        this.svgContainer.nativeElement.style.width = `${this.imageSize.x}px`;
+        this.svgContainer.nativeElement.style.height = `${this.imageSize.y}px`;
+        this.svgContent = this.sanitizer.bypassSecurityTrustHtml(svgstr ?? '');
+        setTimeout(() => { this.updateSVGTransform(); }, 500);
+    }
+
+
+    // ---------- communication with server ----------
+    private receiveServerMessage(msg: ImageEditMessage) {
+        if (msg.type === 'tiled-image') {
+            // we have an image header, get ready to receive the image tiles
+            // save the image data (tilesize & tilecount)
+            this.tilesetParams = { tilesetName: msg['tilesetname'], dpi: msg['dpi'] };
+            this.tileSize = msg['tilesize'];
+            this.tileCount = msg['tilecount'];
+            this.imageSize = msg['imagesize'];
+            this.tileRange = msg['tilerange'];
+            this.tileCrop = msg['tilecrop'];
+            // setup the SVG container
+            if (msg['additional_data'] && msg['additional_data']['svg_overlay']) {
+                this.setSVG(msg['additional_data']['svg_overlay']);
+            }
+            // zoom to fit - delayed because for some reason this is not always done
+            setTimeout(() => { this.zoomToAll(); }, 500);
+            // redraw with no image
+            this.drawBackgroundTransformed();
+        }
+    }
+
+    // ---------- button events ----------
     resetView() {
-        this.xlim = [0, this.bgCanvasRef.nativeElement.width];
-        this.ylim = [0, this.bgCanvasRef.nativeElement.height];
+        this.viewWindow = {
+            x0: 0, x1: this.bgCanvasRef.nativeElement.width,
+            y0: 0, y1: this.bgCanvasRef.nativeElement.height
+        };
         this.drawBackgroundTransformed();
         this.updateSVGTransform();
         this.drawOverlayTransformed();
@@ -153,51 +141,62 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     zoomToAll() {
         let imw = 0;
         let imh = 0;
-        if (this.baseImage) {
-            imw = this.baseImage.width;
-            imh = this.baseImage.height;
-        } else {
-            imw = this.imageSize.x;
-            imh = this.imageSize.y;
-        }
+        imw = this.imageSize.x;
+        imh = this.imageSize.y;
         const canvasw = this.bgCanvasRef.nativeElement.width;
         const canvash = this.bgCanvasRef.nativeElement.height;
         const widthratio = imw / canvasw;
         const heightratio = imh / canvash;
         if (widthratio > heightratio) {
-            this.xlim = [0,imw];
-            this.ylim = [0,canvash*widthratio];
+            this.viewWindow = { x0: 0, x1: imw, y0: 0, y1: canvash*widthratio};
         } else {
-            this.xlim = [0,canvasw*heightratio];
-            this.ylim = [0,imh];
+            this.viewWindow = { x0: 0, x1: canvasw * heightratio, y0: 0, y1: imh };
         }
         this.drawBackgroundTransformed();
         this.updateSVGTransform();
         this.drawOverlayTransformed();
     }
 
-    private mouseDown(e: MouseEvent) {
-        if (this.selectedTool == 'panzoom') {
-            if (e.button === 1 || e.button === 0) {  // middle or left
+
+    // ---------- pointer events ----------
+    onPointerDown(e: PointerEvent) {
+        (e.target as Element).setPointerCapture(e.pointerId);
+        this.pointers.set(e.pointerId, e);
+        console.log('pointer down', e.pointerId, this.pointers.size);
+
+        if (this.pointers.size === 1) {
+            // start pan or edit
+            if (this.selectedTool == 'panzoom') {
                 this.panStart = { x: e.offsetX, y: e.offsetY };
-            }
-        } else if (this.selectedTool == 'edit') {
-            if (this.clickTimer) {
-                clearTimeout(this.clickTimer);
-                this.clickTimer = null;
-                // Handle double-click
-                this.doubleMouseDown(e);
-            } else {
-                this.clickTimer = setTimeout(() => {
+            } else if (this.selectedTool == 'edit') {
+                if (this.clickTimer) {
+                    clearTimeout(this.clickTimer);
                     this.clickTimer = null;
-                    // Handle single click
-                    this.singleMouseDown(e);
-                }, environment.DOUBLE_CLICK_DELAY); // Adjust the delay to match your double-click threshold
+                    // Handle double-click
+                    e.preventDefault();
+                    this.doublePointerDown(e);
+                } else {
+                    this.clickTimer = setTimeout(() => {
+                        this.clickTimer = null;
+                        // Handle single click
+                        this.singlePointerDown(e);
+                    }, environment.DOUBLE_CLICK_DELAY); // Adjust the delay to match your double-click threshold
+                }
             }
+        } else if (this.pointers.size === 2) {
+            console.log('second touch')
+            // start pinch
+            const points = Array.from(this.pointers.values());
+            this.initialPinchDistance = this.distance(points[0], points[1]);
+            this.initialViewAtPinch = { ...this.viewWindow };
+            this.initialPinchCenter = {
+                x: (points[0].offsetX + points[1].offsetX) / 2,
+                y: (points[0].offsetY + points[1].offsetY) / 2
+            };
         }
     }
 
-    private singleMouseDown(e: MouseEvent) {
+    private singlePointerDown(e: PointerEvent) {
         if (e.button === 1 || e.button === 0) { // middle or left
             this.panStart = { x: e.offsetX, y: e.offsetY };
         }
@@ -242,7 +241,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         }
     }
 
-    doubleMouseDown(e: MouseEvent) {
+    private doublePointerDown(e: PointerEvent) {
         const x = e.offsetX;
         const y = e.offsetY;
         if (e.button == 0) { // left double-click creates a new point
@@ -255,181 +254,129 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         }
     }
 
-    private mouseMove(e: MouseEvent) {
-        if (this.selectedTool == 'panzoom') {
-            if (this.panStart) {
-                const dx = e.offsetX - this.panStart.x;
-                const dy = e.offsetY - this.panStart.y;
-                this.panStart = { x: e.offsetX, y: e.offsetY };
+    onPointerMove(e: PointerEvent) {
+        if (!this.pointers.has(e.pointerId)) return;
+        this.pointers.set(e.pointerId, e);
 
-                const canvas: HTMLCanvasElement = this.bgCanvasRef.nativeElement;
-                const [xmin, xmax] = this.xlim;
-                const [ymin, ymax] = this.ylim;
-                const xscale = canvas.width / (xmax - xmin);
-                const yscale = canvas.height / (ymax - ymin);
-                const scale = Math.min(xscale, yscale);
+        if (this.pointers.size === 1 && this.panStart) {
+            const cur = { x: e.offsetX, y: e.offsetY };
+            const dx = cur.x - this.panStart.x;
+            const dy = cur.y - this.panStart.y;
+            this.panStart = cur;
 
-                const deltaX = dx / scale;
-                const deltaY = dy / scale;
+            if (this.selectedTool === 'panzoom') {
+                this.panByPixels(dx, dy);
+            } else if (this.selectedTool === 'edit') {
+                if (this.selectedPoint !== null && this.panStart) {
+                    const [x, y] = this.getCanvas2ImageCoords(cur.x, cur.y);
+                    this.movePointTo.emit({
+                        i: this.selectedPoint,
+                        ex: e.offsetX,
+                        ey: e.offsetY,
+                        dx: dx,
+                        dy: dy,
+                        x: x,
+                        y: y,
+                        callback: () => this.drawOverlayTransformed(),
+                    })
+                }
+            }
+        } else if (this.pointers.size === 2) {
+            const points = Array.from(this.pointers.values());
+            // zoom
+            const curDistance = this.distance(points[0], points[1]);
+            const scaleRatio = curDistance / this.initialPinchDistance;
+            // pan
+            const newCenter = {
+                x: (points[0].offsetX + points[1].offsetX) / 2,
+                y: (points[0].offsetY + points[1].offsetY) / 2
+            }
+            const dx =  newCenter.x - this.initialPinchCenter!.x
+            const dy = newCenter.y - this.initialPinchCenter!.y
+            this.initialPinchCenter = newCenter; // must change, otherwise there would be drift
+            // do it
+            this.panByPixels(dx, dy);
+            this.pinchZoom(scaleRatio);
+        }
+    }
 
-                this.xlim = [xmin - deltaX, xmax - deltaX];
-                this.ylim = [ymin - deltaY, ymax - deltaY];
-
-                this.drawBackgroundTransformed();
-                this.updateSVGTransform();
+    onPointerUp(e: PointerEvent) {
+        console.log('pointer up', e.pointerId)
+        try { (e.target as Element).releasePointerCapture(e.pointerId); } catch { }
+        this.pointers.delete(e.pointerId);
+        if (this.pointers.size === 0) {
+            if (this.selectedTool == 'panzoom') {
+                this.panStart = null;
+            } else if (this.selectedTool == 'edit') {
+                this.panStart = null;
+                this.selectedPoint = null;
                 this.drawOverlayTransformed();
+                this.finalizePoints.emit();
             }
-        } else if (this.selectedTool == 'edit') {
-            if (this.selectedPoint !== null && this.panStart) {
-                const dx = e.offsetX - this.panStart.x;
-                const dy = e.offsetY - this.panStart.y;
-                this.panStart = { x: e.offsetX, y: e.offsetY };
-                const [x, y] = this.getCanvas2ImageCoords(e.offsetX, e.offsetY);
-                this.movePointTo.emit({
-                    i: this.selectedPoint,
-                    ex: e.offsetX,
-                    ey: e.offsetY,
-                    dx: dx,
-                    dy: dy,
-                    x: x,
-                    y: y,
-                    callback: () => this.drawOverlayTransformed(),
-                })
-            }
+        } else if (this.pointers.size === 1) {
+            // promote remaining pointer to pan
+            const remaining = Array.from(this.pointers.values())[0];
+            this.panStart = { x: remaining.clientX, y: remaining.clientY };
         }
     }
 
-    private mouseUp(e: MouseEvent) {
-        if (this.selectedTool == 'panzoom') {
-            this.panStart = null;
-        } else if (this.selectedTool == 'edit') {
-            this.panStart = null;
-            this.selectedPoint = null;
-            this.drawOverlayTransformed();
-            this.finalizePoints.emit();
-        }
-    }
-
-    private mouseLeave(e: MouseEvent) {
+    onPointerCancel(e: PointerEvent) {
+        console.log('pointer cancel')
+        this.pointers.delete(e.pointerId);
         this.panStart = null;
+        this.initialPinchDistance = 0;
+        this.initialViewAtPinch = null;
     }
 
-    private mouseWheel(e: WheelEvent) {
-        if (this.selectedTool == 'panzoom') {
-            e.preventDefault();
-            const canvas = this.overlayCanvasRef.nativeElement;
-            const mouseX = e.offsetX;
-            const mouseY = e.offsetY;
-            const zoomIn = e.deltaY < 0;
+    onMouseWheel(e: WheelEvent) {
+        e.preventDefault();
+        const mouseX = e.offsetX;
+        const mouseY = e.offsetY;
+        const zoomIn = e.deltaY < 0;
 
-            const x = mouseX;
-            const y = mouseY;
+        const x = mouseX;
+        const y = mouseY;
 
-            const [xmin, xmax] = this.xlim;
-            const [ymin, ymax] = this.ylim;
-            const scaleFact = zoomIn ? 1 / this.zoomFactor : this.zoomFactor;
-            const scale = scaleFact * e.deltaY / 100.;
+        [this.viewWindow.x0, this.viewWindow.x1] = this.zoomWindow(this.viewWindow.x0, this.viewWindow.x1, x, zoomIn);
+        [this.viewWindow.y0, this.viewWindow.y1] = this.zoomWindow(this.viewWindow.y0, this.viewWindow.y1, y, zoomIn);
 
-            this.xlim = this.zoomWindow(this.xlim, x, zoomIn);
-            this.ylim = this.zoomWindow(this.ylim, y, zoomIn);
-
-            this.drawBackgroundTransformed();
-            this.updateSVGTransform();
-            this.drawOverlayTransformed();
-        }
+        this.drawBackgroundTransformed();
+        this.updateSVGTransform();
+        this.drawOverlayTransformed();
     }
 
-    private zoomWindow(
-        xlim: [number, number],
-        mouseX: number,
-        zoomIn: boolean,
-        zoomFactor: number = 1.1,
-        minSpan: number = 1e-3
-    ): [number, number] {
-        const [xMin, xMax] = xlim;
-        const span = xMax - xMin;
-        const centerRatio = (mouseX - xMin) / span;
 
-        const scale = zoomIn ? 1 / zoomFactor : zoomFactor;
-        let newSpan = span * scale;
-
-        // Prevent over-zoom
-        if (newSpan < minSpan) newSpan = minSpan;
-
-        const newMin = mouseX - centerRatio * newSpan;
-        const newMax = mouseX + (1 - centerRatio) * newSpan;
-
-        return [newMin, newMax];
-    }
-
-    drawBackgroundImage(base64: string): void {
-        const img = new Image();
-        img.onload = () => {
-            this.baseImage = img;
-            this.zoomToAll();
-        };
-        img.src = 'data:image/png;base64,' + base64;
-    }
-
+    // ---------- canvas draw ----------
     private drawGeneration = 0;
-
     private async drawBackgroundTransformed() {
         // get references and clear canvas
         const canvas = this.bgCanvasRef.nativeElement;
         const ctx = canvas.getContext('2d')!;
 
-        if (this.baseImage) { // legacy method: one large chunk
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            this.drawFullImage(canvas, ctx);
-        } else { // new method: show tiles
-            const myGen = ++this.drawGeneration; // unique ID for this draw session
+        const myGen = ++this.drawGeneration; // unique ID for this draw session
 
-            // Create offscreen buffer
-            const offscreen = new OffscreenCanvas(canvas.width, canvas.height);
-            const offctx = offscreen.getContext('2d')!;
-            // clear it
-            offctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Create offscreen buffer
+        const offscreen = new OffscreenCanvas(canvas.width, canvas.height);
+        const offctx = offscreen.getContext('2d')!;
+        // clear it
+        offctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // get tile order (center first)
-            const orderedTiles = this.getTileOrder();
+        // get tile order (center first)
+        const orderedTiles = this.getTileOrder();
 
-            // draw tiles incrementally in priority order
-            for (const { xi, yi } of orderedTiles) {
-                // quit early if a new generation has started
-                if (myGen !== this.drawGeneration) return;
-                // otherwise start drawing
-                await this.drawTileTransformed(xi, yi, offscreen, offctx, myGen);
-                // flip to visible
-                ctx.drawImage(offscreen, 0, 0);
-            }
-
+        // draw tiles incrementally in priority order
+        for (const { xi, yi } of orderedTiles) {
+            // quit early if a new generation has started
+            if (myGen !== this.drawGeneration) return;
+            // otherwise start drawing
+            await this.drawTileTransformed(xi, yi, offscreen, offctx, myGen);
             // flip to visible
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(offscreen, 0, 0);
-
         }
-    }
 
-    private drawFullImage(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) {
-        if (!this.baseImage) return;
-
-        // get the image data
-        const img = this.baseImage;
-        const imgWidth = img.width;
-        const imgHeight = img.height;
-
-        // Mapping from data coords to image pixels
-        const [xmin, xmax] = this.xlim;
-        const [ymin, ymax] = this.ylim;
-
-        // Determine crop region in image space (sx, sy, sw, sh)
-        const sx = xmin;
-        const sy = ymin;
-        const sw = xmax - xmin;
-        const sh = ymax - ymin;
-
-        // Destination: full canvas
-        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        // flip to visible
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(offscreen, 0, 0);
     }
 
     private async drawTileTransformed(xi: number, yi: number,
@@ -525,27 +472,29 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     drawOverlayTransformed() {
         this.drawOverlay.emit({
             canvas: this.overlayCanvasRef.nativeElement,
-            imgWidth: this.baseImage?.width,
-            imgHeight: this.baseImage?.height,
+            imgWidth: this.imageSize.x,
+            imgHeight: this.imageSize.y,
         });
     }
     
     updateSVGTransform() {
         const canvas: HTMLCanvasElement = this.bgCanvasRef.nativeElement;
-        const [xmin, xmax] = this.xlim;
-        const [ymin, ymax] = this.ylim;
+        const [xmin, xmax] = [this.viewWindow.x0, this.viewWindow.x1];
+        const [ymin, ymax] = [this.viewWindow.y0, this.viewWindow.y1];
         const xscale = canvas.width / (xmax - xmin);
         const yscale = canvas.height / (ymax - ymin);
         const scale = Math.min(xscale, yscale);
         this.svgContainer.nativeElement.children.item(0)?.setAttribute('width', '100%');
         this.svgContainer.nativeElement.children.item(0)?.setAttribute('height', '100%');
-        this.svgContainer.nativeElement.style.transform = `translate(${-this.xlim[0] * scale}px, ${-this.ylim[0] * scale}px) scale(${scale})`
+        this.svgContainer.nativeElement.style.transform = `translate(${-this.viewWindow.x0 * scale}px, ${-this.viewWindow.y0 * scale}px) scale(${scale})`
     }
 
+
+    // ---------- pan and zoom math ----------
     getImage2CanvasCoords(x: number, y: number) {
         const canvas: HTMLCanvasElement = this.bgCanvasRef.nativeElement;
-        const [xmin, xmax] = this.xlim;
-        const [ymin, ymax] = this.ylim;
+        const [xmin, xmax] = [this.viewWindow.x0, this.viewWindow.x1];
+        const [ymin, ymax] = [this.viewWindow.y0, this.viewWindow.y1];
         const xscale = canvas.width / (xmax - xmin);
         const yscale = canvas.height / (ymax - ymin);
 
@@ -554,8 +503,8 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
 
     getCanvas2ImageCoords(x: number, y: number) {
         const canvas: HTMLCanvasElement = this.bgCanvasRef.nativeElement;
-        const [xmin, xmax] = this.xlim;
-        const [ymin, ymax] = this.ylim;
+        const [xmin, xmax] = [this.viewWindow.x0, this.viewWindow.x1];
+        const [ymin, ymax] = [this.viewWindow.y0, this.viewWindow.y1];
         const xscale = canvas.width / (xmax - xmin);
         const yscale = canvas.height / (ymax - ymin);
 
@@ -564,11 +513,95 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
 
     getScale(): { x: number, y: number } {
         const canvas: HTMLCanvasElement = this.bgCanvasRef.nativeElement;
-        const [xmin, xmax] = this.xlim;
-        const [ymin, ymax] = this.ylim;
+        const [xmin, xmax] = [this.viewWindow.x0, this.viewWindow.x1];
+        const [ymin, ymax] = [this.viewWindow.y0, this.viewWindow.y1];
         const xscale = canvas.width / (xmax - xmin);
         const yscale = canvas.height / (ymax - ymin);
         return { x: xscale, y: yscale };
+    }
+
+    private panByPixels(dx: number, dy: number) {
+        const canvas: HTMLCanvasElement = this.bgCanvasRef.nativeElement;
+        const [xmin, xmax] = [this.viewWindow.x0, this.viewWindow.x1];
+        const [ymin, ymax] = [this.viewWindow.y0, this.viewWindow.y1];
+        const xscale = canvas.width / (xmax - xmin);
+        const yscale = canvas.height / (ymax - ymin);
+        const scale = Math.min(xscale, yscale);
+
+        const deltaX = dx / scale;
+        const deltaY = dy / scale;
+
+        this.viewWindow = {
+            x0: xmin - deltaX, x1: xmax - deltaX,
+            y0: ymin - deltaY, y1: ymax - deltaY
+        };
+
+        this.drawBackgroundTransformed();
+        this.updateSVGTransform();
+        this.drawOverlayTransformed();
+    }
+
+    private pinchZoom(scaleRatio: number) {
+        if (!this.initialViewAtPinch) return;
+        const centerX = (this.viewWindow.x0 + this.viewWindow.x1) / 2;
+        const centerY = (this.viewWindow.y0 + this.viewWindow.y1) / 2;
+        const newWidth = (this.initialViewAtPinch.x1 - this.initialViewAtPinch.x0) / scaleRatio;
+        const newHeight = (this.initialViewAtPinch.y1 - this.initialViewAtPinch.y0) / scaleRatio;
+        this.viewWindow.x0 = centerX - newWidth / 2;
+        this.viewWindow.x1 = centerX + newWidth / 2;
+        this.viewWindow.y0 = centerY - newHeight / 2;
+        this.viewWindow.y1 = centerY + newHeight / 2;
+        this.drawBackgroundTransformed();
+        this.updateSVGTransform();
+        this.drawOverlayTransformed();
+    }
+
+    private zoomWindow(
+        xMin: number,
+        xMax: number,
+        mouseX: number,
+        zoomIn: boolean,
+        zoomFactor: number = 1.1,
+        minSpan: number = 1e-3
+    ): [number, number] {
+        const span = xMax - xMin;
+        const centerRatio = (mouseX - xMin) / span;
+
+        const scale = zoomIn ? 1 / zoomFactor : zoomFactor;
+        let newSpan = span * scale;
+
+        // Prevent over-zoom
+        if (newSpan < minSpan) newSpan = minSpan;
+
+        const newMin = mouseX - centerRatio * newSpan;
+        const newMax = mouseX + (1 - centerRatio) * newSpan;
+
+        return [newMin, newMax];
+    }
+
+    private onScreenResized() {
+        const w = this.bgCanvasRef.nativeElement.clientWidth;
+        const h = this.bgCanvasRef.nativeElement.clientHeight;
+        // update view window
+        this.viewWindow.x1 = this.viewWindow.x0 + w;
+        this.viewWindow.y1 = this.viewWindow.y0 + h;
+        // update canvas size
+        this.bgCanvasRef.nativeElement.width = w;
+        this.bgCanvasRef.nativeElement.height = h;
+        this.overlayCanvasRef.nativeElement.width = w;
+        this.overlayCanvasRef.nativeElement.height = h;
+        // redraw
+        this.drawBackgroundTransformed();
+        this.updateSVGTransform();
+        this.drawOverlayTransformed();
+    }
+
+
+    // ---------- helpers ----------
+    private distance(a: PointerEvent, b: PointerEvent) {
+        const dx = a.clientX - b.clientX;
+        const dy = a.clientY - b.clientY;
+        return Math.hypot(dx, dy);
     }
 
 }

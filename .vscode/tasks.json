@@ -17,6 +17,20 @@
             "problemMatcher": [],
             "label": "npm: start - ngapp",
             "detail": "ng serve"
-        }
+        },
+        {
+            "label": "Build Angular (devbuild config)",
+            "type": "shell",
+            "command": "ng",
+            "args": [
+                "build",
+                "--configuration",
+                "devbuild"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/ngapp"
+            },
+            "problemMatcher": []
+        },
     ]
 }
