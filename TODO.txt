@@ -75,6 +75,7 @@ v0.2
 + bugfix: multiple constraint points, not editable?
 + calculation of final map size: area of interest never decreased, but
   increased if some function point would go outside
++ bugfix: extent calculation directly after load (matrix and function does not exist yet)
 
 
 v0.1:

@@ -432,6 +432,10 @@ class VFRLeg:
                         max([x for p, x in self.points]),
                         100
                        )
+        if not hasattr(self, '_matrix_cropmap2func') or self._matrix_cropmap2func is None:
+            self.calc_transformations()
+        if not self.function:
+            self.calc_function()
         psrc = [VFRPoint(x, self.function(x), VFRCoordSystem.FUNCTION, self._route, self) for x in x]
         ps = [p.project_point(VFRCoordSystem.LONLAT) for p in psrc]
         pll = [PointLonLat(p.lon, p.lat) for p in ps] + \
@@ -445,6 +449,10 @@ class VFRLeg:
                         max([x for p, x in self.points]),
                         100
                        )
+        if not hasattr(self, '_matrix_cropmap2func') or self._matrix_cropmap2func is None:
+            self.calc_transformations()
+        if not self.function:
+            self.calc_function()
         psrc = [VFRPoint(x, self.function(x), VFRCoordSystem.FUNCTION, self._route, self) for x in x]
         ps = [p.project_point(VFRCoordSystem.MAPCROP_XY) for p in psrc]
         ax.plot([p.x for p in ps],
