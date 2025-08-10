@@ -162,7 +162,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     onPointerDown(e: PointerEvent) {
         (e.target as Element).setPointerCapture(e.pointerId);
         this.pointers.set(e.pointerId, e);
-        console.log('pointer down', e.pointerId, this.pointers.size);
 
         if (this.pointers.size === 1) {
             // start pan or edit
@@ -184,7 +183,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 }
             }
         } else if (this.pointers.size === 2) {
-            console.log('second touch')
             // start pinch
             const points = Array.from(this.pointers.values());
             this.initialPinchDistance = this.distance(points[0], points[1]);
@@ -301,7 +299,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     }
 
     onPointerUp(e: PointerEvent) {
-        console.log('pointer up', e.pointerId)
         try { (e.target as Element).releasePointerCapture(e.pointerId); } catch { }
         this.pointers.delete(e.pointerId);
         if (this.pointers.size === 0) {
@@ -316,12 +313,11 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         } else if (this.pointers.size === 1) {
             // promote remaining pointer to pan
             const remaining = Array.from(this.pointers.values())[0];
-            this.panStart = { x: remaining.clientX, y: remaining.clientY };
+            this.panStart = { x: remaining.offsetX, y: remaining.offsetY };
         }
     }
 
     onPointerCancel(e: PointerEvent) {
-        console.log('pointer cancel')
         this.pointers.delete(e.pointerId);
         this.panStart = null;
         this.initialPinchDistance = 0;
@@ -437,8 +433,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 // recalculate the pan/zoom on the destination coordinates
                 [imx0, imy0] = this.getImage2CanvasCoords(x0, y0);
                 [imx1, imy1] = this.getImage2CanvasCoords(x1, y1);
-
-                // console.log(`(${xi},${yi}) => (${imx0},${imy0})-(${imx1},${imy1}) x (${bitmap.width}, ${bitmap.height})`);
 
                 ctx.drawImage(
                     bitmap,
@@ -599,8 +593,8 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
 
     // ---------- helpers ----------
     private distance(a: PointerEvent, b: PointerEvent) {
-        const dx = a.clientX - b.clientX;
-        const dy = a.clientY - b.clientY;
+        const dx = a.offsetX - b.offsetX;
+        const dy = a.offsetY - b.offsetY;
         return Math.hypot(dx, dy);
     }
 

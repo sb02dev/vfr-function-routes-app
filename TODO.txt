@@ -1,10 +1,8 @@
-- bugfix: multiple constraint points, not editable?
 - mobile friendly: responsive
-- waypoints/constraint points lon-lat editable (in degrees/minutes/seconds
-  and decimal format)
+- waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
+- session management: caching of states per session to disk on each modification
+- give visual feedback if no route is open on the server for the current session
 - progress indication while waiting for server
-- give visual feedback if no route is open on the server for the
-  current session
 - bubbles' content revised/customizable
 - colorpicker default listed colors revised (high contrast)
 - speed is modifiable in step 6
@@ -13,7 +11,6 @@
 - edit "function_range" on leg page
 - consider tracks from various sources (SkyDemon, ForeFlight, GeoTracker, Garmin5)
 - session management
-  - caching of states per session to disk on each modification
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
 - order constraint points by func_x automatically
@@ -73,6 +70,7 @@ v0.2
 + remove unneccessary info (XY in map info panel)
 + double-click instead of middle button
 + mobile friendly: touch controls
++ bugfix: multiple constraint points, not editable?
 
 v0.1:
 + transition to LEG definition step (waypoints to legs conversion, 

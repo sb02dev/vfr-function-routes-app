@@ -217,14 +217,40 @@ export class Step3LegsEditComponent implements AfterViewInit, OnDestroy {
 
                     // draw corners and names
                     for (let i = 0; i < pts.length; i++) {
+                        // save context's state (we will change it much)
+                        ctx.save();
+
+                        // WARNING: if more than 1 constraining point is there,
+                        // we are forcing a curve to 4 points -> it will not be exact,
+                        // therefore we draw 2 points: where it should be and where it is
+
+                        // draw where the point on the function is
                         const mappt = this.applyTransformationMatrix({ x: pts[i].func_x, y: func(pts[i].func_x) }, leg.matrix_func2cropmap);
-                        const [x, y] = this.mapedit.getImage2CanvasCoords(mappt.x, mappt.y);
+                        const [xf, yf] = this.mapedit.getImage2CanvasCoords(mappt.x, mappt.y);
+                        ctx.beginPath();
+                        ctx.fillStyle = 'none';
+                        ctx.strokeStyle = (l == this.leg_index) ? ((i == this.mapedit.selectedPoint)) ? "green" : "red" : "blue";
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([5, 3]);
+                        ctx.arc(xf, yf, 12, 0, 2 * Math.PI);
+                        ctx.stroke()
+                        ctx.font = "14px serif";
+                        const txt = `${pts[i].func_x.toFixed(2)}, ${func(pts[i].func_x).toFixed(2)}`
+                        ctx.setLineDash([]);
+                        ctx.lineWidth = 1;
+                        ctx.strokeText(txt, xf + 15, yf + i * 10);
+                        ctx.fillStyle = "black";
+                        ctx.fillText(txt, xf + 15, yf + i * 10);
+
+                        // draw the where we wanted to force this point
+                        const [x, y] = this.mapedit.getImage2CanvasCoords(pts[i].x, pts[i].y);
                         ctx.beginPath();
                         ctx.fillStyle = (l == this.leg_index) ? ((i == this.mapedit.selectedPoint)) ? "green" : "red" : "blue";
                         ctx.arc(x, y, 12, 0, 2 * Math.PI);
                         ctx.fill();
-                        ctx.font = "12px serif";
-                        ctx.fillText(`${pts[i].func_x}, ${func(pts[i].func_x)}`, x + 15, y + i*10);
+
+                        // restore the state
+                        ctx.restore();
                     }
 
                     // draw extra point
