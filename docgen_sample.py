@@ -30,7 +30,7 @@ rgen.set_state(VFRRouteState.LEGS) # because we also want to add annotations
 
 rgen.add_leg(
     'LHFH->Lovasberény',
-    '$f(x)=\\sqrt[3]{{x}}$ $x\\in [0,1.5]$',
+    r'\sqrt[3]{{x}}',
     '$x=0$ at Lovasberény, $x=1.5$ at LHFH',
     lambda x: x ** (1. / 3.),
     [
@@ -46,7 +46,7 @@ rgen.add_leg(
 
 rgen.add_leg(
     'Lovasberény->Császár',
-    r'$f(x)=\frac{1}{e^x}$ $x\in [-\frac{\pi}{2},\pi]$',
+    r'\frac{1}{e^x}',
     r'$x=\pi$ at Lovasberény, $x=-\frac{\pi}{2}$ at Császár',
     lambda x: 1. / math.exp(x),
     [
@@ -61,7 +61,7 @@ rgen.add_leg(
 
 rgen.add_leg(
     'Császár->LHFH',
-    r'$f(x)=sin(x)$ $x\in [0,\pi]$',
+    r'\sin(x)',
     r'$x=0$ at Császár, $x=\pi$ at LHFH, $x=\frac{\pi}{2}$ at Nyergesújfalu',
     lambda x: math.sin(x),
     [

@@ -9,9 +9,8 @@
 - bugfix: map-info width and horizontal scrolling
 - edit "function_range" on leg page
 - order constraint points by func_x automatically
-- session management
-  - limit the session connections based on available memory (or number of open sessions)
-  - visual feedback if no connection available
+- session management: limit the session connections based on available memory (or number of open sessions)
+- session management: visual feedback if no connection available
 
 - bubbles' content revised/customizable
 - journey log created, content revised
