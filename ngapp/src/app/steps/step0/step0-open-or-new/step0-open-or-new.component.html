@@ -6,7 +6,11 @@
                      If you are new to this application you can also click Sample route and you will get a pre-created
                      route with all the features included (TODO: currently it does not demonstrate the track feature).">
 </app-header>
-<section fxLayoutAlign='center center' fxLayout='row' class="content-area">
+<div fxLayout='row' fxLayout.lt-sm='column'
+     fxLayoutAlign='center center' fxLayoutAlign.lt-sm='start center'
+     fxLayoutGap="20px" fxLayoutGap.lt-sm="10px"
+     class="content-area"
+    >
     <div fxLayout="column">
         <a mat-raised-button (click)="loadRoute()">Load a route</a>
         <input type="file" id="file-selector" #file_selector accept=".vfr" class="hidden" aria-label="---">
@@ -20,7 +24,7 @@
             <button *ngFor="let rname of publishedRouteList; index as i" mat-menu-item (click)="publishedRoute(i)">{{rname}}</button>
         </mat-menu>
     </div>
-    <form [formGroup]="form" fxLayout="column" class="spacing">
+    <form [formGroup]="form" fxLayout="column">
         <h1>Data of new route:</h1>
         <mat-label>Name of route:</mat-label>
         <mat-form-field fxFlex="100">
@@ -41,5 +45,5 @@
             <input type="time" matInput placeholder="Time of flight (UTC)" name="tof" formControlName="tof" />
         </mat-form-field>
     </form>
-</section>
+</div>
 

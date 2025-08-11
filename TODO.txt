@@ -1,21 +1,22 @@
-- mobile friendly: responsive
-- waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
+- mobile friendly: responsive map pages (step1-5)
 - session management: caching of states per session to disk on each modification
 - give visual feedback if no route is open on the server for the current session
+- visual feedback if error between steps
 - progress indication while waiting for server
+- waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
 - speed is modifiable in step 6
 - bugfix: readonly mathedit does not show formula
+- bugfix: map-info width and horizontal scrolling
 - edit "function_range" on leg page
 - order constraint points by func_x automatically
+- session management
+  - limit the session connections based on available memory (or number of open sessions)
+  - visual feedback if no connection available
 
 - bubbles' content revised/customizable
 - journey log created, content revised
 - colorpicker default listed colors revised (high contrast)
-- bugfix: map-info width and horizontal scrolling
 - consider tracks from various sources (SkyDemon, ForeFlight, GeoTracker, Garmin5)
-- session management
-  - limit the session connections based on available memory (or number of open sessions)
-  - visual feedback if no connection available
 - multiple maps (from multiple countries)
 - consider place-name based waypoint selection (based on a public database)
 
@@ -78,6 +79,7 @@ v0.2
 + save to cloud
 + save to cloud sanitizes file name, checks for max published routes
 + bugfix: edge case no waypoints -> extent calculation crashed + filename sanitization update
++ mobile friendly: responsive action pages (landing, step0, step6)
 
 
 v0.1:

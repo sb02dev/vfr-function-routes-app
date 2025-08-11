@@ -1,4 +1,5 @@
 .content-area {
     width: calc(100vw - 0px);
-    height: calc(100vh - 0px);
+    height: calc(100vh - 36px);
+    overflow-y: auto;
 }

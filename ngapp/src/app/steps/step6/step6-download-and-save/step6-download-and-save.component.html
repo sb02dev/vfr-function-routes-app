@@ -6,7 +6,11 @@
                      downloaded as an image. A .GPX file can be downloaded to import into SkyDemon. And you can save your
                      route locally in a .VFR file (which can be later loaded in the application).">
 </app-header>
-<section fxLayoutAlign='center center' fxLayout='row' class="content-area">
+<div fxLayout='row' fxLayout.lt-sm='column'
+     fxLayoutAlign='center center' fxLayoutAlign.lt-sm='start center'
+     fxLayoutGap="20px" fxLayoutGap.lt-sm="10px"
+     class="content-area"
+    >
     <div fxLayout="column">
         <a mat-raised-button (click)="downloadDOCX()">Download DOCX report</a>
         &nbsp;
@@ -18,7 +22,7 @@
         &nbsp;
         <a mat-raised-button (click)="saveToServer()">Publish route (save on server)</a>
     </div>
-    <div><!--form [formGroup]="form" fxLayout="column" class="spacing"-->
+    <div fxLayout="column">
         <mat-label>Date of flight (UTC):</mat-label>
         <div style="background-color: var(--mdc-filled-text-field-container-color);" fxLayoutAlign="center center">
             <input type="text"
@@ -42,4 +46,4 @@
                    (change)="changeDOF()" />
         </div>
     </div>
-</section>
+</div>

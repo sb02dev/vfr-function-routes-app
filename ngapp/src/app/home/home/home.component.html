@@ -1,5 +1,14 @@
-<div fxLayoutAlign="center center" fxLayout="row">
-    <section style="width: 600px" fxLayout="column">
+<div fxFlexFill 
+     fxLayoutAlign="center start" fxLayoutAlign.lt-sm="start start"
+     fxLayout="row" fxLayout.lt-sm="column"
+     fxLayoutGap="20px" fxLayoutGap.lt-sm="10px"
+     class="content-area"
+    >
+    <div fxFlex="0 100 45%" fxLayout="column" fxShow="false" fxShow.lt-sm="true">
+        <img fxFlex src="assets/screenshot.png" alt="screenshot">
+        <button mat-raised-button title="Let's start" (click)="start()">Let's start</button>
+    </div>
+    <div fxLayout="column" fxFlex class="scrollable-part">
         <h1>VFR Function Routes</h1>
 
         <h2>Why?</h2>
@@ -35,8 +44,9 @@
         This is just a webapp now I spun up as a hobby project. Use it and enjoy. If you like it, buy me a beer/coffee when we
         meet at an airport.
         </p>
-
+    </div>
+    <div fxFlex="0 100 45%" fxLayout="column" fxShow="true" fxShow.lt-sm="false">
+        <img fxFlex src="assets/screenshot.png" alt="screenshot">
         <button mat-raised-button title="Let's start" (click)="start()">Let's start</button>
-    </section>
-    <img src="assets/screenshot.png" alt="screenshot">
+    </div>
 </div>
