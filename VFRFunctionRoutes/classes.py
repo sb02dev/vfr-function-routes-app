@@ -1177,7 +1177,11 @@ class VFRFunctionRoute:
             # get the automatic bounding box
             if len(self.legs)==0 and len(self.tracks)==0:
                 # no legs, no tracks fall back to waypoints extent
-                extent = _get_extent_from_points([PointLonLat(p.lon, p.lat) for name, p in self.waypoints])
+                if len(self.waypoints)==0:
+                    self.extent = AOI
+                    return
+                else:
+                    extent = _get_extent_from_points([PointLonLat(p.lon, p.lat) for name, p in self.waypoints])
             else:
                 # we have at least one leg or track, use those (leg points contain waypoints)
                 extent = _get_extent_from_extents(

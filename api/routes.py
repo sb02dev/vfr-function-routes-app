@@ -10,6 +10,7 @@ import os
 from typing import Optional, Union
 import uuid
 import unicodedata
+import re
 from fastapi import APIRouter, HTTPException, Response, WebSocket
 
 from dotenv import load_dotenv
@@ -537,7 +538,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     try:
                         if len(os.listdir(os.path.join(rootpath, 'routes')))<100:
-                            rtename_normalized = unicodedata.normalize('NFKD', rte.name).encode('ascii', errors='ignore').decode('ascii')
+                            rtename_normalized = re.sub(r'[^a-zA-Z0-9\- !@#$%\^\(\)]',
+                                                        '_',
+                                                        unicodedata.normalize('NFKD', rte.name).
+                                                            encode('ascii', errors='replace').decode('ascii'))
                             fname = f"{rtename_normalized}.vfr"
                             cnt = 0
                             while os.path.isfile(os.path.join(rootpath, 'routes', fname)):
