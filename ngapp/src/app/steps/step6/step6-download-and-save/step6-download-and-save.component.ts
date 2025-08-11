@@ -52,8 +52,10 @@ export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
             } else if (msg.type === 'save-to-cloud-result') {
                 if (msg['result'] === 'success') {
                     this.snackbar.open(`Route saved on server (name: ${msg['fname']})`, undefined, { duration: 5000, panelClass: 'snackbar-success' });
-                } else if (msg['result'] === 'failed') {
+                } else if (msg['result'] === 'fail') {
                     this.snackbar.open('Save of route on server failed', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+                } else if (msg['result'] === 'too-many-files') {
+                    this.snackbar.open('Did not save! Too many published routes, contact the system administrator', undefined, { duration: 3000, panelClass: 'snackbar-error' });
                 } else if (msg['result'] === 'no-route') {
                     this.snackbar.open('No route open on server', undefined, { duration: 3000, panelClass: 'snackbar-warning' });
                 }

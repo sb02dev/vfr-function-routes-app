@@ -9,6 +9,7 @@ import base64
 import os
 from typing import Optional, Union
 import uuid
+import unicodedata
 from fastapi import APIRouter, HTTPException, Response, WebSocket
 
 from dotenv import load_dotenv
@@ -535,16 +536,20 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             elif msgtype == 'save-to-cloud':
                 if rte:
                     try:
-                        fname = f"{rte.name}.vfr"
-                        cnt = 0
-                        while os.path.isfile(os.path.join(rootpath, 'routes', fname)):
-                            fname = f"{rte.name}-{cnt:04d}.vfr"
-                            cnt += 1
-                        with open(os.path.join(rootpath, 'routes', fname), "wt", encoding='utf8') as f:
-                            f.write(rte.toJSON())
-                        await websocket.send_json({"type": "save-to-cloud-result",
-                                                   "result": "success",
-                                                   "fname": fname})
+                        if len(os.listdir(os.path.join(rootpath, 'routes')))<100:
+                            rtename_normalized = unicodedata.normalize('NFKD', rte.name).encode('ascii', errors='ignore').decode('ascii')
+                            fname = f"{rtename_normalized}.vfr"
+                            cnt = 0
+                            while os.path.isfile(os.path.join(rootpath, 'routes', fname)):
+                                fname = f"{rtename_normalized}-{cnt:04d}.vfr"
+                                cnt += 1
+                            with open(os.path.join(rootpath, 'routes', fname), "wt", encoding='utf8') as f:
+                                f.write(rte.toJSON())
+                            await websocket.send_json({"type": "save-to-cloud-result",
+                                                    "result": "success",
+                                                    "fname": fname})
+                        else:
+                            await websocket.send_json({"type": "save-to-cloud-result", "result": "too-many-files"})
                     except:
                         await websocket.send_json({"type": "save-to-cloud-result", "result": "fail"})
                 else:

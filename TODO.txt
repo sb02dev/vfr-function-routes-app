@@ -76,6 +76,7 @@ v0.2
   increased if some function point would go outside
 + bugfix: extent calculation directly after load (matrix and function does not exist yet)
 + save to cloud
++ save to cloud sanitizes file name, checks for max published routes
 
 
 v0.1:
