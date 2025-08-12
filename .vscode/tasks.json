@@ -32,5 +32,19 @@
             },
             "problemMatcher": []
         },
+        {
+            "label": "Serve Angular on Network",
+            "type": "shell",
+            "command": "ng",
+            "args": [
+                "serve",
+                "--host",
+                "0.0.0.0"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/ngapp"
+            },
+            "problemMatcher": []
+        },
     ]
 }
