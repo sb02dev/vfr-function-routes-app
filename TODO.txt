@@ -1,4 +1,4 @@
-- mobile friendly: responsive map pages (step1-5)
+- mobile friendly: responsive map pages (step3-5)
 - session management: caching of states per session to disk on each modification
 - give visual feedback if no route is open on the server for the current session
 - visual feedback if error between steps
@@ -82,6 +82,7 @@ v0.2
 + bugfix: window resize caused zoom change
 + bugfix: edit boxes not recreated on change (navigating with tab was impossible)
 + mobile friendly: responsive map page in step2
++ mobile friendly: responsive map page in step1
 
 
 v0.1:

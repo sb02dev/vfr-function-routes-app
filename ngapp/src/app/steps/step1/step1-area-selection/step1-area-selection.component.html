@@ -12,21 +12,39 @@
     (movePointTo)="movePointTo($event)"
     (finalizePoints)="setAreaOfInterest()"
 >
-        <h1>Area Lon/Lat</h1>
-        <table>
-            <thead class="table-header-cell">
-                <td>Point</td>
-                <td>Lon/Lat</td>
-            </thead>
-            <tbody class="table-cell">
-                <tr>
-                    <td>Top-Left</td>
-                    <td>{{lonlat[0] | number:'1.2-2'}} {{lonlat[1]  | number:'1.2-2'}}</td>
-                </tr>
-                <tr>
-                    <td>Bottom-Right</td>
-                    <td>{{lonlat[2] | number:'1.2-2'}} {{lonlat[3] | number:'1.2-2'}}</td>
-                </tr>
-            </tbody>
-        </table>
+    <mat-card>
+
+        <mat-card-header>
+            <mat-card-title>
+                Area Lon/Lat
+            </mat-card-title>
+        </mat-card-header>
+    
+        <div class="table-container mat-elevation-z8" tabindex="0">
+            <mat-table [dataSource]="[{name: 'Top-Left', lon: lonlat[0], lat: lonlat[1]},
+                                    {name: 'Bottom-Right', lon: lonlat[2], lat: lonlat[3]}]">
+                <ng-container matColumnDef="name">
+                    <mat-header-cell *matHeaderCellDef> Point </mat-header-cell>
+                    <mat-cell *matCellDef="let corner; let i=index">
+                        {{ corner.name }}
+                    </mat-cell>
+                </ng-container>
+                
+                <ng-container matColumnDef="lonlat">
+                    <mat-header-cell *matHeaderCellDef> Lon/Lat </mat-header-cell>
+                    <mat-cell *matCellDef="let corner; let i=index">
+                        <span [className]="corner.lonlat_valid?'':'lonlat-invalid'">
+                            {{corner.lon | number:'1.2-2'}} {{corner.lat | number:'1.2-2'}}</span>
+                    </mat-cell>
+                </ng-container>
+
+                <mat-header-row *matHeaderRowDef="['name', 'lonlat']; sticky: true"></mat-header-row>
+                        
+                <mat-row *matRowDef="let row; columns: ['name', 'lonlat'];"></mat-row>
+                        
+            </mat-table>
+        </div>
+
+    </mat-card>
+
 </app-map-edit>

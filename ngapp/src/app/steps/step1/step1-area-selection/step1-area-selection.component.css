@@ -3,12 +3,23 @@ a.mat-tonal-button {
     color: var(--mdc-filled-button-label-text-color); 
 }
 
-.table-header-cell td {
-    font-weight: bold;
-    border-bottom: 2px solid midnightblue;
-    border-right: 2px solid midnightblue;
+.table-container {
+    @media only screen and (max-width: 600px) {
+        height: calc(30dvh);
+    }
+
+    @media only screen and (min-width: 600px) {
+        height: calc(100dvh - 48px - 0*36px);
+        /* header not considered on purpose because of URL bar on mobile */
+    }
+
+    overflow: auto;
 }
 
-.table-cell tr td {
-    border-right: 2px solid midnightblue;
+.mat-mdc-table-sticky {
+    background: #59abfd;
+    opacity: 1;
 }
+
+.mat-column-name { flex: 0 1 60%; }
+.mat-column-lonlat { flex: 0 1 40%; }

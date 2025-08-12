@@ -3,25 +3,29 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
+import { MatCardModule } from '@angular/material/card';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTableModule } from '@angular/material/table';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { HeaderComponent } from "../../../components/header/header/header.component";
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
 
 @Component({
-  selector: 'app-step1-area-selection',
-  standalone: true,
+    selector: 'app-step1-area-selection',
+    standalone: true,
     imports: [
-    CommonModule,
-    MatButtonModule,
-    MatIconModule,
-    FlexLayoutModule,
-    MatTooltipModule,
-    HeaderComponent,
-    MapEditComponent
+        CommonModule,
+        MatButtonModule,
+        MatIconModule,
+        FlexLayoutModule,
+        MatTooltipModule,
+        MatCardModule,
+        MatTableModule,
+        HeaderComponent,
+        MapEditComponent,
 ],
   templateUrl: './step1-area-selection.component.html',
   styleUrl: './step1-area-selection.component.css'
