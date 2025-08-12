@@ -2,7 +2,7 @@ import { AfterViewInit, Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmit
 import 'mathlive';
 import { ComputeEngine } from '@cortex-js/compute-engine';
 import { create, all, MathNode } from 'mathjs';
-import { MathfieldElement } from 'mathlive';
+import { MathfieldElement, convertLatexToMarkup } from 'mathlive';
 
 const math = create(all);
 
@@ -76,6 +76,10 @@ export class MathEditComponent implements AfterViewInit {
             mathjs = null;
         }
         return mathjs;
+    }
+
+    public convertLatexToHTML(latex: string) {
+        return convertLatexToMarkup(latex, { letterShapeStyle: 'iso' });
     }
 
 }

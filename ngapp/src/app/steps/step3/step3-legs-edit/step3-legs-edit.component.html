@@ -6,29 +6,87 @@
                      leg's route.">
 </app-header>
 <app-map-edit
-    panelWidth="450px"
+    panelWidth="370px"
     (drawOverlay)="drawOverlayTransformed($event)"
     (enumPoints)="enumPoints($event)"
     (movePointTo)="movePointTo($event)"
     (addPointAt)="addPointAt($event)" 
     (finalizePoints)="finalizeMove()"
 >
-    <h1>Leg</h1>
-    <div fxLayout="row" fxLayoutAlign="center">
-        <a mat-icon-button (click)="changeLeg(-1)" matTooltip="Previous leg" matTooltipShowDelay="500">
-            <mat-icon aria-hidden="false" aria-label="Previous leg" fontIcon="arrow_left"></mat-icon>
-        </a>
-        <span>{{legs[leg_index]?legs[leg_index].name:''}} ({{leg_index+1}}/{{legs.length}})</span>
-        <a mat-icon-button (click)="changeLeg(1)" matTooltip="Next leg" matTooltipShowDelay="500">
-            <mat-icon aria-hidden="false" aria-label="Next leg" fontIcon="arrow_right"></mat-icon>
-        </a>
-    </div>
-    <div>
-        <app-math-edit (latexChange)="latexChange($event)"></app-math-edit>
-    </div>
-    <div>
-        {{legs[leg_index]?legs[leg_index].function_range:''}}
-    </div>
+    <mat-card>
+        <mat-card-header>
+            <mat-card-title>
+                <div fxLayout="row" fxLayoutAlign="center">
+                    <a mat-icon-button (click)="changeLeg(-1)" matTooltip="Previous leg" matTooltipShowDelay="500" fxLayoutAlign="start center">
+                        <mat-icon aria-hidden="false" aria-label="Previous leg" fontIcon="arrow_left"></mat-icon>
+                    </a>
+                    <span fxLayoutAlign="center center">{{legs[leg_index]?legs[leg_index].name:''}} ({{leg_index+1}}/{{legs.length}})</span>
+                    <a mat-icon-button (click)="changeLeg(1)" matTooltip="Next leg" matTooltipShowDelay="500" fxLayoutAlign="end center">
+                        <mat-icon aria-hidden="false" aria-label="Next leg" fontIcon="arrow_right"></mat-icon>
+                    </a>
+                </div>
+            </mat-card-title>
+        </mat-card-header>
+
+        <div>
+            <app-math-edit (latexChange)="latexChange($event)"></app-math-edit>
+        </div>
+
+        <div [innerHTML]="getLatexMarkup()"></div>
+
+        <div class="table-container mat-elevation-z8" tabindex="0">
+            <mat-table [dataSource]="legs[leg_index]?legs[leg_index].points:[]">
+                <ng-container matColumnDef="func_x">
+                    <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+                    <mat-cell *matCellDef="let p; let i=index">
+                        <input placeholder="functions x-value at this point"
+                               type="number"
+                               [value]="p.func_x | number:'1.2-2'"
+                               (change)="changeFuncX(i, $event)">
+                    </mat-cell>
+                </ng-container>
+        
+                <ng-container matColumnDef="lonlat">
+                    <mat-header-cell *matHeaderCellDef> Lon/Lat </mat-header-cell>
+                    <mat-cell *matCellDef="let p; let i=index">
+                        <span [className]="p.lonlat_valid?'':'lonlat-invalid'">
+                            {{p.lon | number:'1.2-2'}} {{p.lat | number:'1.2-2'}}
+                        </span>
+                    </mat-cell>
+                </ng-container>
+        
+                <ng-container matColumnDef="actions">
+                    <mat-header-cell *matHeaderCellDef> Actions </mat-header-cell>
+                    <mat-cell *matCellDef="let p; let i=index">
+                        <span class="row-buttons">
+                            <span class="stacked-buttons">
+                                <a (click)="moveConstraintPoint(i, true)" [className]="(i>1)&&(i<legs[leg_index].points.length-1)?'':'disabled-button'"
+                                matTooltip="Move constraint point up" matTooltipShowDelay="500">
+                                    <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up" fontIcon="arrow_drop_up"
+                                        fontSize="12"></mat-icon>
+                                </a>
+                                <a (click)="moveConstraintPoint(i, false)" [className]="(i<legs[leg_index].points.length-2)&&(i>0)?'':'disabled-button'"
+                                matTooltip="Move constraint point down" matTooltipShowDelay="500">
+                                    <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up" fontIcon="arrow_drop_down"
+                                        fontSize="12"></mat-icon>
+                                </a>
+                            </span>
+                            <a (click)="deleteConstraintPoint(i)" matTooltip="Delete constraint point" matTooltipShowDelay="500">
+                                <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
+                            </a>
+                        </span>
+                    </mat-cell>
+                </ng-container>
+        
+                <mat-header-row *matHeaderRowDef="['func_x', 'lonlat', 'actions']; sticky: true"></mat-header-row>
+        
+                <mat-row *matRowDef="let row; columns: ['func_x', 'lonlat', 'actions'];"></mat-row>
+        
+            </mat-table>
+        </div>
+
+    </mat-card>
+
     <table>
         <thead class="table-header-cell">
             <td>X</td>

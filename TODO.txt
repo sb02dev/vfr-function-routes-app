@@ -1,4 +1,4 @@
-- mobile friendly: responsive map pages (step3-5)
+- mobile friendly: responsive map pages (step4-5)
 - session management: caching of states per session to disk on each modification
 - give visual feedback if no route is open on the server for the current session
 - visual feedback if error between steps
@@ -7,7 +7,7 @@
 - speed is modifiable in step 6
 - bugfix: readonly mathedit does not show formula
 - bugfix: map-info width and horizontal scrolling
-- edit "function_range" on leg page
+- edit "function_range" on leg page (maybe it could be automatic?)
 - order constraint points by func_x automatically
 - session management: limit the session connections based on available memory (or number of open sessions)
 - session management: visual feedback if no connection available
@@ -83,6 +83,8 @@ v0.2
 + bugfix: edit boxes not recreated on change (navigating with tab was impossible)
 + mobile friendly: responsive map page in step2
 + mobile friendly: responsive map page in step1
++ mobile friendly: responsive map page in step3
++ first attempt to render 'function_range' correctly
 
 
 v0.1:

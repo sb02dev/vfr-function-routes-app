@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
+import { MatCardModule } from '@angular/material/card';
+import { MatTableModule } from '@angular/material/table';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 
@@ -20,6 +22,8 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
         MatIconModule,
         MatTooltipModule,
         FlexLayoutModule,
+        MatCardModule,
+        MatTableModule,
         MapEditComponent,
         HeaderComponent,
         MathEditComponent
@@ -74,6 +78,16 @@ export class Step3LegsEditComponent implements AfterViewInit, OnDestroy {
     ngOnDestroy(): void {
         // stop observers
         this.subs.unsubscribe();
+    }
+
+    getLatexMarkup() {
+        if (!this.legs[this.leg_index])
+            return '';
+        try {
+            return this.mathedit.convertLatexToHTML(this.legs[this.leg_index].function_range);
+        } catch {
+            return '';
+        }
     }
 
     changeLeg(increment: number) {
