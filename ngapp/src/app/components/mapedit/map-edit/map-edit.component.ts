@@ -5,6 +5,7 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatButtonModule } from '@angular/material/button';
 import { Subscription } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ImageEditService } from '../../../services/image-edit.service';
@@ -74,10 +75,14 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
 
 
     // ---------- component lifecycle ----------
-    constructor(private imgsrv: ImageEditService, private tilesvc: TileService, private sanitizer: DomSanitizer) {
+    constructor(private imgsrv: ImageEditService,
+                private tilesvc: TileService,
+                private sanitizer: DomSanitizer,
+                public mediaq: BreakpointObserver) {
         this.subs = this.imgsrv.channel.subscribe((msg: ImageEditMessage) => {
             this.receiveServerMessage(msg);
         });
+        
     }
     
     ngAfterViewInit(): void {
@@ -578,7 +583,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         const h = this.bgCanvasRef.nativeElement.clientHeight;
         // update view window
         const scale = this.getScale();
-        console.log(scale);
         this.viewWindow.x1 = this.viewWindow.x0 + w / scale.x;
         this.viewWindow.y1 = this.viewWindow.y0 + h / scale.y;
         // update canvas size

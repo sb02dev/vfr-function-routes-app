@@ -81,6 +81,7 @@ v0.2
 + mobile friendly: responsive action pages (landing, step0, step6)
 + bugfix: window resize caused zoom change
 + bugfix: edit boxes not recreated on change (navigating with tab was impossible)
++ mobile friendly: responsive map page in step2
 
 
 v0.1:

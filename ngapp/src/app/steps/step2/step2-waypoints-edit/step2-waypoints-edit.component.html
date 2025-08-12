@@ -5,45 +5,64 @@
                      In the table on the right you can edit the waypoint names and reorder or delete them.">
 </app-header>
 <app-map-edit
-    panelWidth="370px"
+    panelWidth="300px"
     (drawOverlay)="drawOverlayTransformed($event)"
     (enumPoints)="enumPoints($event)"
     (movePointTo)="movePointTo($event)"
     (addPointAt)="addPointAt($event)"
     (finalizePoints)="updateWaypoints()"
 >
-        <h1>Waypoints</h1>
-        <table>
-            <thead class="table-header-cell">
-                <td>Name</td>
-                <td>Lon/Lat</td>
-                <td>Actions</td>
-            </thead>
-            <tbody class="table-cell">
-                <tr *ngFor="let wp of waypoints; index as i; trackBy: compareWaypoints">
-                    <td><input placeholder="name" type="text" [value]="wp.name" (change)="renameWaypoint(i, $event)"></td>
-                    <td [className]="wp.lonlat_valid?'':'lonlat-invalid'">{{wp.lon | number:'1.2-2'}} {{wp.lat |
-                        number:'1.2-2'}}</td>
-                    <td>
-                        <span class="row-buttons">
-                            <span class="stacked-buttons">
-                                <a (click)="moveWaypoint(i, true)" [className]="i>0?'':'disabled-button'"
-                                   matTooltip="Move waypoint up" matTooltipShowDelay="500" >
-                                    <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up"
-                                        fontIcon="arrow_drop_up" fontSize="12"></mat-icon>
-                                </a>
-                                <a (click)="moveWaypoint(i, false)" [className]="i<waypoints.length-1?'':'disabled-button'"
-                                   matTooltip="Move waypoint down" matTooltipShowDelay="500">
-                                    <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up"
-                                        fontIcon="arrow_drop_down" fontSize="12"></mat-icon>
+        <mat-card>
+            <mat-card-header>
+                <mat-card-title>
+                    Waypoints
+                </mat-card-title>
+            </mat-card-header>
+
+            <div class="table-container mat-elevation-z8" tabindex="0">
+                <mat-table [dataSource]="waypoints">
+                    <ng-container matColumnDef="name">
+                        <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+                        <mat-cell *matCellDef="let wp; let i=index">
+                            <input placeholder="name" type="text" [value]="wp.name" (change)="renameWaypoint(i, $event)">
+                        </mat-cell>
+                    </ng-container>
+            
+                    <ng-container matColumnDef="lonlat">
+                        <mat-header-cell *matHeaderCellDef> Lon/Lat </mat-header-cell>
+                        <mat-cell *matCellDef="let wp; let i=index">
+                            <span [className]="wp.lonlat_valid?'':'lonlat-invalid'">{{wp.lon | number:'1.2-2'}} {{wp.lat | number:'1.2-2'}}</span>
+                        </mat-cell>
+                    </ng-container>
+            
+                    <ng-container matColumnDef="actions">
+                        <mat-header-cell *matHeaderCellDef> Actions </mat-header-cell>
+                        <mat-cell *matCellDef="let wp; let i=index">
+                            <span class="row-buttons">
+                                <span class="stacked-buttons">
+                                    <a (click)="moveWaypoint(i, true)" [className]="i>0?'':'disabled-button'" matTooltip="Move waypoint up"
+                                        matTooltipShowDelay="500">
+                                        <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up" fontIcon="arrow_drop_up"
+                                            fontSize="12"></mat-icon>
+                                    </a>
+                                    <a (click)="moveWaypoint(i, false)" [className]="i<waypoints.length-1?'':'disabled-button'"
+                                        matTooltip="Move waypoint down" matTooltipShowDelay="500">
+                                        <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up" fontIcon="arrow_drop_down"
+                                            fontSize="12"></mat-icon>
+                                    </a>
+                                </span>
+                                <a (click)="deleteWaypoint(i)" matTooltip="Delete waypoint" matTooltipShowDelay="500">
+                                    <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
                                 </a>
                             </span>
-                            <a (click)="deleteWaypoint(i)" matTooltip="Delete waypoint" matTooltipShowDelay="500">
-                                <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
-                            </a>
-                        </span>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                        </mat-cell>
+                    </ng-container>
+            
+                    <mat-header-row *matHeaderRowDef="['name', 'lonlat', 'actions']; sticky: true"></mat-header-row>
+            
+                    <mat-row *matRowDef="let row; columns: ['name', 'lonlat', 'actions'];"></mat-row>
+            
+                </mat-table>
+            </div>
+    </mat-card>
 </app-map-edit>

@@ -35,12 +35,12 @@ canvas {
 }
 
 .page-content {
-    height: calc(100vh - 36px);
+    height: calc(100vh - 0*36px); /* header not considered on purpose because of URL bar on mobile */
 }
 
 .map-content {
     position: relative;
-    width: 100%;
+    width: calc(100% - 50px);
     height: 100%;
     overflow: hidden;
 }
@@ -53,4 +53,7 @@ canvas {
 a.mat-tonal-button {
     background-color: var(--mdc-filled-button-container-color);
     color: var(--mdc-filled-button-label-text-color);
+}
+
+.map-info {
 }

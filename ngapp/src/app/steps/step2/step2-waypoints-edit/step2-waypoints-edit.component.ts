@@ -3,6 +3,9 @@ import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
+import { MatTableModule } from '@angular/material/table';
+import { MatCardModule } from "@angular/material/card";
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
@@ -10,20 +13,21 @@ import { ImageEditService } from '../../../services/image-edit.service';
 import { Waypoint } from '../../../models/waypoint';
 import { HeaderComponent } from "../../../components/header/header/header.component";
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
-import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
     selector: 'app-step2-waypoints-edit',
     standalone: true,
     imports: [
-        CommonModule,
-        MatButtonModule,
-        MatIconModule,
-        MatTooltipModule,
-        FlexLayoutModule,
-        HeaderComponent,
-        MapEditComponent
-    ],
+    CommonModule,
+    MatButtonModule,
+    MatIconModule,
+    MatTooltipModule,
+    FlexLayoutModule,
+    MatTableModule,
+    HeaderComponent,
+    MapEditComponent,
+    MatCardModule,
+],
     templateUrl: './step2-waypoints-edit.component.html',
     styleUrl: './step2-waypoints-edit.component.css'
 })
