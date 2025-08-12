@@ -577,8 +577,10 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         const w = this.bgCanvasRef.nativeElement.clientWidth;
         const h = this.bgCanvasRef.nativeElement.clientHeight;
         // update view window
-        this.viewWindow.x1 = this.viewWindow.x0 + w;
-        this.viewWindow.y1 = this.viewWindow.y0 + h;
+        const scale = this.getScale();
+        console.log(scale);
+        this.viewWindow.x1 = this.viewWindow.x0 + w / scale.x;
+        this.viewWindow.y1 = this.viewWindow.y0 + h / scale.y;
         // update canvas size
         this.bgCanvasRef.nativeElement.width = w;
         this.bgCanvasRef.nativeElement.height = h;

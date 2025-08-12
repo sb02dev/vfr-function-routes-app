@@ -79,6 +79,7 @@ v0.2
 + save to cloud sanitizes file name, checks for max published routes
 + bugfix: edge case no waypoints -> extent calculation crashed + filename sanitization update
 + mobile friendly: responsive action pages (landing, step0, step6)
++ bugfix: window resize caused zoom change
 
 
 v0.1:
