@@ -92,6 +92,11 @@ export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
         this.updateTracks();
     }
 
+    compareTracks(index: number, tr: Track) {
+        return index;
+    }
+    
+
     openColorPicker(index: number) {
         const dialogRef = this.dialog.open(ColorPickerDialogComponent, {
             width: '300px',

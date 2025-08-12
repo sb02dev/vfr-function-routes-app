@@ -249,6 +249,12 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
         this.mapedit.drawOverlayTransformed();
     }
 
+
+    compareAnnotations(index: number, ap: Annotation) {
+        return index;
+    }
+
+
     private calculateFuncPoints() {
         this.leg_points = [];
         let last_x = this.legs[this.leg_index].annotations[0].func_x;

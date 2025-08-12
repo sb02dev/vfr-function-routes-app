@@ -20,7 +20,7 @@
                 <td>Actions</td>
             </thead>
             <tbody class="table-cell">
-                <tr *ngFor="let wp of waypoints; index as i">
+                <tr *ngFor="let wp of waypoints; index as i; trackBy: compareWaypoints">
                     <td><input placeholder="name" type="text" [value]="wp.name" (change)="renameWaypoint(i, $event)"></td>
                     <td [className]="wp.lonlat_valid?'':'lonlat-invalid'">{{wp.lon | number:'1.2-2'}} {{wp.lat |
                         number:'1.2-2'}}</td>

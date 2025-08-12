@@ -178,6 +178,12 @@ export class Step3LegsEditComponent implements AfterViewInit, OnDestroy {
     }
 
 
+    compareLegs(index: number, lp: LegPoint) {
+        return index;
+    }
+    
+
+
 
     drawOverlayTransformed(event: { canvas: HTMLCanvasElement, imgWidth: number, imgHeight: number }) {
         // get references and clear canvas

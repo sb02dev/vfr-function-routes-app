@@ -138,6 +138,10 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
         event.callback();
     }
 
+    compareWaypoints(index: number, wp: Waypoint) {
+        return index;
+    }
+
     drawOverlayTransformed(event: { canvas: HTMLCanvasElement, imgWidth: number, imgHeight: number }) {
         // get references and clear canvas
         const canvas = event.canvas;

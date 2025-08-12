@@ -24,7 +24,7 @@
             <td>#Pts</td>
             <td>Actions</td>
         </thead>
-        <tr *ngFor="let t of tracks; index as i">
+        <tr *ngFor="let t of tracks; index as i; trackBy: compareTracks">
             <td>{{t.name}}</td>
             <td>
                 <div mat-button (click)="openColorPicker(i)" [style.background]="t.color" style="width:20px;height:20px;cursor: pointer;"

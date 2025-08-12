@@ -80,6 +80,7 @@ v0.2
 + bugfix: edge case no waypoints -> extent calculation crashed + filename sanitization update
 + mobile friendly: responsive action pages (landing, step0, step6)
 + bugfix: window resize caused zoom change
++ bugfix: edit boxes not recreated on change (navigating with tab was impossible)
 
 
 v0.1:
