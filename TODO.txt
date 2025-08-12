@@ -11,6 +11,7 @@
 - order constraint points by func_x automatically
 - session management: limit the session connections based on available memory (or number of open sessions)
 - session management: visual feedback if no connection available
+- if was zoomed-to-all before resize, keep this feature after (instead of keeping zoom level)
 
 - bubbles' content revised/customizable
 - journey log created, content revised

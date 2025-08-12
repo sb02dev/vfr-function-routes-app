@@ -87,34 +87,4 @@
 
     </mat-card>
 
-    <table>
-        <thead class="table-header-cell">
-            <td>X</td>
-            <td>Lon/Lat</td>
-            <td>Actions</td>
-        </thead>            
-        <tr *ngFor="let p of legs[leg_index]?legs[leg_index].points:[]; index as i; trackBy: compareLegs">
-            <td><input placeholder="functions x-value at this point" type="number" [value]="p.func_x | number:'1.2-2'" (change)="changeFuncX(i, $event)"></td>
-            <td>{{p.lon | number:'1.2-2'}} {{p.lat | number:'1.2-2'}}</td>
-            <td>
-                <span class="row-buttons">
-                    <span class="stacked-buttons">
-                        <a (click)="moveConstraintPoint(i, true)" [className]="(i>1)&&(i<legs[leg_index].points.length-1)?'':'disabled-button'"
-                           matTooltip="Move constraint point up" matTooltipShowDelay="500">
-                            <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up" fontIcon="arrow_drop_up"
-                                fontSize="12"></mat-icon>
-                        </a>
-                        <a (click)="moveConstraintPoint(i, false)" [className]="(i<legs[leg_index].points.length-2)&&(i>0)?'':'disabled-button'"
-                           matTooltip="Move constraint point down" matTooltipShowDelay="500">
-                            <mat-icon class="stacked-button" aria-hidden="false" aria-label="move up" fontIcon="arrow_drop_down"
-                                fontSize="12"></mat-icon>
-                        </a>
-                    </span>
-                    <a (click)="deleteConstraintPoint(i)" matTooltip="Delete constraint point" matTooltipShowDelay="500">
-                        <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
-                    </a>
-                </span>
-            </td>
-        </tr>
-    </table>
 </app-map-edit>
