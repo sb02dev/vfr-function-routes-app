@@ -1,4 +1,5 @@
-<app-header [step-index]="3"
+<app-header #header
+            [step-index]="3"
             header_title="Define Legs"
             tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
                      In Edit mode you can move constraint points with the left mouse button and create a new one with the middle button.
@@ -90,5 +91,8 @@
         </div>
 
     </mat-card>
+
+    <div class="placeholder-for-url-bar-scroll" [class.hidden]="header.isFullScreen$ | async">
+    </div>
 
 </app-map-edit>

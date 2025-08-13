@@ -1,4 +1,5 @@
-<app-header [step-index]="4"
+<app-header #header
+            [step-index]="4"
             header_title="Define Annotation Points" 
             tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
                      In Edit mode you can do two things depending on if the estimated bubbles are shown.
@@ -90,5 +91,8 @@
         </div>
     
     </mat-card>
+
+    <div class="placeholder-for-url-bar-scroll" [class.hidden]="header.isFullScreen$ | async">
+    </div>
 
 </app-map-edit>

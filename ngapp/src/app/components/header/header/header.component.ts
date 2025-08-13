@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { AfterViewInit, Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
@@ -6,6 +6,7 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ImageEditService } from '../../../services/image-edit.service';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
     selector: 'app-header',
@@ -19,7 +20,9 @@ import { ImageEditService } from '../../../services/image-edit.service';
     templateUrl: './header.component.html',
     styleUrl: './header.component.css'
 })
-export class HeaderComponent {
+export class HeaderComponent implements AfterViewInit {
+
+    public isFullScreen$ = new BehaviorSubject<boolean>(false);
 
     @Input('step-index') step_index: number = 0;
     @Input() header_title: string = '';
@@ -29,6 +32,16 @@ export class HeaderComponent {
     @Input('first-step') first_step: boolean = false;
 
     constructor(public router: Router, private imgsrv: ImageEditService) { }
+
+    ngAfterViewInit(): void {
+        document.addEventListener("fullscreenchange", (event) => {
+            if (document.fullscreenElement) {
+                this.isFullScreen$.next(true);
+            } else {
+                this.isFullScreen$.next(false);
+            }
+        });
+    }
 
     stepBack() {
         this.imgsrv.send({

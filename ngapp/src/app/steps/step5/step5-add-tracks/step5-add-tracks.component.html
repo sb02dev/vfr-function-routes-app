@@ -1,43 +1,72 @@
-<app-header [step-index]="5"
+<app-header #header
+            [step-index]="5"
             header_title="Add Tracks" 
             tooltip="In Pan/Zoom mode you can drag the map with left mouse button and zoom in/out with the scroll wheel. 
                      In Edit mode you can do nothing.
                      In the table on the right you can add (from local .gpx files) and delete routes and change their colours.">
 </app-header>
-<app-map-edit 
+<app-map-edit
+    #map
     panelWidth="300px"
-    (drawOverlay)="drawOverlayTransformed($event)"><!--    
-    (enumPoints)="enumPoints($event)"
-    (movePointTo)="movePointTo($event)" 
-    (addPointAt)="addPointAt($event)" 
-    (finalizePoints)="finalizeMove()"
--->
-    <h1>Tracks</h1>
-    <div>
-        <a mat-raised-button (click)="loadTrack()">Add track</a>
-        <input type="file" id="file-selector" #file_selector accept=".gpx" class="hidden" aria-label="---">
+    (drawOverlay)="drawOverlayTransformed($event)">
+
+    <mat-card>
+        <mat-card-header>
+            <mat-card-title>
+                <a mat-raised-button (click)="loadTrack()">Add track</a>
+                <input type="file" id="file-selector" #file_selector accept=".gpx" class="hidden" aria-label="---">
+            </mat-card-title>
+        </mat-card-header>
+    
+        <div class="mat-elevation-z8"
+             [class.table-container-landscape]="map.isLandscape$ | async"
+             [class.table-container-portrait]="!(map.isLandscape$ | async)"
+             tabindex="0">
+            <mat-table [dataSource]="tracks">
+                <ng-container matColumnDef="name">
+                    <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+                    <mat-cell *matCellDef="let t; let i=index">
+                        {{t.name}}
+                    </mat-cell>
+                </ng-container>
+    
+                <ng-container matColumnDef="color">
+                    <mat-header-cell *matHeaderCellDef> Color </mat-header-cell>
+                    <mat-cell *matCellDef="let t; let i=index">
+                        <div mat-button (click)="openColorPicker(i)" [style.background]="t.color"
+                             style="width:20px;height:20px;cursor: pointer;" matTooltip="Change color of the track" matTooltipShowDelay="500">
+                        </div>
+                    </mat-cell>
+                </ng-container>
+    
+                <ng-container matColumnDef="num_points">
+                    <mat-header-cell *matHeaderCellDef> Pts# </mat-header-cell>
+                    <mat-cell *matCellDef="let t; let i=index">
+                        {{t.num_points}}
+                    </mat-cell>
+                </ng-container>
+    
+                <ng-container matColumnDef="actions">
+                    <mat-header-cell *matHeaderCellDef> Actions </mat-header-cell>
+                    <mat-cell *matCellDef="let t; let i=index">
+                        <span class="row-buttons">
+                            <a (click)="deleteTrack(i)" matTooltip="Delete track" matTooltipShowDelay="500">
+                                <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
+                            </a>
+                        </span>
+                    </mat-cell>
+                </ng-container>
+    
+                <mat-header-row *matHeaderRowDef="['name', 'color', 'num_points', 'actions']; sticky: true"></mat-header-row>
+    
+                <mat-row *matRowDef="let row; columns: ['name', 'color', 'num_points', 'actions'];"></mat-row>
+    
+            </mat-table>
+        </div>
+    
+    </mat-card>
+
+    <div class="placeholder-for-url-bar-scroll" [class.hidden]="header.isFullScreen$ | async">
     </div>
-    <table>
-        <thead class="table-header-cell">
-            <td>Name</td>
-            <td>Color</td>
-            <td>#Pts</td>
-            <td>Actions</td>
-        </thead>
-        <tr *ngFor="let t of tracks; index as i; trackBy: compareTracks">
-            <td>{{t.name}}</td>
-            <td>
-                <div mat-button (click)="openColorPicker(i)" [style.background]="t.color" style="width:20px;height:20px;cursor: pointer;"
-                     matTooltip="Change color of the track" matTooltipShowDelay="500"></div>
-            </td>
-            <td>{{t.num_points}}</td>
-            <td>
-                <span class="row-buttons">
-                    <a (click)="deleteTrack(i)" matTooltip="Delete track" matTooltipShowDelay="500">
-                        <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
-                    </a>
-                </span>
-            </td>
-        </tr>
-    </table>
+
 </app-map-edit>

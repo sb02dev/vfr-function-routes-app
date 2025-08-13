@@ -1,11 +1,14 @@
+.placeholder-for-url-bar-scroll {
+    height: 36px;
+}
+
 .table-container-portrait {
     height: calc(20dvh);
     overflow: auto;
 }
 
 .table-container-landscape {
-    height: calc(100dvh - 48px - 80px - 60px - 40px - 0*36px);
-        /* header not considered on purpose because of URL bar on mobile */
+    height: calc(100dvh - 48px - 80px - 60px - 40px - 36px);
     overflow: auto;
 }
 

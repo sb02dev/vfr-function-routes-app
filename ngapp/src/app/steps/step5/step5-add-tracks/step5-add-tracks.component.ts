@@ -7,6 +7,8 @@ import { ColorSketchModule } from 'ngx-color/sketch';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { ColorPickerDialogComponent } from '../../../components/colorpicker/color-picker-dialog/color-picker-dialog.component';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCardModule } from '@angular/material/card';
+import { MatTableModule } from '@angular/material/table';
 
 import { HeaderComponent } from '../../../components/header/header/header.component';
 import { Track } from '../../../models/track';
@@ -23,6 +25,8 @@ import { ImageEditService } from '../../../services/image-edit.service';
         MatTooltipModule,
         ColorSketchModule,
         MatDialogModule,
+        MatCardModule,
+        MatTableModule,
         HeaderComponent,
         MapEditComponent,
     ],
