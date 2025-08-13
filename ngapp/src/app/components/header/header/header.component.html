@@ -5,6 +5,11 @@
             Step {{step_index-1}}
         </a>
         <div fxFlex>
+            <mat-icon aria-hidden="false"
+                      aria-label="Fullscreen"
+                      fontIcon="fullscreen"
+                      (click)="goFullScreen()">x
+            </mat-icon>
             <span fxFlex fxLayoutAlign="center center">{{header_title}}</span>
             <mat-icon aria-hidden="false"
                       aria-label="Help"

@@ -47,4 +47,11 @@ export class HeaderComponent {
         this.router.navigateByUrl(`/step${this.step_index+1}`);
     }
 
+    goFullScreen() {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            document.body.requestFullscreen();
+        }
+    }
 }

@@ -86,6 +86,7 @@ v0.2
 + mobile friendly: responsive map page in step1
 + mobile friendly: responsive map page in step3
 + first attempt to render 'function_range' correctly
++ fullscreen button in header
 
 
 v0.1:

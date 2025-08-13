@@ -3,6 +3,10 @@
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
+:fullscreen, ::backdrop {
+    background-color: white;
+}
+
 .snackbar-error {
     color: white;
     --mdc-snackbar-container-color: #FF005D !important;
