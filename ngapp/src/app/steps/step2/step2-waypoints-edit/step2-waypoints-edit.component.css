@@ -27,13 +27,13 @@
     color: Gray;
 }
 
-.table-container {
-    @media only screen and (max-width: 600px) {
-        height: calc(30dvh);
-    }
-    @media only screen and (min-width: 600px) {
-        height: calc(100dvh - 48px - 0*36px); /* header not considered on purpose because of URL bar on mobile */
-    }
+.table-container-portrait {
+    height: calc(30dvh);
+    overflow: auto;
+}
+
+.table-container-landscape {
+    height: calc(100dvh - 48px - 0*36px); /* header not considered on purpose because of URL bar on mobile */
     overflow: auto;
 }
 

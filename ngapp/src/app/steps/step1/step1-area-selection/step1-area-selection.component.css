@@ -3,16 +3,14 @@ a.mat-tonal-button {
     color: var(--mdc-filled-button-label-text-color); 
 }
 
-.table-container {
-    @media only screen and (max-width: 600px) {
-        height: calc(30dvh);
-    }
+.table-container-portrait {
+    height: calc(30dvh);
+    overflow: auto;
+}
 
-    @media only screen and (min-width: 600px) {
-        height: calc(100dvh - 48px - 0*36px);
+.table-container-landscape {
+    height: calc(100dvh - 48px - 0*36px);
         /* header not considered on purpose because of URL bar on mobile */
-    }
-
     overflow: auto;
 }
 

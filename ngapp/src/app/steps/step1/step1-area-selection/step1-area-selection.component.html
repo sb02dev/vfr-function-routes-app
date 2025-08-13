@@ -6,6 +6,7 @@
                      In the table on the right you see the latitude-longitude values of the corners.">
 </app-header>
 <app-map-edit
+    #map
     panelWidth="250px"
     (drawOverlay)="drawOverlayTransformed($event)"
     (enumPoints)="enumPoints($event)"
@@ -20,7 +21,10 @@
             </mat-card-title>
         </mat-card-header>
     
-        <div class="table-container mat-elevation-z8" tabindex="0">
+        <div class="mat-elevation-z8"
+             [class.table-container-landscape]="map.isLandscape$ | async"
+             [class.table-container-portrait]="!(map.isLandscape$ | async)"
+             tabindex="0">
             <mat-table [dataSource]="[{name: 'Top-Left', lon: lonlat[0], lat: lonlat[1]},
                                     {name: 'Bottom-Right', lon: lonlat[2], lat: lonlat[3]}]">
                 <ng-container matColumnDef="name">

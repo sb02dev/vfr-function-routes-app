@@ -3,9 +3,9 @@ import { MatIconModule } from "@angular/material/icon";
 import { CommonModule } from '@angular/common';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatButtonModule } from '@angular/material/button';
-import { Subscription } from 'rxjs';
+import { distinctUntilChanged, map, Observable, Observer, Subscription, tap } from 'rxjs';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { BreakpointObserver } from '@angular/cdk/layout';
+import { BreakpointObserver, BreakpointState } from '@angular/cdk/layout';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ImageEditService } from '../../../services/image-edit.service';
@@ -46,6 +46,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     @ViewChild('pointerCapture', { static: true }) pointerCapture!: ElementRef<HTMLDivElement>;
     private bgResize!: ResizeObserver;
     public svgContent: SafeHtml = '';
+    readonly isLandscape$: Observable<boolean>;
 
     // tool selection
     public selectedTool: string = 'panzoom';
@@ -82,7 +83,13 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         this.subs = this.imgsrv.channel.subscribe((msg: ImageEditMessage) => {
             this.receiveServerMessage(msg);
         });
-        
+        this.isLandscape$ = mediaq.observe(['(orientation: portrait)',
+                                            '(orientation: landscape)'])
+            .pipe(
+                tap(value => console.log(value)),
+                map(value => Object.keys(value.breakpoints).filter((brk) => value.breakpoints[brk] && brk === '(orientation: landscape)').length == 1),
+                distinctUntilChanged()
+            );
     }
     
     ngAfterViewInit(): void {

@@ -5,6 +5,7 @@
                      In the table on the right you can edit the waypoint names and reorder or delete them.">
 </app-header>
 <app-map-edit
+    #map
     panelWidth="300px"
     (drawOverlay)="drawOverlayTransformed($event)"
     (enumPoints)="enumPoints($event)"
@@ -19,7 +20,10 @@
                 </mat-card-title>
             </mat-card-header>
 
-            <div class="table-container mat-elevation-z8" tabindex="0">
+            <div class="mat-elevation-z8"
+                 [class.table-container-landscape]="map.isLandscape$ | async"
+                 [class.table-container-portrait]="!(map.isLandscape$ | async)"
+                 tabindex="0">
                 <mat-table [dataSource]="waypoints">
                     <ng-container matColumnDef="name">
                         <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>

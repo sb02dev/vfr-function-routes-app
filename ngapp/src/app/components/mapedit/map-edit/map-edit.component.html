@@ -1,5 +1,5 @@
 <div class="page-content"
-     fxLayout="row" fxLayout.lt-sm="column"
+     [fxLayout]="(isLandscape$ | async)?'row':'column'"
     >
     <div fxLayout="row" fxFlex="0 100 auto" fxFill>
         <div class="map-controls" fxLayout="column">
@@ -36,7 +36,7 @@
             </div>
         </div>
     </div>
-    <div class="map-info" [style.width]="(mediaq.isMatched('(max-width: 600px)'))?'':panelWidth">
+    <div class="map-info" [style.width]="(isLandscape$ | async)?panelWidth:''">
         <ng-content></ng-content>
     </div>
 </div>
