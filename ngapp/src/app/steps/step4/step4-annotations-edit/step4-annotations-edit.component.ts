@@ -8,6 +8,8 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCardModule } from '@angular/material/card';
+import { MatTableModule } from '@angular/material/table';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
@@ -26,6 +28,8 @@ import { MathEditComponent } from '../../../components/mathedit/math-edit/math-e
         MatCheckboxModule,
         MatButtonModule,
         MatTooltipModule,
+        MatCardModule,
+        MatTableModule,
         MapEditComponent,
         MathEditComponent,
         HeaderComponent,

@@ -1,10 +1,10 @@
-- mobile friendly: responsive map pages (step4-5)
+- mobile friendly: responsive map pages (step5)
 - session management: caching of states per session to disk on each modification
 - give visual feedback if no route is open on the server for the current session
 - visual feedback if error between steps
 - progress indication while waiting for server
 - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
-- speed is modifiable in step 6
+- speed & name is modifiable in step 6
 - bugfix: readonly mathedit does not show formula
 - bugfix: map-info width and horizontal scrolling
 - edit "function_range" on leg page (maybe it could be automatic?)
@@ -88,6 +88,7 @@ v0.2
 + first attempt to render 'function_range' correctly
 + fullscreen button in header
 + mobile friendly: steps 1-3 correctly handles portrait/landscape instead of screen width
++ mobile friendly: responsive map pages (step4)
 
 
 v0.1:

@@ -1,0 +1,20 @@
+.table-container-portrait {
+    height: calc(20dvh);
+    overflow: auto;
+}
+
+.table-container-landscape {
+    height: calc(100dvh - 48px - 80px - 60px - 40px - 0*36px);
+        /* header not considered on purpose because of URL bar on mobile */
+    overflow: auto;
+}
+
+.mat-mdc-table-sticky {
+    background: #59abfd;
+    opacity: 1;
+}
+
+.mat-column-name { flex: 0 1 45%; }
+.mat-column-func_x { flex: 0 1 20%; }
+.mat-column-offset { flex: 0 1 25%; }
+.mat-column-actions { flex: 0 1 10%; }
