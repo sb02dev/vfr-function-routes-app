@@ -79,6 +79,7 @@ class SessionStore:
             del self._store[sid]
 
     def save(self):
+        """Saves the session store to disk. Call periodically."""
         json_store = {}
         for k, (exp, rte) in self._store.items():
             json_store[k] = { "expiry": exp, "route": rte.toDict() }
@@ -86,8 +87,16 @@ class SessionStore:
             json.dump(json_store, f, indent=2)
 
     def load(self):
+        """Loads the session store from disk (if it exists, otherwise clears
+           memory store). Call on startup.
+        """
+        # check if cache exists
+        fname = os.path.join(rootpath, 'data', 'session_cache.json')
+        if not os.path.isfile(fname):
+            self._store.clear()
+            return
         # load from file to dict
-        with open(os.path.join(rootpath, 'data', 'session_cache.json'), 'rt', encoding='utf8') as f:
+        with open(fname, 'rt', encoding='utf8') as f:
             json_store = json.load(f)
         # load to memory store but only non-expired ones
         now = time.time()
@@ -95,7 +104,7 @@ class SessionStore:
         for k, v in json_store.items():
             if now <= v['expiry']:
                 self._store[k] = (
-                    v['expiry'], 
+                    v['expiry'],
                     VFRFunctionRoute.fromDict(v['route'],
                                               session = global_requests_session,
                                               workfolder=os.path.join(rootpath, "data"),
@@ -106,8 +115,8 @@ class SessionStore:
 
     def __len__(self):
         return len(self._store)
-    
-       
+
+
 
 _vfrroutes = SessionStore(ttl_seconds=3600)
 _vfrroutes.load()
