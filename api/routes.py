@@ -78,22 +78,52 @@ class SessionStore:
         for sid in expired:
             del self._store[sid]
 
+    def save(self):
+        json_store = {}
+        for k, (exp, rte) in self._store.items():
+            json_store[k] = { "expiry": exp, "route": rte.toDict() }
+        with open(os.path.join(rootpath, 'data', 'session_cache.json'), 'wt', encoding='utf8') as f:
+            json.dump(json_store, f, indent=2)
+
+    def load(self):
+        # load from file to dict
+        with open(os.path.join(rootpath, 'data', 'session_cache.json'), 'rt', encoding='utf8') as f:
+            json_store = json.load(f)
+        # load to memory store but only non-expired ones
+        now = time.time()
+        self._store.clear()
+        for k, v in json_store.items():
+            if now <= v['expiry']:
+                self._store[k] = (
+                    v['expiry'], 
+                    VFRFunctionRoute.fromDict(v['route'],
+                                              session = global_requests_session,
+                                              workfolder=os.path.join(rootpath, "data"),
+                                              outfolder=os.path.join(rootpath, "output"),
+                                              tracksfolder=os.path.join(rootpath, "tracks")
+                    )
+                )
+
     def __len__(self):
         return len(self._store)
     
        
 
-_vfrroutes = SessionStore(ttl_seconds=600)
+_vfrroutes = SessionStore(ttl_seconds=3600)
+_vfrroutes.load()
 
 
 async def cleanup_loop():
     while True:
         _vfrroutes.cleanup()
+        _vfrroutes.save()
         await asyncio.sleep(60)  # run every minute
 
 
-async def send_tiled_image_header(websocket: WebSocket, renderer: TileRenderer, area: SimpleRect, additional_data: dict = {}):
-    tile_list, crop, image_size, tile_range = renderer.get_tile_list_for_area(area)
+async def send_tiled_image_header(websocket: WebSocket, renderer: TileRenderer, area: SimpleRect, additional_data: dict = None):
+    if additional_data is None:
+        additional_data = {}
+    _, crop, image_size, tile_range = renderer.get_tile_list_for_area(area)
     await websocket.send_json({"type": "tiled-image",
                                "tilesetname": renderer.tileset_name,
                                "dpi": renderer.dpi,

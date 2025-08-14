@@ -1,5 +1,4 @@
 - session management
-  - caching of states per session to disk on each modification
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
 - communication & its visual feedback
@@ -92,6 +91,8 @@ v0.2
 + mobile friendly: responsive map pages (step5)
 + fullscreen size fixed (tables were over the screen because of the url-bar-scroll-needed hack)
 + if was zoomed-to-all before resize, keep this feature after (instead of keeping zoom level)
+- session management
+  + caching of states per session to disk periodically, load it on startup
 
 
 v0.1:

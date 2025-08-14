@@ -1460,23 +1460,23 @@ class VFRFunctionRoute:
             'state': self._state.name
         }
         # step 1: area of interest
-        if self._state.value>=VFRRouteState.AREAOFINTEREST.value:
-            jsonrte['step1'] = { 'area_of_interest': {
-                'top-left': self.area_of_interest['top-left'].toDict(),
-                'bottom-right': self.area_of_interest['bottom-right'].toDict(),
-            }}
+        #if self._state.value>=VFRRouteState.AREAOFINTEREST.value:
+        jsonrte['step1'] = { 'area_of_interest': {
+            'top-left': self.area_of_interest['top-left'].toDict(),
+            'bottom-right': self.area_of_interest['bottom-right'].toDict(),
+        }}
         # step 2: waypoints
-        if self._state.value>=VFRRouteState.WAYPOINTS.value:
-            jsonrte['step2'] = { 'waypoints': [(wp[0], wp[1].toDict()) for wp in self.waypoints] }
+        #if self._state.value>=VFRRouteState.WAYPOINTS.value:
+        jsonrte['step2'] = { 'waypoints': [(wp[0], wp[1].toDict()) for wp in self.waypoints] }
         # step 3: legs
-        if self._state.value>=VFRRouteState.LEGS.value:
-            jsonrte['step3'] = { 'legs': [leg.toDict() for leg in self.legs] }
+        #if self._state.value>=VFRRouteState.LEGS.value:
+        jsonrte['step3'] = { 'legs': [leg.toDict() for leg in self.legs] }
         # step 4: annotation points
-        if self._state.value>=VFRRouteState.ANNOTATIONS.value:
-            jsonrte['step4'] = { 'annotations': [[ann.toDict() for ann in leg.annotations] for leg in self.legs] }
+        #if self._state.value>=VFRRouteState.ANNOTATIONS.value:
+        jsonrte['step4'] = { 'annotations': [[ann.toDict() for ann in leg.annotations] for leg in self.legs] }
         # step 5: tracks
-        if self._state.value>=VFRRouteState.FINALIZED.value:
-            jsonrte['step5'] = { 'tracks': [t.toDict() for t in self.tracks]}
+        #if self._state.value>=VFRRouteState.FINALIZED.value:
+        jsonrte['step5'] = { 'tracks': [t.toDict() for t in self.tracks]}
         # return
         return jsonrte
     
@@ -1492,35 +1492,44 @@ class VFRFunctionRoute:
                  tracksfolder: Union[str, Path, None] = None):
         # decode json
         jsonrte = json.loads(jsonstring)
+        # load it
+        return VFRFunctionRoute.fromDict(jsonrte, session, workfolder, outfolder, tracksfolder)
+
+    @classmethod
+    def fromDict(cls, jsonrte: dict,
+                 session: requests.Session = None,
+                 workfolder: Union[str, Path, None] = None,
+                 outfolder: Union[str, Path, None] = None,
+                 tracksfolder: Union[str, Path, None] = None):
         # initiate with basic info
         rte = VFRFunctionRoute(jsonrte['name'], jsonrte['speed'], datetime.datetime.fromisoformat(jsonrte['dof']),
                                session, workfolder, outfolder, tracksfolder)
         state = VFRRouteState[jsonrte['state']]
         # step 1: area of interest
-        if state.value>=VFRRouteState.AREAOFINTEREST.value:
-            rte.area_of_interest = {
-                'top-left': VFRPoint.fromDict(jsonrte['step1']['area_of_interest']['top-left'], rte),
-                'bottom-right': VFRPoint.fromDict(jsonrte['step1']['area_of_interest']['bottom-right'], rte),
-            }
-            rte.set_state(VFRRouteState.AREAOFINTEREST)
+        #if state.value>=VFRRouteState.AREAOFINTEREST.value:
+        rte.area_of_interest = {
+            'top-left': VFRPoint.fromDict(jsonrte['step1']['area_of_interest']['top-left'], rte),
+            'bottom-right': VFRPoint.fromDict(jsonrte['step1']['area_of_interest']['bottom-right'], rte),
+        }
+        #rte.set_state(VFRRouteState.AREAOFINTEREST)
         # step 2: waypoints
-        if state.value>=VFRRouteState.WAYPOINTS.value:
-            rte.waypoints = [(name, VFRPoint.fromDict(p, rte)) for name, p in jsonrte['step2']['waypoints']]
-            rte.set_state(VFRRouteState.WAYPOINTS)
+        #if state.value>=VFRRouteState.WAYPOINTS.value:
+        rte.waypoints = [(name, VFRPoint.fromDict(p, rte)) for name, p in jsonrte['step2']['waypoints']]
+        #rte.set_state(VFRRouteState.WAYPOINTS)
         # step 3: legs
-        if state.value>=VFRRouteState.LEGS.value:
-            rte.legs = [VFRLeg.fromDict(leg, rte) for leg in jsonrte['step3']['legs']]
-            rte.set_state(VFRRouteState.LEGS)
+        #if state.value>=VFRRouteState.LEGS.value:
+        rte.legs = [VFRLeg.fromDict(leg, rte) for leg in jsonrte['step3']['legs']]
+        #rte.set_state(VFRRouteState.LEGS)
         # step 4: annotation points
-        if state.value>=VFRRouteState.ANNOTATIONS.value:
-            for i, l in enumerate(jsonrte['step4']['annotations']):
-                leg = rte.legs[i]
-                leg.annotations = [VFRAnnotation.fromDict(ann, leg) for ann in l]
-            rte.set_state(VFRRouteState.ANNOTATIONS)
-        # TODO: step 5: tracks
-        if state.value>=VFRRouteState.FINALIZED.value:
-            rte.tracks = [VFRTrack.fromDict(t, rte) for t in jsonrte['step5']['tracks']]
-            rte.set_state(VFRRouteState.FINALIZED)
+        #if state.value>=VFRRouteState.ANNOTATIONS.value:
+        for i, l in enumerate(jsonrte['step4']['annotations']):
+            leg = rte.legs[i]
+            leg.annotations = [VFRAnnotation.fromDict(ann, leg) for ann in l]
+        #rte.set_state(VFRRouteState.ANNOTATIONS)
+        # step 5: tracks
+        #if state.value>=VFRRouteState.FINALIZED.value:
+        rte.tracks = [VFRTrack.fromDict(t, rte) for t in jsonrte['step5']['tracks']]
+        #rte.set_state(VFRRouteState.FINALIZED)
         # set final state and return
         rte.set_state(state)
         return rte
