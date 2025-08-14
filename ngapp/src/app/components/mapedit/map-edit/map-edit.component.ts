@@ -60,6 +60,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     private viewWindow = { x0: 0, y0: 0, x1: 4, y1: 4 }; // we store view window in image-space: x0,y0,x1,y1
     private panStart: { x: number, y: number } | null = null;
     private zoomFactor: number = 1.1; // how much to zoom in/out per scroll step
+    private zoomedToAll: boolean = false;
 
     // tile related
     private tilesetParams!: { tilesetName: string, dpi: number };
@@ -86,7 +87,6 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         this.isLandscape$ = mediaq.observe(['(orientation: portrait)',
                                             '(orientation: landscape)'])
             .pipe(
-                tap(value => console.log(value)),
                 map(value => Object.keys(value.breakpoints).filter((brk) => value.breakpoints[brk] && brk === '(orientation: landscape)').length == 1),
                 distinctUntilChanged()
             );
@@ -145,6 +145,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
             x0: 0, x1: this.bgCanvasRef.nativeElement.width,
             y0: 0, y1: this.bgCanvasRef.nativeElement.height
         };
+        this.zoomedToAll = false;
         this.drawBackgroundTransformed();
         this.updateSVGTransform();
         this.drawOverlayTransformed();
@@ -164,6 +165,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         } else {
             this.viewWindow = { x0: 0, x1: canvasw * heightratio, y0: 0, y1: imh };
         }
+        this.zoomedToAll = true;
         this.drawBackgroundTransformed();
         this.updateSVGTransform();
         this.drawOverlayTransformed();
@@ -347,6 +349,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
 
         [this.viewWindow.x0, this.viewWindow.x1] = this.zoomWindow(this.viewWindow.x0, this.viewWindow.x1, x, zoomIn);
         [this.viewWindow.y0, this.viewWindow.y1] = this.zoomWindow(this.viewWindow.y0, this.viewWindow.y1, y, zoomIn);
+        this.zoomedToAll = false;
 
         this.drawBackgroundTransformed();
         this.updateSVGTransform();
@@ -541,6 +544,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
             x0: xmin - deltaX, x1: xmax - deltaX,
             y0: ymin - deltaY, y1: ymax - deltaY
         };
+        this.zoomedToAll = false;
 
         this.drawBackgroundTransformed();
         this.updateSVGTransform();
@@ -557,6 +561,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         this.viewWindow.x1 = centerX + newWidth / 2;
         this.viewWindow.y0 = centerY - newHeight / 2;
         this.viewWindow.y1 = centerY + newHeight / 2;
+        this.zoomedToAll = false;
         this.drawBackgroundTransformed();
         this.updateSVGTransform();
         this.drawOverlayTransformed();
@@ -588,15 +593,20 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     private onScreenResized() {
         const w = this.bgCanvasRef.nativeElement.clientWidth;
         const h = this.bgCanvasRef.nativeElement.clientHeight;
-        // update view window
         const scale = this.getScale();
-        this.viewWindow.x1 = this.viewWindow.x0 + w / scale.x;
-        this.viewWindow.y1 = this.viewWindow.y0 + h / scale.y;
         // update canvas size
         this.bgCanvasRef.nativeElement.width = w;
         this.bgCanvasRef.nativeElement.height = h;
         this.overlayCanvasRef.nativeElement.width = w;
         this.overlayCanvasRef.nativeElement.height = h;
+        // update view window
+        if (this.zoomedToAll) {
+            this.zoomToAll();
+        } else {
+            this.viewWindow.x1 = this.viewWindow.x0 + w / scale.x;
+            this.viewWindow.y1 = this.viewWindow.y0 + h / scale.y;
+            this.zoomedToAll = false;
+        }
         // redraw
         this.drawBackgroundTransformed();
         this.updateSVGTransform();

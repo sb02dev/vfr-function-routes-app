@@ -1,16 +1,17 @@
-- session management: caching of states per session to disk on each modification
-- give visual feedback if no route is open on the server for the current session
-- visual feedback if error between steps
-- progress indication while waiting for server
-- waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
-- speed & name is modifiable in step 6
-- bugfix: readonly mathedit does not show formula
-- bugfix: map-info width and horizontal scrolling
-- edit "function_range" on leg page (maybe it could be automatic?)
-- order constraint points by func_x automatically
-- session management: limit the session connections based on available memory (or number of open sessions)
-- session management: visual feedback if no connection available
-- if was zoomed-to-all before resize, keep this feature after (instead of keeping zoom level)
+- session management
+  - caching of states per session to disk on each modification
+  - limit the session connections based on available memory (or number of open sessions)
+  - visual feedback if no connection available
+- communication & its visual feedback
+  - give visual feedback if no route is open on the server for the current session
+  - visual feedback if error between steps
+  - progress indication while waiting for server (maybe disable inputs until answer?)
+- route editing
+  - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
+  - speed & name is modifiable in step 6
+  - bugfix: readonly mathedit does not show formula
+  - edit "function_range" on leg page (maybe it could be automatic?)
+  - order constraint points by func_x automatically
 
 - bubbles' content revised/customizable
 - journey log created, content revised
@@ -90,6 +91,7 @@ v0.2
 + mobile friendly: responsive map pages (step4)
 + mobile friendly: responsive map pages (step5)
 + fullscreen size fixed (tables were over the screen because of the url-bar-scroll-needed hack)
++ if was zoomed-to-all before resize, keep this feature after (instead of keeping zoom level)
 
 
 v0.1:
