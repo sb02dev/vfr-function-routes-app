@@ -554,22 +554,28 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         "filename": f"{rte.name}.vfr"
                     }))
 
-            elif msgtype=='get-dof':
+            elif msgtype=='get-route-data':
                 if rte:
                     await websocket.send_text(json.dumps({
-                        "type": "dof",
+                        "type": "route-data",
+                        "name": rte.name,
+                        "speed": rte.speed,
                         "dof":  rte.dof.isoformat(),
                     }))
 
-            elif msgtype == 'set-dof':
+            elif msgtype == 'set-route-data':
                 if rte:
                     dv = msg.get("dof", None)
+                    rte.name = msg.get("name", rte.name)
+                    rte.speed = msg.get("speed", rte.speed)
                     if dv:
                         d = datetime.datetime.fromisoformat(dv)
                         rte.dof = d
-                        _vfrroutes.set(session_id, rte)
+                    _vfrroutes.set(session_id, rte)
                     await websocket.send_text(json.dumps({
-                        "type": "dof",
+                        "type": "route-data",
+                        "name": rte.name,
+                        "speed": rte.speed,
                         "dof":  rte.dof.isoformat(),
                     }))
 

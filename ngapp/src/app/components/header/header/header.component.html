@@ -10,7 +10,7 @@
                       fontIcon="fullscreen"
                       (click)="goFullScreen()">x
             </mat-icon>
-            <span fxFlex fxLayoutAlign="center center">{{header_title}}|{{imgsrv.connected | async}}</span>
+            <span fxFlex fxLayoutAlign="center center">{{header_title}}</span>
             <mat-icon *ngIf="!(imgsrv.connected | async)"
                       aria-hidden="false"
                       aria-label="Disconnected"
