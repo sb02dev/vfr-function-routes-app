@@ -10,7 +10,15 @@
                       fontIcon="fullscreen"
                       (click)="goFullScreen()">x
             </mat-icon>
-            <span fxFlex fxLayoutAlign="center center">{{header_title}}</span>
+            <span fxFlex fxLayoutAlign="center center">{{header_title}}|{{imgsrv.connected | async}}</span>
+            <mat-icon *ngIf="!(imgsrv.connected | async)"
+                      aria-hidden="false"
+                      aria-label="Disconnected"
+                      fontIcon="power_off"
+                      matTooltip="Sorry, there is no connection to the server.
+                                  If it does not get better in a minute try
+                                  refreshing the page">
+            </mat-icon>
             <mat-icon aria-hidden="false"
                       aria-label="Help"
                       fontIcon="help"

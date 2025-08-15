@@ -1,16 +1,15 @@
+- communication & its visual feedback
+  - visual feedback if error between steps (or in any communication)
+  - progress indication while waiting for server (maybe disable inputs until answer?)
 - session management
   - limit the session connections based on available memory (or number of open sessions)
   - visual feedback if no connection available
-- communication & its visual feedback
-  - give visual feedback if no route is open on the server for the current session
-  - visual feedback if error between steps
-  - progress indication while waiting for server (maybe disable inputs until answer?)
 - route editing
-  - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
   - speed & name is modifiable in step 6
+  - order constraint points by func_x automatically
+  - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
   - bugfix: readonly mathedit does not show formula
   - edit "function_range" on leg page (maybe it could be automatic?)
-  - order constraint points by func_x automatically
 
 - bubbles' content revised/customizable
 - journey log created, content revised
@@ -93,6 +92,8 @@ v0.2
 + if was zoomed-to-all before resize, keep this feature after (instead of keeping zoom level)
 - session management
   + caching of states per session to disk periodically, load it on startup
+- communication & its visual feedback
+  + give visual feedback if no route is open on the server for the current session
 
 
 v0.1:

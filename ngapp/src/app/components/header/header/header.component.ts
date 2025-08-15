@@ -1,4 +1,6 @@
 import { AfterViewInit, Component, EventEmitter, Input, Output } from '@angular/core';
+import { MatCommonModule } from '@angular/material/core';
+import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
@@ -12,6 +14,8 @@ import { BehaviorSubject } from 'rxjs';
     selector: 'app-header',
     standalone: true,
     imports: [
+        CommonModule,
+        MatCommonModule,
         MatButtonModule,
         MatIconModule,
         MatTooltipModule,
@@ -31,7 +35,7 @@ export class HeaderComponent implements AfterViewInit {
     @Input('last-step') last_step: boolean = false;
     @Input('first-step') first_step: boolean = false;
 
-    constructor(public router: Router, private imgsrv: ImageEditService) { }
+    constructor(public router: Router, public imgsrv: ImageEditService) { }
 
     ngAfterViewInit(): void {
         document.addEventListener("fullscreenchange", (event) => {

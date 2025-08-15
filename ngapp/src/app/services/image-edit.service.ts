@@ -1,5 +1,5 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 import { ImageEditMessage } from '../models/image-edit-msg';
@@ -18,7 +18,7 @@ export class ImageEditService implements OnDestroy {
 
     public channel = new Subject<ImageEditMessage>();
     public binary_channel = new Subject<Blob>();
-    public connected = new Subject<boolean>();
+    public connected = new BehaviorSubject<boolean>(false);
   
     constructor(private session: SessionService) { 
         this.scheduleReconnect();        
@@ -72,6 +72,7 @@ export class ImageEditService implements OnDestroy {
 
         this.socket.onerror = (err) => {
             console.error('WebSocket error', err);
+            this.connected.next(false);
             this.socket.close();
         };
     }
