@@ -69,6 +69,15 @@ class SessionStore:
             del self._store[session_id]  # expire
             return None
         return data
+    
+    def touch(self, session_id: str) -> None:
+        """Sets the expiry of the given session to now+ttl (no expiry while used)"""
+        expiry = time.time() + self.ttl
+        item = self._store.get(session_id)
+        if not item:
+            return
+        _, data = item
+        self._store[session_id] = (expiry, data)
 
     def cleanup(self):
         """Remove expired sessions. Call periodically."""
@@ -194,6 +203,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             data = await websocket.receive_text()
             msg = json.loads(data)
             msgtype = msg.get("type")
+
+            # increasing expiry of session on each message we get
+            if msgtype is not None and msgtype!='':
+                _vfrroutes.touch(session_id)
 
             ####################
             # General messages #

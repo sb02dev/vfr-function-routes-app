@@ -93,6 +93,7 @@ v0.2
 - session management
   + caching of states per session to disk periodically, load it on startup
   + if there is an open route on server, in step0 we can continue with that
+  + each communication in a session raises it's expiry date
 - communication & its visual feedback
   + give visual feedback if no route is open on the server for the current session
 - route editing
