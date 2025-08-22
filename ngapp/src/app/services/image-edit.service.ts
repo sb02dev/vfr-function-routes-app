@@ -1,7 +1,8 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
+import { environment } from '../../environments/environment';
 import { ImageEditMessage } from '../models/image-edit-msg';
 import { SessionService } from './session.service';
 
@@ -23,7 +24,7 @@ export class ImageEditService implements OnDestroy {
 
     public expectedResponses = new Map<string, string[]>();
   
-    constructor(private session: SessionService) { 
+    constructor(private session: SessionService, private snackbar: MatSnackBar) { 
         this.scheduleReconnect();        
     }
 
@@ -63,6 +64,15 @@ export class ImageEditService implements OnDestroy {
                 if (data.type === 'set_session') {
                     this.session.storeSessionId(data['session_id']);
                 } else {
+                    if (data.type === 'result' && data['result'] === 'exception') {
+                        const msg = `SERVER ERROR: (${data['exception_type']}) ${data['message']}`;
+                        console.error(msg, data['traceback']);
+                        this.snackbar.open(
+                            msg,
+                            undefined,
+                            { duration: 10000, panelClass: 'snackbar-error' }
+                        );
+                    }
                     this.communicating.next(this.checkCommunicating(data.type));
                     this.channel.next(data);
                 }

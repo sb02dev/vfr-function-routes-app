@@ -327,7 +327,7 @@ class VFRAnnotation:
                 self._declination = api_res["result"][0]["declination"]
             else:
                 self._declination = 6
-        except:
+        except Exception as e:
             import traceback
             traceback.print_exc()
             self._declination = 5
@@ -338,7 +338,12 @@ class VFRAnnotation:
     def wind(self):
         self.get_weather()
         weather_ts = int(self._leg._route.dof.timestamp())
-        return sorted((wfx for wfx in self._weather['list'] if wfx['dt']<=weather_ts), key=lambda wfx: wfx['dt'])[-1]['wind']
+        latest = sorted((wfx for wfx in self._weather['list'] if wfx['dt']<=weather_ts), key=lambda wfx: wfx['dt'])
+        if len(latest)<1:
+            raise ValueError(
+                f"No wind forecast is available for that date/time ({self._leg._route.dof.isoformat()})"
+            )
+        return latest[-1]['wind']
 
 
     @property

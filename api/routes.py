@@ -11,7 +11,8 @@ from typing import Optional, Union
 import uuid
 import unicodedata
 import re
-from fastapi import APIRouter, HTTPException, Response, WebSocket
+import traceback
+from fastapi import APIRouter, HTTPException, Response, WebSocket, WebSocketException, WebSocketDisconnect
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -253,16 +254,18 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     )
                     _vfrroutes.set(session_id, rte)
                     await websocket.send_json({"type": "load-result", "result": "success"})
-                except:
+                except Exception as e:
                     await websocket.send_json({"type": "load-result", "result": "failed"})
+                    raise
 
             elif msgtype=='sample':
                 try:
                     rte = default_route()
                     _vfrroutes.set(session_id, rte)
                     await websocket.send_json({"type": "load-result", "result": "success"})
-                except:
+                except Exception as e:
                     await websocket.send_json({"type": "load-result", "result": "failed"})
+                    raise
 
             elif msgtype == 'load':
                 try:
@@ -276,8 +279,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
 
                     _vfrroutes.set(session_id, rte)
                     await websocket.send_json({"type": "load-result", "result": "success", "step": rte._state.value})
-                except:
+                except Exception as e:
                     await websocket.send_json({"type": "load-result", "result": "failed"})
+                    raise
 
             elif msgtype=='load-published':
                 try:
@@ -290,8 +294,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                                         )
                     _vfrroutes.set(session_id, rte)
                     await websocket.send_json({"type": "load-result", "result": "success", "step": rte._state.value})
-                except:
+                except Exception as e:
                     await websocket.send_json({"type": "load-result", "result": "failed"})
+                    raise
 
             else:
                 # all other messages need a route
@@ -607,17 +612,27 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                                     "fname": fname})
                         else:
                             await websocket.send_json({"type": "save-to-cloud-result", "result": "too-many-files"})
-                    except:
+                    except Exception as e:
                         await websocket.send_json({"type": "save-to-cloud-result", "result": "fail"})
+                        raise
 
 
-
-
-        except Exception as e:
-            print(f"WebSocket error: {e}")
-            import traceback
+        except WebSocketException as e:
             traceback.print_exc()
             break
+
+        except WebSocketDisconnect as e:
+            print(f"Session {session_id} disconnected.")
+            break
+
+        except Exception as e:
+            traceback.print_exc()
+            await websocket.send_json({"type": "result",
+                                       "result": "exception",
+                                       "exception_type": e.__class__.__name__,
+                                       "message": str(e),
+                                       "traceback": traceback.format_exc()
+                                      })
 
 
 
