@@ -38,6 +38,7 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
     // area of interest edit variables
     rect: [number, number, number, number] = [100, 100, 200, 200];
     lonlat: [number, number, number, number] = [0, 0, 0, 0];
+    lonlatValid: [boolean, boolean] = [false, false];
 
     constructor(public router: Router, private imgsrv: ImageEditService) {
         this.subs = imgsrv.channel.subscribe((msg) => {
@@ -54,6 +55,8 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
                     msg['bottom-right'].lon,
                     msg['bottom-right'].lat
                 ];
+                this.lonlatValid[0] = true;
+                this.lonlatValid[1] = true;
             }
         });
     }
@@ -87,14 +90,20 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
     movePointTo(event: { i: number, x: number, y: number, callback: () => void }) {
         const [x, y] = [event.x, event.y]; //this.mapedit.getCanvas2ImageCoords(event.x, event.y);
         const [sx, sy, sw, sh] = this.rect;
-        if (event.i == 0) {
+        if (event.i == 0) { // top-left
             this.rect = [x, y, sw - (x - sx), sh - (y - sy)];
-        } else if (event.i == 1) {
+            this.lonlatValid[0] = false;
+        } else if (event.i == 1) { // top-right -> moves both
             this.rect = [sx, y, x - sx, sh - (y - sy)];
-        } else if (event.i == 2) {
+            this.lonlatValid[0] = false;
+            this.lonlatValid[1] = false;
+        } else if (event.i == 2) { // bottom-right
             this.rect = [sx, sy, x - sx, y - sy];
-        } else if (event.i == 3) {
+            this.lonlatValid[1] = false;
+        } else if (event.i == 3) { // bottom-left -> moves both
             this.rect = [x, sy, sw - (x - sx), y - sy];
+            this.lonlatValid[0] = false;
+            this.lonlatValid[1] = false;
         }
         event.callback();
     }

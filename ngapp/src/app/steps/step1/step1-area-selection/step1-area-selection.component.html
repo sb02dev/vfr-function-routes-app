@@ -38,7 +38,7 @@
                 <ng-container matColumnDef="lonlat">
                     <mat-header-cell *matHeaderCellDef> Lon/Lat </mat-header-cell>
                     <mat-cell *matCellDef="let corner; let i=index">
-                        <span [className]="corner.lonlat_valid?'':'lonlat-invalid'">
+                        <span [className]="lonlatValid[i]?'':'lonlat-invalid'">
                             {{corner.lon | number:'1.2-2'}} {{corner.lat | number:'1.2-2'}}</span>
                     </mat-cell>
                 </ng-container>

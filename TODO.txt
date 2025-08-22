@@ -2,11 +2,6 @@
   - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
   - bugfix: readonly mathedit does not show formula
   - edit "function_range" on leg page (maybe it could be automatic?)
-- session management
-  - limit the session connections based on number of open sessions & visual feedback if no connection available
-  - limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
-- communication & its visual feedback
-  - visual feedback if error between steps (or in any communication)
 
 - bubbles' content revised/customizable
 - journey log created, content revised
@@ -14,6 +9,11 @@
 - consider tracks from various sources (SkyDemon, ForeFlight, GeoTracker, Garmin5)
 - multiple maps (from multiple countries)
 - consider place-name based waypoint selection (based on a public database)
+- communication & its visual feedback
+  - visual feedback if error between steps (or in any communication)
+- session management
+  - limit the session connections based on number of open sessions & visual feedback if no connection available
+  - limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
 
 v0.3
 
@@ -87,20 +87,21 @@ v0.2
 + mobile friendly: responsive map pages (step5)
 + fullscreen size fixed (tables were over the screen because of the url-bar-scroll-needed hack)
 + if was zoomed-to-all before resize, keep this feature after (instead of keeping zoom level)
-- session management
++ session management
   + caching of states per session to disk periodically, load it on startup
   + if there is an open route on server, in step0 we can continue with that
   + each communication in a session raises it's expiry date
-- communication & its visual feedback
++ communication & its visual feedback
   + give visual feedback if no route is open on the server for the current session
   + visual feedback on each page if no open route on server
   + progress indication while waiting for server
-- route editing
-  + speed & name is modifiable in step 6
-  + order constraint points by func_x automatically
 + tile download moved out from drawing loop
 + bugfix: first & last of leg's points and annotations were deletable
 + bugfix: step3 icon buttons were misrendered
++ bugfix: step1 did not dim invalid lon-lat values
+- route editing
+  + speed & name is modifiable in step 6
+  + order constraint points by func_x automatically
 
 
 v0.1:
