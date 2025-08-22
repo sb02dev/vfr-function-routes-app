@@ -1,4 +1,5 @@
 - communication & its visual feedback
+  - visual feedback on each page if no open route on server
   - visual feedback if error between steps (or in any communication)
   - progress indication while waiting for server (maybe disable inputs until answer?)
 - session management
@@ -95,6 +96,7 @@ v0.2
   + give visual feedback if no route is open on the server for the current session
 - route editing
   + speed & name is modifiable in step 6
++ tile download moved out from drawing loop
 
 
 v0.1:

@@ -409,7 +409,10 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
         let [imx1, imy1] = this.getImage2CanvasCoords(x1, y1);
         // draw only if it is in viewport
         if ((imx0 <= canvas.width && imx1 >= 0) && (imy0 <= canvas.height && imy1 >= 0)) {
-            const bitmap = await this.tilesvc.getTile(this.tilesetParams.tilesetName, this.tilesetParams.dpi, xi, yi);
+            const bitmap = await this.tilesvc.getTile(this.tilesetParams.tilesetName, this.tilesetParams.dpi, xi, yi, (blob: Blob) => {
+                // we redraw the whole map
+                this.drawBackgroundTransformed();
+            });
             if (myGen !== this.drawGeneration) return; // cancel if outdated
             if (bitmap) {
                 let [sx, sy, sw, sh] = [0, 0, bitmap.width, bitmap.height]; // initiate with no crop
