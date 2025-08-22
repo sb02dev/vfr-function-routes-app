@@ -1,5 +1,4 @@
 - route editing
-  - order constraint points by func_x automatically
   - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
   - bugfix: readonly mathedit does not show formula
   - edit "function_range" on leg page (maybe it could be automatic?)
@@ -98,6 +97,7 @@ v0.2
   + progress indication while waiting for server
 - route editing
   + speed & name is modifiable in step 6
+  + order constraint points by func_x automatically
 + tile download moved out from drawing loop
 + bugfix: first & last of leg's points and annotations were deletable
 + bugfix: step3 icon buttons were misrendered

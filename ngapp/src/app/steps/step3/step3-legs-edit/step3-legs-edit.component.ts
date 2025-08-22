@@ -114,11 +114,28 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
     }
 
     changeFuncX(index: number, event: any) {
+        // basic checks
         if (!event.target) return;
         let target = (event.target as HTMLInputElement);
         if (!target.value) return;
+        // limit checks
         const val: number = parseFloat(target.value);
-        this.legs[this.leg_index].points[index].func_x = val;
+        const pts = this.legs[this.leg_index].points;
+        if ((((pts[0].func_x > val) && (pts[pts.length - 1].func_x > val)) || // both larger
+             ((pts[0].func_x < val) && (pts[pts.length - 1].func_x < val))) && // or both smaller
+            ((pts.length>2) && (index!=0) && (index!=pts.length-1))) { // and there are multiple points and it is a middle point
+            // not in range, don't set but reset the form's value
+            target.value = pts[index].func_x.toString();
+            return;
+        }
+        // set the value
+        pts[index].func_x = val;
+        // reorder constrain points (but only we edited a middle point, otherwise the other end may change)
+        if ((pts.length > 2) && (index != 0) && (index != pts.length - 1)) {
+            const direction = pts[pts.length - 1].func_x - pts[0].func_x;
+            pts.sort((a: LegPoint, b: LegPoint) => (a.func_x - b.func_x) * direction);
+        }
+        // update the server
         this.updateLegs();
     }
 
