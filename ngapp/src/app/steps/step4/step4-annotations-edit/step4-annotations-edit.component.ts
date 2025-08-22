@@ -106,7 +106,8 @@ export class Step4AnnotationsEditComponent implements AfterContentInit, OnDestro
         if (new_index < 0) new_index = this.legs.length - 1;
         if (new_index >= 0 && new_index < this.legs.length) {
             this.leg_index = new_index;
-            this.leg_func = (x: number) => this.legs[this.leg_index].function_mathjs_compiled?.evaluate({ x: x });
+            this.mathedit.setLatex(this.legs[this.leg_index].function_latex);
+           this.leg_func = (x: number) => this.legs[this.leg_index].function_mathjs_compiled?.evaluate({ x: x });
             this.leg_matrix = this.legs[this.leg_index].matrix_func2cropmap;
             this.leg_invmatrix = this.legs[this.leg_index].matrix_cropmap2func;
             this.calculateFuncPoints();

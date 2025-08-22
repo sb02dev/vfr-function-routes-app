@@ -27,7 +27,7 @@ export class MathEditComponent implements AfterViewInit {
             this.mf.nativeElement.readOnly = value;
         }
     }
-    get readonly(): boolean {
+    get readOnly(): boolean {
         return this._readonly;
     }
     

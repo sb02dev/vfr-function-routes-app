@@ -11,7 +11,7 @@
                       (click)="goFullScreen()">x
             </mat-icon>
             <span fxFlex fxLayoutAlign="center center">
-                {{header_title}}
+                Step {{step_index}}: {{header_title}}
                 <mat-spinner [diameter]="20" *ngIf="(imgsrv.communicating | async)"></mat-spinner>
             </span>
             <mat-icon *ngIf="!(imgsrv.connected | async)"

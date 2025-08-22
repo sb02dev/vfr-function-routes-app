@@ -1,6 +1,5 @@
 - route editing
   - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
-  - bugfix: readonly mathedit does not show formula
   - edit "function_range" on leg page (maybe it could be automatic?)
 
 - bubbles' content revised/customizable
@@ -102,6 +101,7 @@ v0.2
 - route editing
   + speed & name is modifiable in step 6
   + order constraint points by func_x automatically
+  + bugfix: readonly mathedit does not show formula
 
 
 v0.1:

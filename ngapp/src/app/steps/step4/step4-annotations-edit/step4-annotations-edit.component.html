@@ -37,8 +37,11 @@
             </mat-card-title>
         </mat-card-header>
     
-        <app-math-edit [readOnly]="false"></app-math-edit>
-        <div> <!--style="background-color: var(--mdc-filled-text-field-container-color);"-->
+        <div>
+            <app-math-edit [readOnly]="true"></app-math-edit>
+        </div>
+
+        <div>
             <mat-checkbox [(ngModel)]="showBubbles" title="Show estimated bubbles">Show estimated bubbles</mat-checkbox>
         </div>
     
