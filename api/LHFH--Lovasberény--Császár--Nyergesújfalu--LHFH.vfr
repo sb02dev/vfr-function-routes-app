@@ -50,7 +50,7 @@
       {
         "name": "LHFH -- Lovasber\u00e9ny",
         "function_name": "\\sqrt[3]{{x}}",
-        "function_range": "$x=0$ at Lovasber\u00e9ny, $x=1.5$ at LHFH",
+        "function_range": "x=0\\textrm{ at Lovasber\u00e9ny, }x=1.5\\textrm{ at LHFH}",
         "points": [
           {
             "p": {
@@ -73,7 +73,7 @@
       {
         "name": "Lovasber\u00e9ny -- Cs\u00e1sz\u00e1r",
         "function_name": "\\frac{1}{e^x}",
-        "function_range": "$x=\\pi$ at Lovasber\u00e9ny, $x=-\\frac{\\pi}{2}$ at Cs\u00e1sz\u00e1r",
+        "function_range": "x=\\pi\\textrm{ at Lovasber\u00e9ny, }x=-\\frac{\\pi}{2}\\textrm{ at Cs\u00e1sz\u00e1r}",
         "points": [
           {
             "p": {
@@ -96,7 +96,7 @@
       {
         "name": "Cs\u00e1sz\u00e1r -- LHFH",
         "function_name": "\\sin\\left(x\\right)",
-        "function_range": "$x=0$ at Cs\u00e1sz\u00e1r, $x=\\pi$ at LHFH, $x=\\frac{\\pi}{2}$ at Nyerges\u00fajfalu",
+        "function_range": "x=0\\textrm{ at Cs\u00e1sz\u00e1r, }x=\\pi\\textrm{ at LHFH, }x=\\frac{\\pi}{2}\\textrm{{ at Nyerges\u00fajfalu}}",
         "points": [
           {
             "p": {

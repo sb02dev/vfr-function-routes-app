@@ -34,9 +34,11 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
     styleUrl: './step3-legs-edit.component.css'
 })
 export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
+
     subs: Subscription;
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
-    @ViewChild(MathEditComponent) mathedit!: MathEditComponent;
+    @ViewChild('functionEdit') mathedit!: MathEditComponent;
+    @ViewChild('functionRangeEdit') matheditrange!: MathEditComponent;
 
     legs: Leg[] = [];
     leg_index: number = 0;
@@ -99,6 +101,7 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
         if (new_index >= 0 && new_index < this.legs.length) {
             this.leg_index = new_index;
             this.mathedit.setLatex(this.legs[this.leg_index].function_latex);
+            this.matheditrange.setLatex(this.legs[this.leg_index].function_range);
         }
         this.mapedit.drawOverlayTransformed();
     }
@@ -137,6 +140,23 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
         }
         // update the server
         this.updateLegs();
+    }
+
+    latexRangeChange($event: { latex: string; ast: any; mathjs: any }) {
+        if (!this.legs[this.leg_index]) return;
+        this.legs[this.leg_index].function_range = $event.latex;
+    }
+
+    autoRangeText() {
+        if (!this.legs[this.leg_index]) return;
+        let rng = "";
+        const pts = this.legs[this.leg_index].points;
+        pts.forEach((p: LegPoint, i: number) => {
+            rng += `x=${p.func_x.toLocaleString()}\\textrm{ at (name), }`;
+        })
+        rng = rng.substring(0, rng.length - 3) + "}";
+        this.legs[this.leg_index].function_range = rng;
+        this.matheditrange.setLatex(rng);
     }
 
     updateLegs() {

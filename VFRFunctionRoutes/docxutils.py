@@ -17,9 +17,4 @@ def get_math_oxml(latex):
 
 def add_formula_par(doc, txt, **kwargs):
     p = doc.add_paragraph(**kwargs)
-    texts = re.split(r'\$(.*?)\$', txt) # FIXME: should split to include '\$'s as well and then below we could check them and then remove them before converting
-    for i, txt in enumerate(texts):
-        if i % 2 == 0: # FIXME: this is input dependent!!! or is it?
-            p.add_run(txt)
-        else:
-            p._element.append(get_math_oxml(txt))
+    p._element.append(get_math_oxml(txt))

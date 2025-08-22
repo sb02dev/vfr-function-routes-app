@@ -741,7 +741,8 @@ class VFRFunctionRoute:
                     leg.add_annotation('???', leg.points[-1][1], (0,0))
             else: # we don't have a leg yet
                 # so we add a new one
-                self.add_leg(f"{wp_start[0]} -- {wp_end[0]}", f"x^{i+1}", "", lambda x: x**i, 
+                func_range = f"x=0\\textrm{{ at {wp_start[0]}, }}x=1\\textrm{{ at {wp_end[0]}}}"
+                self.add_leg(f"{wp_start[0]} -- {wp_end[0]}", f"x^{i+1}", func_range, lambda x: x**i,
                              [
                                  (VFRPoint(wp_start[1].lon, wp_start[1].lat, VFRCoordSystem.LONLAT, self), 0),
                                  (VFRPoint(wp_end[1].lon, wp_end[1].lat, VFRCoordSystem.LONLAT, self), 1)
@@ -1331,6 +1332,7 @@ class VFRFunctionRoute:
         """
         self._ensure_state(VFRRouteState.FINALIZED)
         # draw map if we don't have it yet and save the image
+        oldRTD, setRTD = False, False
         if not self.use_realtime_data:
             oldRTD, self.use_realtime_data, setRTD = self.use_realtime_data, True, True
         image = self.draw_map()
@@ -1359,7 +1361,7 @@ class VFRFunctionRoute:
             # leg heading and definiton
             doc.add_heading(leg.name, level=1)
             doc.add_heading("Definition", level=2)
-            add_formula_par(doc, f"${leg.function_name}$", style="List Bullet")
+            add_formula_par(doc, leg.function_name, style="List Bullet")
             add_formula_par(doc, leg.function_range, style="List Bullet")
             doc.add_heading("Segments", level=2)
 
@@ -1371,7 +1373,7 @@ class VFRFunctionRoute:
             for i, hdr in enumerate(["Name", "Hdg", "Mag", "WCA", "Length", "Time", "Tme(WC)", "Wind"]):
                 tab.rows[0].cells[i].text = hdr
 
-            # TODO: leg table rows (per annotations)
+            # leg table rows (per annotations)
             for ann in leg.annotations:
                 seglen = ann.seglen
                 segtime = ann.segtime

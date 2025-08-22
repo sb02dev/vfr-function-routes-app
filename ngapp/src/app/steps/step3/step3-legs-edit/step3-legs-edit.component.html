@@ -31,10 +31,15 @@
         </mat-card-header>
 
         <div>
-            <app-math-edit (latexChange)="latexChange($event)"></app-math-edit>
+            <app-math-edit #functionEdit (latexChange)="latexChange($event)"></app-math-edit>
         </div>
 
-        <div [innerHTML]="getLatexMarkup()"></div>
+        <div>
+            <app-math-edit #functionRangeEdit (latexChange)="latexRangeChange($event)"></app-math-edit>
+        </div>
+        <div>
+            <button mat-raised-button title="Auto range text" fxFlex="100" (click)="autoRangeText()">Auto range text</button>
+        </div>
 
         <div class="mat-elevation-z8"
              [class.table-container-landscape]="map.isLandscape$ | async"

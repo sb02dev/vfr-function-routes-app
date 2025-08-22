@@ -1,20 +1,17 @@
-- route editing
-  - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
-  - edit "function_range" on leg page (maybe it could be automatic?)
-
-- bubbles' content revised/customizable
-- journey log created, content revised
-- colorpicker default listed colors revised (high contrast)
-- consider tracks from various sources (SkyDemon, ForeFlight, GeoTracker, Garmin5)
-- multiple maps (from multiple countries)
-- consider place-name based waypoint selection (based on a public database)
 - communication & its visual feedback
   - visual feedback if error between steps (or in any communication)
-- session management
-  - limit the session connections based on number of open sessions & visual feedback if no connection available
-  - limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
 
 v0.3
+- multiple maps (from multiple countries)
+- waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
+- colorpicker default listed colors revised (high contrast)
+- bubbles' content revised/customizable
+- journey log created, content revised
+- consider tracks from various sources (SkyDemon, ForeFlight, GeoTracker, Garmin5)
+- consider place-name based waypoint selection (based on a public database)
+- limit the session connections based on number of open sessions & visual feedback if no connection available
+- limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
+
 
 v0.2
 + landing page
@@ -98,10 +95,11 @@ v0.2
 + bugfix: first & last of leg's points and annotations were deletable
 + bugfix: step3 icon buttons were misrendered
 + bugfix: step1 did not dim invalid lon-lat values
-- route editing
++ route editing
   + speed & name is modifiable in step 6
   + order constraint points by func_x automatically
   + bugfix: readonly mathedit does not show formula
+  + edit "function_range" on leg page (maybe it could be automatic?)
 
 
 v0.1:
