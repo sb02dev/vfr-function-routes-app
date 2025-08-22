@@ -1,5 +1,4 @@
-<app-header #header
-            [step-index]="1" 
+<app-header [step-index]="1" 
             header_title="Create / Load a route"
             [last-step]="true"
             [first-step]="true"
@@ -13,10 +12,8 @@
      class="content-area"
     >
     <div fxLayout="column">
-        @if (hasOpenRoute) {
-            <a mat-raised-button (click)="header.stepForward()">Edit last route</a>
-            &nbsp;
-        }
+        <a mat-raised-button (click)="editOpenRoute()" [disabled]="!hasOpenRoute">Edit last route</a>
+        &nbsp;
         <a mat-raised-button (click)="loadRoute()">Load a route</a>
         <input type="file" id="file-selector" #file_selector accept=".vfr" class="hidden" aria-label="---">
         &nbsp;
@@ -25,29 +22,57 @@
         <a mat-raised-button (click)="loadSample()">Sample route</a>
         &nbsp;
         <a mat-raised-button [matMenuTriggerFor]="publishedRoutes">Load published route</a>
-        <mat-menu #publishedRoutes="matMenu">   
-            <button *ngFor="let rname of publishedRouteList; index as i" mat-menu-item (click)="publishedRoute(i)">{{rname}}</button>
+        <mat-menu #publishedRoutes="matMenu">
+            @for (rname of publishedRouteList; track $index) {
+                <button type="button" mat-menu-item (click)="publishedRoute($index)">{{rname}}</button>
+            }
         </mat-menu>
     </div>
     <form [formGroup]="form" fxLayout="column">
         <h1>Data of new route:</h1>
         <mat-label>Name of route:</mat-label>
         <mat-form-field fxFlex="100">
-            <input type="text" matInput placeholder="Name of route" name="rteName" formControlName="rteName" />
+            <input type="text"
+                   matInput
+                   placeholder="Name of route"
+                   name="rteName"
+                   formControlName="rteName"
+                   (change)="changeRouteData()"
+            />
         </mat-form-field>
         <mat-label>Planned airspeed:</mat-label>
         <mat-form-field fxFlex="100">
-            <input type="number" matInput placeholder="Planned airspeed" name="speed" formControlName="speed" value="90" />
+            <input type="number"
+                   matInput
+                   placeholder="Planned airspeed"
+                   name="speed"
+                   formControlName="speed"
+                   value="90"
+                   (change)="changeRouteData()"
+            />
         </mat-form-field>
         <mat-label>Date of flight (UTC):</mat-label>
         <mat-form-field fxFlex="100">
-            <input type="text" matInput [matDatepicker]="dofPicker" placeholder="Date of flight (UTC)" name="dof" formControlName="dof" />
+            <input type="text" 
+                   matInput
+                   [matDatepicker]="dofPicker"
+                   placeholder="Date of flight (UTC)"
+                   name="dof"
+                   formControlName="dof"
+                   (dateChange)="changeRouteData()"
+            />
             <mat-datepicker-toggle matIconSuffix [for]="dofPicker"></mat-datepicker-toggle>
-            <mat-datepicker #dofPicker ></mat-datepicker>
+            <mat-datepicker #dofPicker></mat-datepicker>
         </mat-form-field>
         <mat-label>Time of flight (UTC):</mat-label>
         <mat-form-field fxFlex="100">
-            <input type="time" matInput placeholder="Time of flight (UTC)" name="tof" formControlName="tof" />
+            <input type="time"
+                   matInput
+                   placeholder="Time of flight (UTC)"
+                   name="tof"
+                   formControlName="tof"
+                   (change)="changeRouteData()"
+            />
         </mat-form-field>
     </form>
 </div>

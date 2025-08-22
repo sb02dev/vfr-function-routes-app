@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { AfterContentInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { Subscription } from 'rxjs';
@@ -33,7 +33,7 @@ import { ImageEditService } from '../../../services/image-edit.service';
     templateUrl: './step5-add-tracks.component.html',
     styleUrl: './step5-add-tracks.component.css'
 })
-export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
+export class Step5AddTracksComponent implements AfterContentInit, OnDestroy {
     subs: Subscription;
 
     tracks: Track[] = [];
@@ -58,10 +58,10 @@ export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
         });
     }
 
-    ngAfterViewInit(): void {
+    ngAfterContentInit(): void {
         // initiate image load
-        this.imgsrv.send({ type: 'get-tracks' });
-        this.imgsrv.send({ type: 'get-tracks-map' });
+        this.imgsrv.send({ type: 'get-tracks' }, ['tracks', 'result']);
+        this.imgsrv.send({ type: 'get-tracks-map' }, ['tiled-image']);
     }
 
     ngOnDestroy(): void {
@@ -83,7 +83,7 @@ export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
                         type: 'load-track',
                         filename: fs.files[i].name,
                         data: fstr
-                    });
+                    }, ['tracks', 'result']);
                     break; // don't upload multiple files
                 };
             }
@@ -122,7 +122,7 @@ export class Step5AddTracksComponent implements AfterViewInit, OnDestroy {
                     color: t.color
                 }
             })
-        });
+        }, ['tracks', 'result']);
     }
 
     drawOverlayTransformed(event: { canvas: HTMLCanvasElement, imgWidth: number, imgHeight: number }) {

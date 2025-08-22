@@ -6,9 +6,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { BehaviorSubject, Subscription } from 'rxjs';
 
 import { ImageEditService } from '../../../services/image-edit.service';
-import { BehaviorSubject } from 'rxjs';
 
 @Component({
     selector: 'app-header',
@@ -19,6 +21,7 @@ import { BehaviorSubject } from 'rxjs';
         MatButtonModule,
         MatIconModule,
         MatTooltipModule,
+        MatProgressSpinnerModule,
         FlexLayoutModule,
     ],
     templateUrl: './header.component.html',
@@ -28,6 +31,8 @@ export class HeaderComponent implements AfterViewInit {
 
     public isFullScreen$ = new BehaviorSubject<boolean>(false);
 
+    subs: Subscription;
+    
     @Input('step-index') step_index: number = 0;
     @Input() header_title: string = '';
     @Input() tooltip: string = '';
@@ -35,7 +40,20 @@ export class HeaderComponent implements AfterViewInit {
     @Input('last-step') last_step: boolean = false;
     @Input('first-step') first_step: boolean = false;
 
-    constructor(public router: Router, public imgsrv: ImageEditService) { }
+    constructor(public router: Router, public imgsrv: ImageEditService, private snackbar: MatSnackBar) { 
+        this.subs = imgsrv.channel.subscribe((msg) => {
+            if (msg.type === 'result') {
+                if (msg['result'] === 'success') {
+                    // nothing to do here
+                } else if (msg['result'] === 'invalid-step-value') {
+                    this.snackbar.open('Entering next step of route editing failed: invalid step', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+                } else if (msg['result'] === 'no-route') {
+                    this.snackbar.open('There is no route open on the server', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+                    this.router.navigateByUrl('/step0');
+                }
+            }
+        });
+    }
 
     ngAfterViewInit(): void {
         document.addEventListener("fullscreenchange", (event) => {
@@ -51,7 +69,7 @@ export class HeaderComponent implements AfterViewInit {
         this.imgsrv.send({
             type: "step",
             step: this.step_index-1,
-        }); // we don't need to wait for the answer
+        }, ['result']); // we don't need to wait for the answer
         this.router.navigateByUrl(`/step${this.step_index-1}`);
     }
 
@@ -60,7 +78,7 @@ export class HeaderComponent implements AfterViewInit {
         this.imgsrv.send({
             type: "step",
             step: this.step_index+1,
-        }); // we don't need to wait for the answer
+        }, ['result']); // we don't need to wait for the answer
         this.router.navigateByUrl(`/step${this.step_index+1}`);
     }
 

@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy } from '@angular/core';
+import { AfterContentInit, Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -31,7 +31,7 @@ import { ImageEditService } from '../../../services/image-edit.service';
     templateUrl: './step6-download-and-save.component.html',
     styleUrl: './step6-download-and-save.component.css'
 })
-export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
+export class Step6DownloadAndSaveComponent implements AfterContentInit, OnDestroy {
 
     subs: Subscription;
     binary_subs: Subscription;
@@ -84,8 +84,8 @@ export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
         });        
     }
 
-    ngAfterViewInit(): void {
-        this.imgsrv.send({ type: 'get-route-data' });
+    ngAfterContentInit(): void {
+        this.imgsrv.send({ type: 'get-route-data' }, ['route-data', 'result']);
     }
 
     ngOnDestroy(): void {
@@ -104,14 +104,14 @@ export class Step6DownloadAndSaveComponent implements AfterViewInit, OnDestroy {
             name: val['rteName'],
             speed: val['speed'],
             dof: dofs,
-        })
+        }, ['route-data', 'result'])
     }
 
-    downloadDOCX() { this.imgsrv.send({ type: 'get-docx' }); }
-    downloadVFR() { this.imgsrv.send({ type: 'get-vfr' }); }
-    downloadGPX() { this.imgsrv.send({ type: 'get-gpx' }); }
-    downloadPNG() { this.imgsrv.send({ type: 'get-png' }); }
-    saveToServer() { this.imgsrv.send({ type: 'save-to-cloud' }); }
+    downloadDOCX() { this.imgsrv.send({ type: 'get-docx' }, ['docx', 'result']); }
+    downloadVFR() { this.imgsrv.send({ type: 'get-vfr' }, ['vfr', 'result']); }
+    downloadGPX() { this.imgsrv.send({ type: 'get-gpx' }, ['gpx', 'result']); }
+    downloadPNG() { this.imgsrv.send({ type: 'get-png' }, ['png', 'result']); }
+    saveToServer() { this.imgsrv.send({ type: 'save-to-cloud' }, ['save-to-cloud-result', 'result']); }
 
     private base64ToBlob(base64: string, mime: string): Blob {
         const byteChars = atob(base64);

@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, AfterContentInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,7 +30,7 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
   templateUrl: './step1-area-selection.component.html',
   styleUrl: './step1-area-selection.component.css'
 })
-export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
+export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy {
     
     subs: Subscription;
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
@@ -58,10 +58,10 @@ export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
         });
     }
 
-    ngAfterViewInit(): void { 
+    ngAfterContentInit(): void { 
         // initiate image load
-        this.imgsrv.send({ type: 'get-area-of-interest' });
-        this.imgsrv.send({ type: 'get-low-res-map' });
+        this.imgsrv.send({ type: 'get-area-of-interest' }, ['area-of-interest', 'result']);
+        this.imgsrv.send({ type: 'get-low-res-map' }, ['tiled-image']);
     }
 
     ngOnDestroy(): void {
@@ -104,7 +104,7 @@ export class Step1AreaSelectionComponent implements AfterViewInit, OnDestroy {
             type: 'set-area-of-interest',
             topleft: { x: this.rect[0], y: this.rect[1] },
             bottomright: { x: this.rect[0] + this.rect[2], y: this.rect[1] + this.rect[3] },
-        });
+        }, ['area-of-interest', 'result']);
     }
 
     drawOverlayTransformed(event: { canvas: HTMLCanvasElement, imgWidth: number, imgHeight: number }) {

@@ -19,12 +19,19 @@ export class ImageEditService implements OnDestroy {
     public channel = new Subject<ImageEditMessage>();
     public binary_channel = new Subject<Blob>();
     public connected = new BehaviorSubject<boolean>(false);
+    public communicating = new BehaviorSubject<boolean>(false);
+
+    public expectedResponses = new Map<string, string[]>();
   
     constructor(private session: SessionService) { 
         this.scheduleReconnect();        
     }
 
-    async send(msg: ImageEditMessage) {
+    async send(msg: ImageEditMessage, expectedResponses: string[] = []) {
+        if (expectedResponses.length != 0) {
+            this.communicating.next(true);
+            this.expectedResponses.set(msg.type, expectedResponses);
+        }
         while (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             await new Promise((resolve, reject) => {
                 setInterval(() => {
@@ -56,9 +63,11 @@ export class ImageEditService implements OnDestroy {
                 if (data.type === 'set_session') {
                     this.session.storeSessionId(data['session_id']);
                 } else {
+                    this.communicating.next(this.checkCommunicating(data.type));
                     this.channel.next(data);
                 }
             } else if (msg.data instanceof Blob) {
+                this.communicating.next(this.checkCommunicating('--blob--'));
                 const data: Blob = msg.data;
                 this.binary_channel.next(data);
             }
@@ -75,6 +84,20 @@ export class ImageEditService implements OnDestroy {
             this.connected.next(false);
             this.socket.close();
         };
+    }
+
+    private checkCommunicating(response: string): boolean {
+        // will cancel all that expects this response
+        let tocancel: string[] = [];
+        this.expectedResponses.forEach((resps, key) => {
+            if (resps.indexOf(response) != -1) {
+                tocancel.push(key);
+            }
+        })
+        tocancel.forEach((key) => {
+            this.expectedResponses.delete(key);
+        })
+        return this.expectedResponses.size > 0;
     }
 
     private scheduleReconnect() {

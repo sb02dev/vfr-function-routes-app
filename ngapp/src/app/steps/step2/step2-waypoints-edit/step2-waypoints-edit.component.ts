@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, AfterContentInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -31,7 +31,7 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
     templateUrl: './step2-waypoints-edit.component.html',
     styleUrl: './step2-waypoints-edit.component.css'
 })
-export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
+export class Step2WaypointsEditComponent implements AfterContentInit, OnDestroy {
     subs: Subscription;
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
 
@@ -67,10 +67,10 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
         });
     }
 
-    ngAfterViewInit(): void {
+    ngAfterContentInit(): void {
         // initiate image load
-        this.imgsrv.send({ type: 'get-waypoints' });
-        this.imgsrv.send({ type: 'get-waypoints-map' });
+        this.imgsrv.send({ type: 'get-waypoints' }, ['waypoints', 'result']);
+        this.imgsrv.send({ type: 'get-waypoints-map' }, ['tiled-image']);
     }
 
     ngOnDestroy(): void {
@@ -110,7 +110,7 @@ export class Step2WaypointsEditComponent implements AfterViewInit, OnDestroy {
                     y: wp.y,
                 }
             }),
-        });
+        }, ['waypoints', 'result']);
     }
 
     enumPoints(enumerate: (i: number, map_coords: boolean, x: number, y: number, w: number | undefined, h: number | undefined) => boolean) {

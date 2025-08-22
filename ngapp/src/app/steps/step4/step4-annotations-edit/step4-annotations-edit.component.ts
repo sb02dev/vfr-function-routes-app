@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, ViewChild } from '@angular/core';
+import { AfterContentInit, Component, OnDestroy, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatIconModule } from "@angular/material/icon";
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
@@ -37,7 +37,7 @@ import { MathEditComponent } from '../../../components/mathedit/math-edit/math-e
     templateUrl: './step4-annotations-edit.component.html',
     styleUrl: './step4-annotations-edit.component.css'
 })
-export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
+export class Step4AnnotationsEditComponent implements AfterContentInit, OnDestroy {
 
     private readonly numPieces: number = 100;
 
@@ -89,10 +89,10 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
         });
     }
 
-    ngAfterViewInit(): void {
+    ngAfterContentInit(): void {
         // initiate image load
-        this.imgsrv.send({ type: 'get-annotations' });
-        this.imgsrv.send({ type: 'get-annotations-map' });
+        this.imgsrv.send({ type: 'get-annotations' }, ['annotations', 'result']);
+        this.imgsrv.send({ type: 'get-annotations-map' }, ['tiled-image']);
     }
 
     ngOnDestroy(): void {
@@ -129,7 +129,7 @@ export class Step4AnnotationsEditComponent implements AfterViewInit, OnDestroy {
                     })
                 }
             }),
-        });
+        }, ['annotations', 'result']);
     }
     
 

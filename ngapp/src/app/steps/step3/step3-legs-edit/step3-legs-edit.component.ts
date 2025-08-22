@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, OnDestroy, ViewChild } from '@angular/core';
+import { AfterContentInit, Component, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -31,7 +31,7 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
     templateUrl: './step3-legs-edit.component.html',
     styleUrl: './step3-legs-edit.component.css'
 })
-export class Step3LegsEditComponent implements AfterViewInit, OnDestroy {
+export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
     subs: Subscription;
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
     @ViewChild(MathEditComponent) mathedit!: MathEditComponent;
@@ -69,10 +69,10 @@ export class Step3LegsEditComponent implements AfterViewInit, OnDestroy {
         });
     }
 
-    ngAfterViewInit(): void {
+    ngAfterContentInit(): void {
         // initiate image load
-        this.imgsrv.send({ type: 'get-legs' });
-        this.imgsrv.send({ type: 'get-legs-map' });
+        this.imgsrv.send({ type: 'get-legs' }, ['legs', 'result']);
+        this.imgsrv.send({ type: 'get-legs-map' }, ['tiled-image']);
     }
 
     ngOnDestroy(): void {
@@ -137,7 +137,7 @@ export class Step3LegsEditComponent implements AfterViewInit, OnDestroy {
                     })
                 }
             }),
-        });
+        }, ['legs', 'result']);
     }
 
     finalizeMove() {

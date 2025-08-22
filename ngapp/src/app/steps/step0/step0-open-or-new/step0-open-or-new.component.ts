@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { AfterContentInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -38,10 +38,11 @@ const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'AN
     templateUrl: './step0-open-or-new.component.html',
     styleUrl: './step0-open-or-new.component.css'
 })
-export class Step0OpenOrNewComponent implements AfterViewInit, OnDestroy {
+export class Step0OpenOrNewComponent implements AfterContentInit, OnDestroy {
 
     subs: Subscription;
 
+    @ViewChild(HeaderComponent) header!: HeaderComponent;
     @ViewChild('file_selector') file_selector!: ElementRef<HTMLInputElement>;
     form: FormGroup;
 
@@ -83,10 +84,14 @@ export class Step0OpenOrNewComponent implements AfterViewInit, OnDestroy {
     ngOnDestroy(): void {
         this.subs.unsubscribe();
     }
-    ngAfterViewInit(): void {
-        this.imgsrv.send({ type: 'get-published-routes' });
+    ngAfterContentInit(): void {
+        this.imgsrv.send({ type: 'get-published-routes' }, ['published-routes', 'result']);
     }
 
+
+    editOpenRoute() {
+        this.header.stepForward();
+    }
 
     loadRoute() {
         let fs = this.file_selector.nativeElement;
@@ -101,7 +106,7 @@ export class Step0OpenOrNewComponent implements AfterViewInit, OnDestroy {
                     this.imgsrv.send({
                         type: 'load',
                         data: fstr
-                    });
+                    }, ['load-result', 'result']);
                     break; // don't upload multiple files
                 };
             }
@@ -120,7 +125,7 @@ export class Step0OpenOrNewComponent implements AfterViewInit, OnDestroy {
             name: val.rteName,
             speed: val.speed,
             dof: dof
-        })
+        }, ['load-result', 'result'])
     }
 
 
@@ -128,7 +133,7 @@ export class Step0OpenOrNewComponent implements AfterViewInit, OnDestroy {
         // load sample route and go to its current step (last)
         this.imgsrv.send({
             type: 'sample'
-        })
+        }, ['load-result', 'result'])
     }
 
     publishedRoute(index: number) {
@@ -136,6 +141,11 @@ export class Step0OpenOrNewComponent implements AfterViewInit, OnDestroy {
         this.imgsrv.send({
             type: 'load-published',
             fname: this.publishedRouteList[index],
-        })
+        }, ['load-result', 'result'])
     }
+
+    changeRouteData() {
+        // pass, it is here just to avoid continuous refresh
+    }
+
 }  

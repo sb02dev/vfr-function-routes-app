@@ -215,10 +215,15 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 if rte:
                     step = msg.get("step", rte._state.value+1)
                     try:
-                        newstate = VFRRouteState(step)
-                        rte.set_state(newstate)
+                        if step > 0:
+                            newstate = VFRRouteState(step)
+                            rte.set_state(newstate)
+                        await websocket.send_json({"type": "result", "result": "success"})
                     except ValueError:
                         print(f"Not a valid VFRRouteState: {step}")
+                    await websocket.send_json({"type": "result", "result": "ivalid-step-value"})
+                else:
+                    await websocket.send_json({"type": "result", "result": "no-route"})
 
             ################################################
             # Step 0: Initialize a VFRFunctionRoute object #
@@ -229,6 +234,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                            "routes": routefiles,
                                            "has_open_route": rte is not None 
                                           })
+
             elif msgtype=='create':
                 try:
                     dv = msg.get("dof", None)
@@ -249,6 +255,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     await websocket.send_json({"type": "load-result", "result": "success"})
                 except:
                     await websocket.send_json({"type": "load-result", "result": "failed"})
+
             elif msgtype=='sample':
                 try:
                     rte = default_route()
@@ -256,6 +263,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     await websocket.send_json({"type": "load-result", "result": "success"})
                 except:
                     await websocket.send_json({"type": "load-result", "result": "failed"})
+
             elif msgtype == 'load':
                 try:
                     rte = VFRFunctionRoute.fromJSON(
@@ -270,6 +278,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     await websocket.send_json({"type": "load-result", "result": "success", "step": rte._state.value})
                 except:
                     await websocket.send_json({"type": "load-result", "result": "failed"})
+
             elif msgtype=='load-published':
                 try:
                     with open(os.path.join(rootpath, "routes", msg["fname"]), 'rt', encoding='utf8') as f:
@@ -284,11 +293,16 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 except:
                     await websocket.send_json({"type": "load-result", "result": "failed"})
 
-            #######################################################
-            # Step 1: mark an 'area of interest' on a low-res map #
-            #######################################################
-            elif msgtype=='get-area-of-interest': 
-                if rte:
+            else:
+                # all other messages need a route
+                if rte is None:
+                    # send error message
+                    await websocket.send_json({"type": "result", "result": "no-route"})
+
+                #######################################################
+                # Step 1: mark an 'area of interest' on a low-res map #
+                #######################################################
+                elif msgtype=='get-area-of-interest':
                     tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
                     br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
                     await websocket.send_text(json.dumps({
@@ -307,13 +321,11 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         },
                     }))
 
-            elif msgtype == 'get-low-res-map':
-                if rte:
+                elif msgtype == 'get-low-res-map':
                     renderer = tilerenderers["low"]
                     await send_tiled_image_header(websocket, renderer, TileRenderer.rect_to_simplerect(renderer._crop_rect))
 
-            elif msgtype=='set-area-of-interest':
-                if rte:
+                elif msgtype=='set-area-of-interest':
                     tl = msg.get("topleft")
                     br = msg.get("bottomright")
                     rte.set_area_of_interest(tl.get("x"), tl.get("y"), br.get("x"), br.get("y"))
@@ -336,11 +348,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         },
                     }))
 
-            ####################################################################
-            # Step 2: mark the waypoints on a high-res map of area of interest #
-            ####################################################################
-            elif msgtype=='get-waypoints':
-                if rte:
+                ####################################################################
+                # Step 2: mark the waypoints on a high-res map of area of interest #
+                ####################################################################
+                elif msgtype=='get-waypoints':
                     await websocket.send_text(json.dumps({
                         "type": "waypoints",
                         "waypoints": [{"name": name,
@@ -351,12 +362,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                         } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
                     }))
 
-            elif msgtype == 'get-waypoints-map':
-                if rte:
+                elif msgtype == 'get-waypoints-map':
                     await send_tiled_image_header(websocket, tilerenderers["high"], rte.calc_basemap_clip())
 
-            elif msgtype=='update-wps':
-                if rte:
+                elif msgtype=='update-wps':
                     rte.update_waypoints(msg.get("waypoints"))
                     _vfrroutes.set(session_id, rte)
                     wps = [{
@@ -371,11 +380,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         "waypoints": wps,
                     }))
 
-            ################################################################################
-            # Step 3: define the legs: add constraint points, define function and x values #
-            ################################################################################
-            elif msgtype=='get-legs':
-                if rte:
+                ################################################################################
+                # Step 3: define the legs: add constraint points, define function and x values #
+                ################################################################################
+                elif msgtype=='get-legs':
                     await websocket.send_text(json.dumps({
                         "type": "legs",
                         "legs": [{"name": leg.name,
@@ -393,12 +401,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                     }  for leg in rte.legs]
                     }))
 
-            elif msgtype == 'get-legs-map':
-                if rte:
+                elif msgtype == 'get-legs-map':
                     await send_tiled_image_header(websocket, tilerenderers["high"], rte.calc_basemap_clip())
 
-            elif msgtype=='update-legs':
-                if rte:
+                elif msgtype=='update-legs':
                     rte.update_legs(msg.get("legs"))
                     _vfrroutes.set(session_id, rte)
                     await websocket.send_text(json.dumps({
@@ -418,11 +424,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                     } for leg in rte.legs]
                     }))
 
-            #############################################################################
-            # Step 4: define annotation points, their names and an offset of the bubble #
-            #############################################################################
-            elif msgtype=='get-annotations':
-                if rte:
+                #############################################################################
+                # Step 4: define annotation points, their names and an offset of the bubble #
+                #############################################################################
+                elif msgtype=='get-annotations':
                     await websocket.send_json({
                         "type": "annotations",
                         "annotations": [{
@@ -438,8 +443,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                     } for leg in rte.legs]
                     })
 
-            elif msgtype == 'get-annotations-map':
-                if rte:
+                elif msgtype == 'get-annotations-map':
                     clip = rte.calc_basemap_clip()
                     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
                     await send_tiled_image_header(websocket,
@@ -449,8 +453,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                                   }
                                                  )
 
-            elif msgtype=='update-annotations':
-                if rte:
+                elif msgtype=='update-annotations':
                     rte.update_annotations(msg.get("annotations"))
                     _vfrroutes.set(session_id, rte)
                     clip = rte.calc_basemap_clip()
@@ -471,11 +474,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                     } for leg in rte.legs]
                     }))
 
-            ###################################
-            # Step 5: add tracks to the route #
-            ###################################
-            elif msgtype=='get-tracks':
-                if rte:
+                ###################################
+                # Step 5: add tracks to the route #
+                ###################################
+                elif msgtype=='get-tracks':
                     await websocket.send_text(json.dumps({
                         "type": "tracks",
                         "tracks": [{
@@ -485,8 +487,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         } for trk in rte.tracks]
                     }))
 
-            elif msgtype == 'get-tracks-map':
-                if rte:
+                elif msgtype == 'get-tracks-map':
                     clip = rte.calc_basemap_clip()
                     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
                     await send_tiled_image_header(websocket,
@@ -496,8 +497,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                                                   }
                                                  )
 
-            elif msgtype == 'load-track':
-                if rte:
+                elif msgtype == 'load-track':
                     rte.add_track(msg.get('filename'), msg.get('color', '#0000FF'), base64.b64decode(msg.get('data')))
                     _vfrroutes.set(session_id, rte)
                     clip = rte.calc_basemap_clip()
@@ -512,8 +512,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         } for trk in rte.tracks]
                     }))
 
-            elif msgtype=='update-tracks':
-                if rte:
+                elif msgtype=='update-tracks':
                     rte.update_tracks(msg.get('tracks'))
                     _vfrroutes.set(session_id, rte)
                     clip = rte.calc_basemap_clip()
@@ -528,11 +527,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         } for trk in rte.tracks]
                     }))
 
-            ##################################################################
-            # Step 6: Download and save generated files or save to the cloud #
-            ##################################################################
-            elif msgtype=='get-docx':
-                if rte:
+                ##################################################################
+                # Step 6: Download and save generated files or save to the cloud #
+                ##################################################################
+                elif msgtype=='get-docx':
                     buf = rte.create_doc(False)
                     if buf:
                         await websocket.send_text(json.dumps({
@@ -542,8 +540,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         }))
                         await websocket.send_bytes(buf.getvalue())
 
-            elif msgtype=='get-png':
-                if rte:
+                elif msgtype=='get-png':
                     image = rte.draw_map(True)
                     await websocket.send_json({
                         "type": "png",
@@ -552,8 +549,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     })
                     await websocket.send_bytes(image)
 
-            elif msgtype=='get-gpx':
-                if rte:
+                elif msgtype=='get-gpx':
                     await websocket.send_text(json.dumps({
                         "type": "gpx",
                         "data":  rte.save_plan(),
@@ -561,8 +557,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         "filename": f"{rte.name}.gpx"
                     }))
 
-            elif msgtype=='get-vfr':
-                if rte:
+                elif msgtype=='get-vfr':
                     await websocket.send_text(json.dumps({
                         "type": "vfr",
                         "data":  rte.toJSON(),
@@ -570,8 +565,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         "filename": f"{rte.name}.vfr"
                     }))
 
-            elif msgtype=='get-route-data':
-                if rte:
+                elif msgtype=='get-route-data':
                     await websocket.send_text(json.dumps({
                         "type": "route-data",
                         "name": rte.name,
@@ -579,8 +573,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         "dof":  rte.dof.isoformat(),
                     }))
 
-            elif msgtype == 'set-route-data':
-                if rte:
+                elif msgtype == 'set-route-data':
                     dv = msg.get("dof", None)
                     rte.name = msg.get("name", rte.name)
                     rte.speed = msg.get("speed", rte.speed)
@@ -595,8 +588,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         "dof":  rte.dof.isoformat(),
                     }))
 
-            elif msgtype == 'save-to-cloud':
-                if rte:
+                elif msgtype == 'save-to-cloud':
                     try:
                         if len(os.listdir(os.path.join(rootpath, 'routes')))<100:
                             rtename_normalized = re.sub(r'[^a-zA-Z0-9\- !@#$%\^\(\)]',
@@ -617,8 +609,6 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                             await websocket.send_json({"type": "save-to-cloud-result", "result": "too-many-files"})
                     except:
                         await websocket.send_json({"type": "save-to-cloud-result", "result": "fail"})
-                else:
-                    await websocket.send_json({"type": "save-to-cloud-result", "result": "no-route"})
 
 
 
