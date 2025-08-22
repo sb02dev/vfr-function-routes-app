@@ -212,7 +212,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
             ################################################
             elif msgtype == 'get-published-routes':
                 routefiles = [f for f in os.listdir(os.path.join(rootpath, "routes")) if os.path.isfile(os.path.join(rootpath, "routes", f)) and f.endswith('.vfr')]
-                await websocket.send_json({"type": "published-routes", "routes": routefiles})
+                await websocket.send_json({"type": "published-routes",
+                                           "routes": routefiles,
+                                           "has_open_route": rte is not None 
+                                          })
             elif msgtype=='create':
                 try:
                     dv = msg.get("dof", None)

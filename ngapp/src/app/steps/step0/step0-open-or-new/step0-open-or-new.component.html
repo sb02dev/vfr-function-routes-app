@@ -1,4 +1,5 @@
-<app-header [step-index]="1" 
+<app-header #header
+            [step-index]="1" 
             header_title="Create / Load a route"
             [last-step]="true"
             [first-step]="true"
@@ -12,6 +13,10 @@
      class="content-area"
     >
     <div fxLayout="column">
+        @if (hasOpenRoute) {
+            <a mat-raised-button (click)="header.stepForward()">Edit last route</a>
+            &nbsp;
+        }
         <a mat-raised-button (click)="loadRoute()">Load a route</a>
         <input type="file" id="file-selector" #file_selector accept=".vfr" class="hidden" aria-label="---">
         &nbsp;

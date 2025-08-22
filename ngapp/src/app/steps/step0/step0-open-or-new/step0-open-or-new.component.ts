@@ -46,6 +46,7 @@ export class Step0OpenOrNewComponent implements AfterViewInit, OnDestroy {
     form: FormGroup;
 
     publishedRouteList: string[] = [];
+    hasOpenRoute: boolean = false;
 
     constructor(public router: Router, private fb: FormBuilder, private imgsrv: ImageEditService, private snackbar: MatSnackBar) {
         this.form = this.fb.group({
@@ -63,6 +64,7 @@ export class Step0OpenOrNewComponent implements AfterViewInit, OnDestroy {
         this.subs = imgsrv.channel.subscribe((msg) => {
             if (msg.type === 'published-routes') {
                 this.publishedRouteList = msg['routes'];
+                this.hasOpenRoute = msg['has_open_route'];
             } else if (msg.type === 'load-result') {
                 if (msg['result'] === 'success') {
                     this.snackbar.open('Route loaded', undefined, { duration: 5000, panelClass: 'snackbar-success' });
