@@ -76,7 +76,8 @@
                                         fontSize="12"></mat-icon>
                                 </a>
                             </span>
-                            <a (click)="deleteConstraintPoint(i)" matTooltip="Delete constraint point" matTooltipShowDelay="500">
+                            <a (click)="deleteConstraintPoint(i)" matTooltip="Delete constraint point" matTooltipShowDelay="500"
+                               [className]="(i>0)&&(i<legs[leg_index].points.length-1)?'':'disabled-button'">
                                 <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
                             </a>
                         </span>

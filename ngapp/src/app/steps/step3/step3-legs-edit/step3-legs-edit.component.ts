@@ -1,6 +1,7 @@
 import { AfterContentInit, Component, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatCardModule } from '@angular/material/card';
@@ -20,6 +21,7 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
     imports: [
         CommonModule,
         MatIconModule,
+        MatButtonModule,
         MatTooltipModule,
         FlexLayoutModule,
         MatCardModule,

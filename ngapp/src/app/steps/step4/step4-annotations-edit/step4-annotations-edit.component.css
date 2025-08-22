@@ -2,6 +2,12 @@
     height: 36px;
 }
 
+.disabled-button {
+    pointer-events: none !important;
+    cursor: default;
+    color: Gray;
+}
+
 .table-container-portrait {
     height: calc(20dvh);
     overflow: auto;

@@ -37,10 +37,10 @@
             </mat-card-title>
         </mat-card-header>
     
-            <app-math-edit [readOnly]="false"></app-math-edit>
-            <div> <!--style="background-color: var(--mdc-filled-text-field-container-color);"-->
-                <mat-checkbox [(ngModel)]="showBubbles" title="Show estimated bubbles">Show estimated bubbles</mat-checkbox>
-            </div>
+        <app-math-edit [readOnly]="false"></app-math-edit>
+        <div> <!--style="background-color: var(--mdc-filled-text-field-container-color);"-->
+            <mat-checkbox [(ngModel)]="showBubbles" title="Show estimated bubbles">Show estimated bubbles</mat-checkbox>
+        </div>
     
         <div class="mat-elevation-z8"
              [class.table-container-landscape]="map.isLandscape$ | async"
@@ -76,7 +76,8 @@
                     <mat-header-cell *matHeaderCellDef> Actions </mat-header-cell>
                     <mat-cell *matCellDef="let a; let i=index">
                         <span class="row-buttons">
-                            <a (click)="deleteAnnotation(i)" matTooltip="Delete annotation point" matTooltipShowDelay="500">
+                            <a (click)="deleteAnnotation(i)" matTooltip="Delete annotation point" matTooltipShowDelay="500"
+                               [className]="(i>0)&&(i<legs[leg_index].annotations.length-1)?'':'disabled-button'">
                                 <mat-icon class="button" aria-hidden="false" aria-label="delete" fontIcon="delete"></mat-icon>
                             </a>
                         </span>
