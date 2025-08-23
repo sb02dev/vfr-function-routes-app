@@ -31,7 +31,8 @@ class MapDefinition:
                  defaultarea: dict[str, PointLonLat],
                  points: dict[PointLonLat, PointXY],
                  dpis: list[int],
-                 datadir: str):
+                 datadir: str,
+                 request_session: requests.Session):
         self.name = name
         self.url = url
         self.page_num = page_num
@@ -40,6 +41,8 @@ class MapDefinition:
         self.area = defaultarea
         self.points = points
         self.datafolder = datadir
+        self.request_session = request_session
+        self.download_map()
         self.tilerenderers = {dpi: TileRenderer(self.name,
                                                 self.datafolder,
                                                 self.name+'.pdf',
@@ -48,10 +51,10 @@ class MapDefinition:
                                                 dpi
                                                 ) for dpi in dpis}
 
-    def download_map(self, request_session: requests.Session):
+    def download_map(self):
         pdf_destination = os.path.join(self.datafolder, self.name+".pdf")
         if not os.path.isfile(pdf_destination):
-            response = request_session.get(self.url, timeout=10)
+            response = self.request_session.get(self.url, timeout=10)
             with open(pdf_destination, 'wb') as pdf_file:
                 pdf_file.write(response.content)
 
@@ -61,7 +64,7 @@ class MapDefinition:
 
 
     @classmethod
-    def fromDict(cls, dct: dict, dpis: list[int], datadir: str):
+    def fromDict(cls, dct: dict, dpis: list[int], datadir: str, request_session: requests.Session):
         return MapDefinition(dct["name"],
                              dct["url"],
                              dct["projection_string"],
@@ -72,7 +75,8 @@ class MapDefinition:
                              "bottom-right": PointLonLat(dct["defaultarea"]["bottom-right"]["lon"], dct["defaultarea"]["bottom-right"]["lat"])},
                              {PointLonLat(p["lon"], p["lat"]): PointXY(p["x"], p["y"]) for p in dct["projectionpoints"]},
                              dpis,
-                             datadir
+                             datadir,
+                             request_session
         )
 
 
@@ -88,11 +92,11 @@ class MapManager:
         self.datadir = os.path.join(self.rootdir, "data")
         self.mapsdir = os.path.join(self.rootdir, "maps")
         # get list of maps
-        maps = [MapManager.read_map_config(os.path.join(self.mapsdir, n),
-                                                   self.dpis,
-                                                   self.datadir)
-                     for n in os.listdir(self.mapsdir)
-                     if os.path.isfile(os.path.join(self.mapsdir, n)) and os.path.basename(n).lower().endswith('.json')
+        maps = [self.read_map_config(os.path.join(self.mapsdir, n),
+                                     self.dpis,
+                                     self.datadir)
+                for n in os.listdir(self.mapsdir)
+                if os.path.isfile(os.path.join(self.mapsdir, n)) and os.path.basename(n).lower().endswith('.json')
         ]
         self.maps = {map.name: map for map in maps}
         # save the first instance
@@ -107,10 +111,9 @@ class MapManager:
         return None
 
 
-    @classmethod
-    def read_map_config(cls, fname: str, dpis: list[int], datadir: str) -> MapDefinition:
+    def read_map_config(self, fname: str, dpis: list[int], datadir: str) -> MapDefinition:
         with open(fname, "rt", encoding="utf8") as f:
-            return MapDefinition.fromDict(json.load(f), dpis, datadir)
+            return MapDefinition.fromDict(json.load(f), dpis, datadir, self.request_session)
 
 
     def download_maps(self):

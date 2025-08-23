@@ -37,7 +37,6 @@ mapmanager = MapManager([int(os.getenv("LOW_DPI", "72")),
                          int(os.getenv("DOC_DPI", "200")),
                          int(os.getenv("HIGH_DPI", "600"))
                         ], global_requests_session)
-mapmanager.download_maps()
 
 
 class SessionStore:

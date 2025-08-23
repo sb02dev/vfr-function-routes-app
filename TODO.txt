@@ -1,5 +1,6 @@
 v0.3
 + multiple maps (from multiple countries, 1 additional country introduced)
++ bugfix: server could not start when no map was downloaded
 - separate VFRFunctionRoute class from the rest (~geometry.py)
 - limit the session connections based on number of open sessions & visual feedback if no connection available
 - limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
