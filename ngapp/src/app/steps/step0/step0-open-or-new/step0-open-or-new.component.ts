@@ -10,11 +10,12 @@ import { MatMenuModule } from '@angular/material/menu';
 import { Router } from '@angular/router';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { Subscription } from 'rxjs';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { HeaderComponent } from '../../../components/header/header/header.component';
-import { Subscription } from 'rxjs';
-import { MatSnackBar } from '@angular/material/snack-bar';
 
 const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'ANNOTATIONS', 'FINALIZED'];
 
@@ -30,6 +31,7 @@ const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'AN
         MatDatepickerModule,
         MatCommonModule,
         MatMenuModule,
+        MatSelectModule,
         ReactiveFormsModule,
         CommonModule,
         HeaderComponent
@@ -48,16 +50,19 @@ export class Step0OpenOrNewComponent implements AfterContentInit, OnDestroy {
 
     publishedRouteList: string[] = [];
     hasOpenRoute: boolean = false;
+    mapsList: string[] = [];
 
     constructor(public router: Router, private fb: FormBuilder, private imgsrv: ImageEditService, private snackbar: MatSnackBar) {
         this.form = this.fb.group({
             rteName: [null, Validators.required],
+            map: [null, Validators.required],
             speed: [90, Validators.required],
             dof: [null, Validators.required],
             tof: [null, Validators.required]
         });
         this.form.setValue({
             "rteName": "xxx",
+            "map": "xxx",
             "speed": 100,
             "dof": new Date(2025, 8, 1, 7, 0),
             "tof": "07:00"
@@ -66,6 +71,7 @@ export class Step0OpenOrNewComponent implements AfterContentInit, OnDestroy {
             if (msg.type === 'published-routes') {
                 this.publishedRouteList = msg['routes'];
                 this.hasOpenRoute = msg['has_open_route'];
+                this.mapsList = msg['maps'];
             } else if (msg.type === 'load-result') {
                 if (msg['result'] === 'success') {
                     this.snackbar.open('Route loaded', undefined, { duration: 5000, panelClass: 'snackbar-success' });
@@ -123,6 +129,7 @@ export class Step0OpenOrNewComponent implements AfterContentInit, OnDestroy {
         this.imgsrv.send({
             type: 'create',
             name: val.rteName,
+            mapname: val.map,
             speed: val.speed,
             dof: dof
         }, ['load-result', 'result'])

@@ -55,6 +55,8 @@ from .projutils import (
 )
 from .docxutils import add_formula_par
 from .rendering import SimpleRect, TileRenderer
+from .maps import MapDefinition, MapManager
+
 
 OPENWEATHER_ENDPOINT = "https://api.openweathermap.org/data/2.5/forecast?lat={lat}&lon={lon}&appid={OPENWEATHER_APIKEY}"
 MAGDEV_ENDPOINT = "https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination?lat1={lat}&lon1={lon}&startYear={when.year}&startMonth={when.month}&startDay={when.day}&resultFormat=json&key={MAGDEV_APIKEY}"
@@ -602,21 +604,9 @@ class VFRFunctionRoute:
       - generate a flight plan file for SkyDaemon
     """
     
-    # "https://ais.hungarocontrol.hu/aip/2024-03-21-ICAO500k/ICAO500_2024_egylapos.pdf"
-    PDF_URL = os.getenv("PDF_URL")
-    PDF_FILE = os.getenv("PDF_FILE")
-    PDF_IN_WORLD_XY = {
-      PointLonLat(16.0, 48.5): PointXY(6.0, 54.0),
-      PointLonLat(16.5, 46.0): PointXY(155.83, 1639.36),
-      PointLonLat(21.0, 46.0): PointXY(2133.00, 1658.6),
-    } # I don't see any possibility to do this automatically
-    PDF_MARGINS = SimpleRect(PointXY(79.0, 110.1), PointXY(79.05, 139.0)) #(('left', 'top'), ('right', 'bottom'))
     HIGH_DPI = int(os.getenv("HIGH_DPI", "600"))
     LOW_DPI = int(os.getenv("LOW_DPI", "72"))
     DOC_DPI = int(os.getenv("DOC_DPI", "200"))
-    TILESIZE_X = int(os.getenv("TILESIZE_X", "512"))
-    TILESIZE_Y = int(os.getenv("TILESIZE_Y", "512"))
-    TILESIZE = (TILESIZE_X, TILESIZE_Y)
 
 
     @property
@@ -633,6 +623,7 @@ class VFRFunctionRoute:
     
     def __init__(self,
                  name: str,
+                 map: MapDefinition,
                  speed: float,
                  dof: datetime.datetime,
                  session: requests.Session = None,
@@ -644,6 +635,7 @@ class VFRFunctionRoute:
         """
         self._state = VFRRouteState.INITIATED
         self.name = name
+        self.map = map
         self.speed = speed
         self.dof = dof
         self.workfolder = workfolder
@@ -654,10 +646,9 @@ class VFRFunctionRoute:
         self._session = session if session else requests.Session()
         self.waypoints: list[tuple[str, VFRPoint]] = []
         self.area_of_interest = {
-            'top-left': VFRPoint(18.5, 47.5, VFRCoordSystem.LONLAT, self),
-            'bottom-right': VFRPoint(19.5, 47.0, VFRCoordSystem.LONLAT, self)
+            'top-left': VFRPoint(self.map.area["top-left"].lon, self.map.area["top-left"].lat, VFRCoordSystem.LONLAT, self),
+            'bottom-right': VFRPoint(self.map.area["bottom-right"].lon, self.map.area["bottom-right"].lat, VFRCoordSystem.LONLAT, self)
         }
-        self.pdf_destination = VFRFunctionRoute.download_map(self._session, self.workfolder)
         self._use_realtime_data = False
         self.calc_extents()
         self.calc_transformations()
@@ -777,72 +768,6 @@ class VFRFunctionRoute:
         self._state = VFRRouteState.FINALIZED
         
 
-    @classmethod    
-    def download_map(cls, session, workfolder):
-        """Downloads map as pdf from internet if not already exists as a file."""
-        pdf_destination = os.path.join(workfolder, cls.PDF_FILE)
-        if not os.path.isfile(pdf_destination):
-            response = session.get(cls.PDF_URL)
-            with open(pdf_destination, 'wb') as pdf_file:
-                pdf_file.write(response.content)
-        return pdf_destination
-
-
-    def get_lowres_map_tilesetup(self) -> tuple[tuple[int, int], tuple[float, float], tuple[int, int]]:
-        """
-        Sets up the environment to generate tiles for the full map in low resolution.
-        MUST be followed by `get_lowres_map_tilefinish()` to free up resources.
-
-        Returns:
-            ((x_size, y_size), (x_count, y_count))
-                The size of each tile and the count of them
-        """
-        # state check
-        self._ensure_state(VFRRouteState.INITIATED)
-
-        # open pdf
-        self._pdf_document = pymupdf.open(self.pdf_destination)
-        page = self._pdf_document[0]
-        rect = page.rect  # the page rectangle
-        m = self.PDF_MARGINS
-        clip = pymupdf.Rect(m.p0.x, m.p0.y, rect.width-m.p1.x, rect.height-m.p1.y)  # the area we want
-
-        # calculate tile numbers
-        scale = 1/72*self.LOW_DPI
-        width_in_pixels = clip.width * scale
-        x_count = math.ceil(width_in_pixels / self.TILESIZE[0])
-        height_in_pixels = clip.height * scale
-        y_count = math.ceil(height_in_pixels / self.TILESIZE[1])
-
-        # return
-        return (self.TILESIZE, (x_count, y_count), (width_in_pixels, height_in_pixels))
-    
-
-    def get_lowres_map_tilefinish(self):
-        # close the pdf file
-        self._pdf_document = None
-
-    def get_lowres_map_tile(self, x: int, y: int) -> bytes:
-        # calculate the clip coordinates
-        page = self._pdf_document[0]
-        rect = page.rect
-        scale = 1/72*self.LOW_DPI
-        ((mx0, my0), (mx1, my1)) = self.PDF_MARGINS
-        #((mx0s, my0s), (mx1s, my1s)) = ((mx0*scale, my0*scale), (mx1*scale, my1*scale))
-        x_pixels = x * self.TILESIZE[0]
-        y_pixels = y * self.TILESIZE[1]
-        clip = pymupdf.Rect(
-            mx0 + x_pixels/scale,
-            my0 + y_pixels/scale,
-            min(rect.width-mx1, mx0 + (x_pixels + self.TILESIZE[0] - 1)/scale),
-            min(rect.height-my1, my0 + (y_pixels + self.TILESIZE[1] - 1)/scale)
-        )
-
-        # get the image
-        pixmap: pymupdf.Pixmap = page.get_pixmap(clip=clip, dpi=self.LOW_DPI)
-        return pixmap.tobytes("png")
-
-
     def set_area_of_interest(self, top_left_x: float, top_left_y: float, bottom_right_x: float, bottom_right_y: float) -> None:
         self._ensure_state(VFRRouteState.INITIATED)
         self.area_of_interest = {
@@ -942,111 +867,6 @@ class VFRFunctionRoute:
                                        ]
 
 
-    def _fullmap_clicker(self):
-        """
-        Allows to get click points on the map (to later estimate transformations from them)
-        """
-        pdf_document = pymupdf.open(self.pdf_destination)
-        page = pdf_document[0]
-        rect = page.rect  # the page rectangle
-        m = self.PDF_MARGINS
-        clip = pymupdf.Rect(m.p0.x, m.p0.y, rect.width-m.p1.x, rect.height-m.p1.y)  # the area we want
-        pdfimage_cropcheck = page.get_pixmap(clip=clip)
-        pilimage_cropcheck = PIL.Image.open(io.BytesIO(pdfimage_cropcheck.tobytes("png")))
-        fig, ax = plt.subplots()
-        print(pilimage_cropcheck.size)
-        ax.imshow(pilimage_cropcheck)
-        # draw reference points
-        p = [self._proj(ll.lon, ll.lat) for ll in self.PDF_IN_WORLD_XY.keys()]
-        p = [_apply_transformation_matrix(pp, self._matrix_fullmap2map) for pp in p]
-        ax.scatter([pp[0] for pp in p], [pp[1] for pp in p], marker='X', c='red')
-        # draw map rectangle
-        p = [
-            PointLonLat(self.extent.minlon, self.extent.minlat), # minlon-minlat -> leftbottom
-            PointLonLat(self.extent.minlon, self.extent.maxlat), # minlon-maxlat -> lefttop
-            PointLonLat(self.extent.maxlon, self.extent.minlat), # maxlon-minlat -> rightbottom
-            PointLonLat(self.extent.maxlon, self.extent.maxlat), # maxlon-maxlat -> righttop
-        ]
-        p = [self._proj(ll.lon, ll.lat) for ll in p]
-        p = [_apply_transformation_matrix(pp, self._matrix_fullmap2map) for pp in p]
-        ax.scatter([pp[0] for pp in p], [pp[1] for pp in p], marker='X', c='red')
-        p = self.get_mapxyextent()
-        rect = patches.Rectangle((p.minx, p.miny), p.maxx-p.minx, p.maxy-p.miny, linewidth=1, edgecolor='r', facecolor='none')
-        ax.add_patch(rect)
-        # interactive plot
-        from matplotlib.backend_bases import MouseButton
-        def on_click(event):
-            if event.button is MouseButton.LEFT:
-                print(event)
-        plt.connect('button_press_event', on_click)
-        plt.show()
-
-
-    def _map_clicker(self):
-        """
-        Allows to get click points on the map (to later estimate transformations from them)
-        """
-        xt = self.get_mapxyextent()
-        x0, y0, x1, y1 = xt.minx, xt.miny, xt.maxx, xt.maxy
-        scale = 72/self.HIGH_DPI # PDF coordinates are based on 72 DPI
-        pdf_document = pymupdf.open(self.pdf_destination)
-        page = pdf_document[0]
-        rect = page.rect  # the page rectangle
-        m = self.PDF_MARGINS
-        clip = pymupdf.Rect(m.p0.x+x0,
-                            m.p0.y+y0,
-                            m.p0.x+x1,  # rect.width-m[1][0]
-                            m.p0.y+y1,  # rect.height-m[1][1]
-                           )
-        print(rect, clip)
-        pdfimage_cropcheck = page.get_pixmap(clip=clip, dpi=self.HIGH_DPI)
-        pilimage_cropcheck = PIL.Image.open(io.BytesIO(pdfimage_cropcheck.tobytes("png")))
-        fig, ax = plt.subplots()
-        print(pilimage_cropcheck.size)
-        ax.imshow(pilimage_cropcheck)
-        # draw map rectangle
-        print("points:")
-        p = [
-            PointLonLat(self.extent.minlon, self.extent.minlat), # minlon-minlat -> leftbottom
-            PointLonLat(self.extent.minlon, self.extent.maxlat), # minlon-maxlat -> lefttop
-            PointLonLat(self.extent.maxlon, self.extent.minlat), # maxlon-minlat -> rightbottom
-            PointLonLat(self.extent.maxlon, self.extent.maxlat), # maxlon-maxlat -> righttop
-        ]
-        p = [self._proj(ll.lon, ll.lat) for ll in p]
-        p = [_apply_transformation_matrix(pp, self._matrix_fullmap2map) for pp in p]
-        print(f"  fullmap: {p}")
-        p = [_apply_transformation_matrix(pp, self._matrix_map2cropmap) for pp in p]
-        print(f"  cropmap: {p}")
-        ax.scatter([pp[0] for pp in p], [pp[1] for pp in p], marker='X', c='red')
-        print("rect:")
-        p = [(xt.minx, xt.miny), (xt.maxx, xt.maxy)]
-        print(f" fullmap: {p}")
-        p = [_apply_transformation_matrix(pp, self._matrix_map2cropmap) for pp in p]
-        print(f" cropmap: {p}")
-        rect = patches.Rectangle((p[0][0], p[0][1]), p[1][0]-p[0][0], p[1][1]-p[0][1], linewidth=1, edgecolor='r', facecolor='none')
-        ax.add_patch(rect)
-        # draw all leg points
-        ps = []
-        ps2 = []
-        for l in self.legs:
-            for p, x in l.points:
-                pp = p.project_point(VFRCoordSystem.MAPCROP_XY)
-                ps.append(pp)
-                pp = self._proj(p.lon, p.lat)
-                pp = _apply_transformation_matrix(pp, self._matrix_fullmap2map)
-                pp = _apply_transformation_matrix(pp, self._matrix_map2cropmap)
-                ps2.append(pp)
-        ax.scatter([pp.x for pp in ps], [pp.y for pp in ps], marker='X', c='blue')
-        ax.scatter([pp[0] for pp in ps2], [pp[1] for pp in ps2], marker='X', c='green')
-        # interactive plot
-        from matplotlib.backend_bases import MouseButton
-        def on_click(event):
-            if event.button is MouseButton.LEFT:
-                print(event)
-        plt.connect('button_press_event', on_click)
-        plt.show()
-
-        
     def add_leg(self, 
                 name: str,
                 function_name: str,
@@ -1116,8 +936,8 @@ class VFRFunctionRoute:
         #print(self._proj(16,48.5))
         #print(self._proj(17,47.5))
         # calculate transformations for FULL_WORLD_XY<->MAP_XY
-        p = [self._proj(ll.lon, ll.lat) for ll in self.PDF_IN_WORLD_XY.keys()] # convert to fullworld map coord
-        pp = [PointXY(pxy.x/72*self.LOW_DPI, pxy.y/72*self.LOW_DPI) for pxy in self.PDF_IN_WORLD_XY.values()] # must scale it to LOW_DPI from default pdf metric of 72
+        p = [self._proj(ll.lon, ll.lat) for ll in self.map.points.keys()] # convert to fullworld map coord
+        pp = [PointXY(pxy.x/72*self.LOW_DPI, pxy.y/72*self.LOW_DPI) for pxy in self.map.points.values()] # must scale it to LOW_DPI from default pdf metric of 72
         self._matrix_fullmap2map = _calculate_2d_transformation_matrix(p, pp) # calc matrix from fullworld map coord to map coord
         self._matrix_map2fullmap = np.linalg.inv(self._matrix_fullmap2map)
         #print("TEST lonlat to mapxy:")
@@ -1242,36 +1062,38 @@ class VFRFunctionRoute:
         """
         self._ensure_state(VFRRouteState.FINALIZED)
 
-        setRTD = False
+        setRTD, oldRTD = False, self.use_realtime_data
         if use_realtime is not None:
             if use_realtime!=self.use_realtime_data:
                 oldRTD, self.use_realtime_data, setRTD = self.use_realtime_data, True, True
 
-        # draw background
-        bg_img = self.calc_basemap()
-        
-        # initialize map
-        fig = plt.figure()
-        ax = plt.Axes(fig, [0., 0., 1., 1.])
-        ax.set_axis_off()
-        fig.add_axes(ax)
-        
-        # draw the map parts
-        for l in self.legs:
-            l.draw(ax)
-        for t in self.tracks:
-            t.draw(ax)
-        
-        # render the overlay
-        fig.set_size_inches((c/self.DOC_DPI for c in [bg_img.width, bg_img.height]))
-        ax.set_xlim(0, bg_img.size[0]/self.DOC_DPI*self.HIGH_DPI)
-        ax.set_ylim(bg_img.size[1]/self.DOC_DPI*self.HIGH_DPI, 0)
-        overlay_pngbuf = self._get_image_from_figure(fig, dpi=self.DOC_DPI)
-        overlay_img = PIL.Image.open(overlay_pngbuf)
-        plt.close(fig)
+        try:
+            # draw background
+            bg_img = self.calc_basemap()
+            
+            # initialize map
+            fig = plt.figure()
+            ax = plt.Axes(fig, [0., 0., 1., 1.])
+            ax.set_axis_off()
+            fig.add_axes(ax)
+            
+            # draw the map parts
+            for l in self.legs:
+                l.draw(ax)
+            for t in self.tracks:
+                t.draw(ax)
+            
+            # render the overlay
+            fig.set_size_inches((c/self.DOC_DPI for c in [bg_img.width, bg_img.height]))
+            ax.set_xlim(0, bg_img.size[0]/self.DOC_DPI*self.HIGH_DPI)
+            ax.set_ylim(bg_img.size[1]/self.DOC_DPI*self.HIGH_DPI, 0)
+            overlay_pngbuf = self._get_image_from_figure(fig, dpi=self.DOC_DPI)
+            overlay_img = PIL.Image.open(overlay_pngbuf)
+            plt.close(fig)
 
-        if setRTD:
-            self.use_realtime_data = oldRTD
+        finally:
+            if setRTD:
+                self.use_realtime_data = oldRTD
 
         # return the composited
         composited = PIL.Image.alpha_composite(bg_img.convert('RGBA'), overlay_img.convert('RGBA'))
@@ -1302,14 +1124,14 @@ class VFRFunctionRoute:
         # this is in LOW_DPI => convert it back to PDF coordinates
         ((x0, y0), (x1, y1)) = ((x0/self.LOW_DPI*72, y0/self.LOW_DPI*72),
                                 (x1/self.LOW_DPI*72, y1/self.LOW_DPI*72))
-        ((xm, ym), (_, _)) = self.PDF_MARGINS
+        ((xm, ym), (_, _)) = self.map.margins
         ((x0, y0), (x1, y1)) = ((xm+x0, ym+y0), (xm+x1, ym+y1))
         return SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
 
 
     def calc_basemap(self):
         # clip the image
-        tiles = TileRenderer("hungarymap", self.workfolder, self.PDF_FILE, 0, self.PDF_MARGINS, self.DOC_DPI)
+        tiles = self.map.get_tilerenderer(int(os.getenv('DOC_DPI', '200')))
         tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(self.calc_basemap_clip())
         composite = PIL.Image.new("RGBA", [int(s) for s in image_size], (0, 0, 0, 0))
         for p in tile_list:
@@ -1462,6 +1284,7 @@ class VFRFunctionRoute:
         # initiate json object with basic info
         jsonrte = {
             'name': self.name,
+            'mapname': self.map.name,
             'speed': self.speed,
             'dof': self.dof.isoformat(),
             'state': self._state.name
@@ -1509,7 +1332,10 @@ class VFRFunctionRoute:
                  outfolder: Union[str, Path, None] = None,
                  tracksfolder: Union[str, Path, None] = None):
         # initiate with basic info
-        rte = VFRFunctionRoute(jsonrte['name'], jsonrte['speed'], datetime.datetime.fromisoformat(jsonrte['dof']),
+        rte = VFRFunctionRoute(jsonrte['name'],
+                               MapManager.instance().maps.get(jsonrte['mapname']),
+                               jsonrte['speed'],
+                               datetime.datetime.fromisoformat(jsonrte['dof']),
                                session, workfolder, outfolder, tracksfolder)
         state = VFRRouteState[jsonrte['state']]
         # step 1: area of interest

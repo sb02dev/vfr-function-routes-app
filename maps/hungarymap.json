@@ -1,0 +1,13 @@
+{
+    "name": "HUNGARY",
+    "url": "https://storage.hungarocontrol.hu/media/1132/ICAO_500k_2025.pdf",
+    "pagenum": 0,
+    "projection_string": "+proj=lcc +lon_0=-90 +lat_1=46 +lat_2=48 +ellps=WGS84",
+    "margins": {"left": 79.0, "top": 110.1, "right": 79.05, "bottom": 139.0},
+    "defaultarea": {"top-left": {"lon": 18.5, "lat": 47.5}, "bottom-right": {"lon": 19.5, "lat": 47.0}},
+    "projectionpoints": [
+      {"lon": 16.0, "lat": 48.5, "x": 6.0, "y": 54.0},
+      {"lon": 16.5, "lat": 46.0, "x": 155.83, "y": 1639.36},
+      {"lon": 21.0, "lat": 46.0, "x": 2133.00, "y": 1658.6}
+    ]
+}

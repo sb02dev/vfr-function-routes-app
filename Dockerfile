@@ -24,6 +24,9 @@ COPY api/ ./api/
 COPY VFRFunctionRoutes/ ./VFRFunctionRoutes/
 COPY main.py ./
 
+# Copy map definitions
+COPY maps/ ./maps/
+
 # Copy Angular build into backend (to be served by FastAPI)
 COPY --from=frontend /app/frontend/browser ./frontend/browser
 
@@ -36,5 +39,6 @@ RUN mkdir routes
 # Expose port
 EXPOSE 8080
 
+# The command to run the application
 WORKDIR /app
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "debug"]

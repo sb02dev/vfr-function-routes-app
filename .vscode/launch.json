@@ -13,7 +13,7 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python Debugger: Main File",
+            "name": "Python Debugger: FastAPI Server",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}\\main.py",
@@ -24,6 +24,13 @@
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}\\docgen_sample.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python Debugger: Setup New Map",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}\\setup_new_map.py",
             "console": "integratedTerminal"
         },
         {

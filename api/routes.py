@@ -24,6 +24,7 @@ from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, TileRenderer, SVGRende
 from VFRFunctionRoutes.classes import VFRCoordSystem, VFRRouteState  # pylint: disable=no-name-in-module
 from VFRFunctionRoutes.projutils import PointXY
 from VFRFunctionRoutes.rendering import SimpleRect
+from VFRFunctionRoutes.maps import MapManager
 
 
 rootpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -31,22 +32,12 @@ rootpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 routes = APIRouter()
 
 global_requests_session = requests.Session()
-VFRFunctionRoute.download_map(global_requests_session, os.path.join(rootpath, 'data'))
 
-tilerenderers = {
-    'low': TileRenderer("hungarymap",
-                        os.path.join(rootpath, "data"),
-                        VFRFunctionRoute.PDF_FILE,
-                        0,
-                        VFRFunctionRoute.PDF_MARGINS,
-                        VFRFunctionRoute.LOW_DPI),
-    'high': TileRenderer("hungarymap",
-                         os.path.join(rootpath, "data"),
-                         VFRFunctionRoute.PDF_FILE,
-                         0,
-                         VFRFunctionRoute.PDF_MARGINS,
-                         VFRFunctionRoute.HIGH_DPI),
-}
+mapmanager = MapManager([int(os.getenv("LOW_DPI", "72")),
+                         int(os.getenv("DOC_DPI", "200")),
+                         int(os.getenv("HIGH_DPI", "600"))
+                        ], global_requests_session)
+mapmanager.download_maps()
 
 
 class SessionStore:
@@ -163,18 +154,12 @@ async def send_tiled_image_header(websocket: WebSocket, renderer: TileRenderer, 
             },
             response_class=Response)
 async def get_tile(tileset_name: str, dpi: int, x: int, y:int):
-    matching_renderers = [r for k, r in tilerenderers.items() if r.tileset_name==tileset_name and r.dpi==dpi]
-    if len(matching_renderers)>1:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, 
-                            f"Multiple renderers matched ({tileset_name}, {dpi})", 
-                            {"X-Error": "Multiple renderers matched"}
-                           )
-    if len(matching_renderers)==0:
+    renderer = mapmanager.get_tilerenderer(tileset_name, dpi)
+    if renderer is None:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
                             f"No renderers matched ({tileset_name}, {dpi})", 
                             {"X-Error": "No renderers matched"}
                            )
-    renderer = matching_renderers[0]
     image = renderer.get_tile(x, y)
     return Response(content=image,
                     media_type="image/png",
@@ -233,7 +218,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 routefiles = [f for f in os.listdir(os.path.join(rootpath, "routes")) if os.path.isfile(os.path.join(rootpath, "routes", f)) and f.endswith('.vfr')]
                 await websocket.send_json({"type": "published-routes",
                                            "routes": routefiles,
-                                           "has_open_route": rte is not None 
+                                           "has_open_route": rte is not None,
+                                           "maps": list(mapmanager.maps.keys())
                                           })
 
             elif msgtype=='create':
@@ -245,6 +231,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         d = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=2)
                     rte = VFRFunctionRoute(
                         msg.get("name", "Untitled route"),
+                        mapmanager.maps.get(msg.get("mapname", "HUNGARY"), None),
                         msg.get("speed", 90),
                         d,
                         session = global_requests_session,
@@ -327,7 +314,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     }))
 
                 elif msgtype == 'get-low-res-map':
-                    renderer = tilerenderers["low"]
+                    renderer = rte.map.get_tilerenderer(int(os.getenv('LOW_DPI', '72')))
                     await send_tiled_image_header(websocket, renderer, TileRenderer.rect_to_simplerect(renderer._crop_rect))
 
                 elif msgtype=='set-area-of-interest':
@@ -368,7 +355,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     }))
 
                 elif msgtype == 'get-waypoints-map':
-                    await send_tiled_image_header(websocket, tilerenderers["high"], rte.calc_basemap_clip())
+                    renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
+                    await send_tiled_image_header(websocket, renderer, rte.calc_basemap_clip())
 
                 elif msgtype=='update-wps':
                     rte.update_waypoints(msg.get("waypoints"))
@@ -407,7 +395,8 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     }))
 
                 elif msgtype == 'get-legs-map':
-                    await send_tiled_image_header(websocket, tilerenderers["high"], rte.calc_basemap_clip())
+                    renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
+                    await send_tiled_image_header(websocket, renderer, rte.calc_basemap_clip())
 
                 elif msgtype=='update-legs':
                     rte.update_legs(msg.get("legs"))
@@ -451,8 +440,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 elif msgtype == 'get-annotations-map':
                     clip = rte.calc_basemap_clip()
                     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
+                    renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
                     await send_tiled_image_header(websocket,
-                                                  tilerenderers["high"],
+                                                  renderer,
                                                   clip, {
                                                     "svg_overlay": svgrenderer.get_svg(),
                                                   }
@@ -495,8 +485,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 elif msgtype == 'get-tracks-map':
                     clip = rte.calc_basemap_clip()
                     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
+                    renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
                     await send_tiled_image_header(websocket,
-                                                  tilerenderers["high"],
+                                                  renderer,
                                                   clip, {
                                                     "svg_overlay": svgrenderer.get_svg(),
                                                   }

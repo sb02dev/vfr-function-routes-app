@@ -40,6 +40,14 @@
                    (change)="changeRouteData()"
             />
         </mat-form-field>
+        <mat-label>Map to use:</mat-label>
+        <mat-form-field fxFlex="100">
+            <mat-select title="Map to use" matInput name="map" formControlName="map">
+                @for (map of mapsList; track map) {
+                    <mat-option [value]="map">{{map}}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
         <mat-label>Planned airspeed:</mat-label>
         <mat-form-field fxFlex="100">
             <input type="number"

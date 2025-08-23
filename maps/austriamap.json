@@ -1,0 +1,13 @@
+{
+    "name": "AUSTRIA",
+    "url": "https://www.austrocontrol.at/jart/prj3/ac/data/dokumente/ICAO500_20250320_v1-1_VS_rgb_digital_2025-03-20_070310.pdf",
+    "pagenum": 0,
+    "projection_string": "+proj=lcc +lon_0=-90 +lat_1=46 +lat_2=49 +ellps=WGS84",
+    "margins": {"left": 178.37, "top": 198.1, "right": 55.76, "bottom": 196.84},
+    "defaultarea": {"top-left": {"lon": 15.5, "lat": 49}, "bottom-right": {"lon": 16.5, "lat": 48.0}},
+    "projectionpoints": [
+      {"lon": 10.5, "lat": 48.0, "x": 639.9921568962159, "y": 975.8947350851413},
+      {"lon": 13.0, "lat": 46.5, "x": 1692.7422824644639, "y": 1942.3935651129834},
+      {"lon": 16.5, "lat": 48.0, "x": 3176.7798226785567, "y": 970.400788671502}
+    ]
+}
