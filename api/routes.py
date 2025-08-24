@@ -39,6 +39,23 @@ mapmanager = MapManager([int(os.getenv("LOW_DPI", "72")),
                         ], global_requests_session)
 
 
+
+def pregenerate_tiles():
+    """Generates tile caches for all tiles in all maps"""
+    count_all_tiles = 0
+    for mapname, curmap in mapmanager.maps.items():
+        for dpi, tr in curmap.tilerenderers.items():
+            count_all_tiles += tr.tile_count.x * tr.tile_count.y
+    count_finished_tiles = 0
+    for mapname, curmap in mapmanager.maps.items():
+        for dpi, tr in curmap.tilerenderers.items():
+            for xi in range(tr.tile_count.x):
+                for yi in range(tr.tile_count.y):
+                    #print(f"Generating {mapname}-{dpi}-x{xi}-y{yi} ({count_finished_tiles}/{count_all_tiles})", flush=True)
+                    tr.get_tile(xi, yi, return_format='none')
+                    count_finished_tiles += 1
+
+
 class SessionStore:
     def __init__(self, ttl_seconds: int = 600):
         # session_id -> (data, expiry_time)
@@ -169,6 +186,24 @@ async def get_tile(tileset_name: str, dpi: int, x: int, y:int):
                     })
 
 
+@routes.get("/cachestatus")
+async def get_cache_status():
+    count_all_tiles = 0
+    for mapname, curmap in mapmanager.maps.items():
+        for dpi, tr in curmap.tilerenderers.items():
+            count_all_tiles += tr.tile_count.x * tr.tile_count.y
+    count_finished_tiles = 0
+    for mapname, curmap in mapmanager.maps.items():
+        for dpi, tr in curmap.tilerenderers.items():
+            for xi in range(tr.tile_count.x):
+                for yi in range(tr.tile_count.y):
+                    if os.path.isfile(os.path.join(tr.datafolder, tr._get_tile_id(xi, yi)+".png")):
+                        count_finished_tiles += 1
+    return {"finished": count_finished_tiles,
+            "total": count_all_tiles,
+            "progress": f"{count_finished_tiles/count_all_tiles*100 if count_all_tiles!=0 else 0:.2f}%"
+           }
+
 
 @routes.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
@@ -206,7 +241,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         await websocket.send_json({"type": "result", "result": "success"})
                     except ValueError:
                         print(f"Not a valid VFRRouteState: {step}")
-                    await websocket.send_json({"type": "result", "result": "ivalid-step-value"})
+                    await websocket.send_json({"type": "result", "result": "invalid-step-value"})
                 else:
                     await websocket.send_json({"type": "result", "result": "no-route"})
 

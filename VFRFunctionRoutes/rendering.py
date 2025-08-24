@@ -114,7 +114,7 @@ class TileRenderer:
         return ordered_tile_list, cropping, image_size, [tile_x0, tile_x1, tile_y0, tile_y1]
 
 
-    def get_tile(self, x: int, y: int, return_format: Literal['buf', 'image'] = 'buf') -> Union[bytes, PIL.Image]:
+    def get_tile(self, x: int, y: int, return_format: Literal['buf', 'image', 'none'] = 'buf') -> Union[bytes, PIL.Image, None]:
         """
         Get the tile at the xth row yth column as a PNG bytes array
         """
@@ -122,6 +122,8 @@ class TileRenderer:
         tile_id = self._get_tile_id(x, y)
         tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
         if os.path.isfile(tilecache_fname):
+            if return_format=='none':
+                return
             if return_format=='image':
                 return PIL.Image.open(tilecache_fname)
             with open(tilecache_fname, "rb") as f:
@@ -145,6 +147,8 @@ class TileRenderer:
             buf = pixmap.tobytes("png")
             with open(tilecache_fname, "wb") as f:
                 f.write(buf)
+            if return_format=='none':
+                return
             if return_format=='buf':
                 return buf
             bufio = io.BytesIO(buf)
@@ -173,6 +177,8 @@ class TileRenderer:
         buf.seek(0)
         with open(tilecache_fname, "wb") as f:
             f.write(buf.getvalue())
+        if return_format=='none':
+            return
         if return_format == 'image':
             return final_img
 

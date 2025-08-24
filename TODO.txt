@@ -14,6 +14,7 @@ v0.3
 + limit tile download to 3 simultaneous
 + bugfix: always left-top tile was drawn first
 + include tile png generation in the build process (commented out, because Koyeb build times out)
++ tile cache pre-generation included in main server as a background process
 
 
 v0.2

@@ -1,17 +1,24 @@
 import asyncio
 from contextlib import asynccontextmanager
+import multiprocessing
 import uuid
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import RedirectResponse
 
-from api import routes, session_cleanup_loop
+from api import routes, session_cleanup_loop, pregenerate_tiles
 from api.staticfilesfallback import StaticFilesFallback
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # setup the session cleanup (expiry) checking
     asyncio.create_task(session_cleanup_loop())
+    # setup the initial tile cache generation
+    p = multiprocessing.Process(target=pregenerate_tiles, daemon=True)
+    p.start()
+    # give back control to server app
     yield
+    # cleanup resources
     pass
 
 
