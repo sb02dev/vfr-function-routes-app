@@ -13,6 +13,7 @@ v0.3
 + multiple maps (from multiple countries, 1 additional country introduced)
 + bugfix: server could not start when no map was downloaded
 + limit tile download to 3 simultaneous
++ bugfix: always left-top tile was drawn first
 
 
 v0.2

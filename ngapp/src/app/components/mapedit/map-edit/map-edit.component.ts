@@ -132,10 +132,13 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
             if (msg['additional_data'] && msg['additional_data']['svg_overlay']) {
                 this.setSVG(msg['additional_data']['svg_overlay']);
             }
-            // zoom to fit - delayed because for some reason this is not always done
-            setTimeout(() => { this.zoomToAll(); }, 500);
-            // redraw with no image
-            this.drawBackgroundTransformed();
+            // delayed because for some reason zoom is not always done if immediate
+            setTimeout(() => {
+                // zoom to fit
+                this.zoomToAll();
+                // redraw with no image
+                this.drawBackgroundTransformed();
+            }, 500);
         }
     }
 
