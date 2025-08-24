@@ -241,7 +241,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                         await websocket.send_json({"type": "result", "result": "success"})
                     except ValueError:
                         print(f"Not a valid VFRRouteState: {step}")
-                    await websocket.send_json({"type": "result", "result": "invalid-step-value"})
+                        await websocket.send_json({"type": "result", "result": "invalid-step-value"})
                 else:
                     await websocket.send_json({"type": "result", "result": "no-route"})
 

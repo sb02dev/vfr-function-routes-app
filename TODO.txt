@@ -15,6 +15,7 @@ v0.3
 + bugfix: always left-top tile was drawn first
 + include tile png generation in the build process (commented out, because Koyeb build times out)
 + tile cache pre-generation included in main server as a background process
++ bugfix: invalid-step-value error was sent regardless of error condition
 
 
 v0.2
