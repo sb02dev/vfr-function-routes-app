@@ -13,7 +13,7 @@ v0.3
 + bugfix: server could not start when no map was downloaded
 + limit tile download to 3 simultaneous
 + bugfix: always left-top tile was drawn first
-+ include tile png generation in the build process
++ include tile png generation in the build process (commented out, because Koyeb build times out)
 
 
 v0.2
