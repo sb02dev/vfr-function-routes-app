@@ -21,6 +21,6 @@ if __name__ == "__main__":
         for dpi, tr in curmap.tilerenderers.items():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
-                    print(f"Generating {mapname}-{dpi}-x{xi}-y{yi} ({index}/{count})")
+                    print(f"Generating {mapname}-{dpi}-x{xi}-y{yi} ({index}/{count})", flush=True)
                     tr.get_tile(xi, yi)
                     index += 1
