@@ -36,6 +36,10 @@ RUN mkdir output
 RUN mkdir tracks
 RUN mkdir routes
 
+# Pregenerate tile cache
+COPY render_all_tiles.py /tmp/render_all_tiles.py
+RUN python /tmp/render_all_tiles.py
+
 # Expose port
 EXPOSE 8080
 
