@@ -1,5 +1,4 @@
 v0.3
-- separate VFRFunctionRoute class from the rest (~geometry.py)
 - limit the session connections based on number of open sessions & visual feedback if no connection available
 - limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
 - waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
@@ -16,6 +15,7 @@ v0.3
 + include tile png generation in the build process (commented out, because Koyeb build times out)
 + tile cache pre-generation included in main server as a background process
 + bugfix: invalid-step-value error was sent regardless of error condition
++ separate VFRFunctionRoute class from the rest (~geometry.py)
 
 
 v0.2

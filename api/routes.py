@@ -4,7 +4,6 @@ from http import HTTPStatus
 from pathlib import Path
 import time
 import json
-import io
 import base64
 import os
 from typing import Optional, Union
@@ -17,14 +16,9 @@ from fastapi import APIRouter, HTTPException, Response, WebSocket, WebSocketExce
 from dotenv import load_dotenv
 load_dotenv()
 
-import matplotlib.pyplot as plt
 import requests
 
-from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, TileRenderer, SVGRenderer  # pylint: disable=no-name-in-module
-from VFRFunctionRoutes.classes import VFRCoordSystem, VFRRouteState  # pylint: disable=no-name-in-module
-from VFRFunctionRoutes.projutils import PointXY
-from VFRFunctionRoutes.rendering import SimpleRect
-from VFRFunctionRoutes.maps import MapManager
+from VFRFunctionRoutes import *
 
 
 rootpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
