@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend code
 COPY api/ ./api/
 COPY VFRFunctionRoutes/ ./VFRFunctionRoutes/
-COPY main.py ./
+COPY vfr_function_routes_server.py ./
 
 # Copy map definitions
 COPY maps/ ./maps/
