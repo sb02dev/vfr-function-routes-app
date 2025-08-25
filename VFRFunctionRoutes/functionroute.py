@@ -227,6 +227,13 @@ class VFRFunctionRoute:
             'bottom-right': VFRPoint(bottom_right_x, bottom_right_y, VFRCoordSystem.MAP_XY, self).project_point(VFRCoordSystem.LONLAT)
         }
 
+    def set_area_of_interest_lonlat(self, top_left_lon: float, top_left_lat: float, bottom_right_lon: float, bottom_right_lat: float) -> None:
+        self._ensure_state(VFRRouteState.INITIATED)
+        self.area_of_interest = {
+            'top-left': VFRPoint(top_left_lon, top_left_lat, VFRCoordSystem.LONLAT, self),
+            'bottom-right': VFRPoint(bottom_right_lon, bottom_right_lat, VFRCoordSystem.LONLAT, self)
+        }
+
     def _get_image_from_figure(self, fig, size: tuple[float, float] = None, dpi: float = None) -> bytes:
         buf = io.BytesIO()
         if size:

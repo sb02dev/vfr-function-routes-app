@@ -6,12 +6,14 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTableModule } from '@angular/material/table';
+import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { HeaderComponent } from "../../../components/header/header/header.component";
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
+import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon-lat-edit-dialog/lon-lat-edit-dialog.component';
 
 @Component({
     selector: 'app-step1-area-selection',
@@ -40,7 +42,7 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
     lonlat: [number, number, number, number] = [0, 0, 0, 0];
     lonlatValid: [boolean, boolean] = [false, false];
 
-    constructor(public router: Router, private imgsrv: ImageEditService) {
+    constructor(public router: Router, private imgsrv: ImageEditService, private dialog: MatDialog) {
         this.subs = imgsrv.channel.subscribe((msg) => {
             if (msg.type === 'area-of-interest') {
                 this.rect = [
@@ -57,6 +59,7 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
                 ];
                 this.lonlatValid[0] = true;
                 this.lonlatValid[1] = true;
+                this.mapedit.drawOverlayTransformed();
             }
         });
     }
@@ -74,6 +77,23 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
 
     stepForward() {
         this.setAreaOfInterest();
+    }
+
+    editLonLatDialog(index:number, corner: {name: string, lon: number, lat: number}) {
+        const dialogRef = this.dialog.open(LonLatEditDialogComponent, {
+            data: {"lon": corner.lon, "lat": corner.lat}
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (index == 0) { // top-left
+                this.lonlat = [result.lon, result.lat, this.lonlat[2], this.lonlat[3]];
+                this.lonlatValid[0] = false;
+            } else if (index == 2) { // bottom-right
+                this.lonlat = [this.lonlat[0], this.lonlat[1], result.lon, result.lat];
+                this.lonlatValid[1] = false;
+            }
+            this.setAreaOfInterest(true);
+        });
     }
 
     enumPoints(enumerate: (i: number, map_coords: boolean, x: number, y: number, w: number | undefined, h: number | undefined) => boolean) {
@@ -108,12 +128,20 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
         event.callback();
     }
 
-    setAreaOfInterest() {
-        this.imgsrv.send({
-            type: 'set-area-of-interest',
-            topleft: { x: this.rect[0], y: this.rect[1] },
-            bottomright: { x: this.rect[0] + this.rect[2], y: this.rect[1] + this.rect[3] },
-        }, ['area-of-interest', 'result']);
+    setAreaOfInterest(byLonLat: boolean = false) {
+        if (!byLonLat) {
+            this.imgsrv.send({
+                type: 'set-area-of-interest',
+                topleft: { x: this.rect[0], y: this.rect[1] },
+                bottomright: { x: this.rect[0] + this.rect[2], y: this.rect[1] + this.rect[3] },
+            }, ['area-of-interest', 'result']);
+        } else {
+            this.imgsrv.send({
+                type: 'set-area-of-interest',
+                topleft: { lon: this.lonlat[0], lat: this.lonlat[1] },
+                bottomright: { lon: this.lonlat[2], lat: this.lonlat[3] },
+            }, ['area-of-interest', 'result']);
+        }
     }
 
     drawOverlayTransformed(event: { canvas: HTMLCanvasElement, imgWidth: number, imgHeight: number }) {

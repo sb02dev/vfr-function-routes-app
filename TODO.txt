@@ -6,8 +6,8 @@ v1.0
 - consider place-name based waypoint selection (based on a public database)
 
 v0.3
+- points lon-lat editable all steps
 - limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
-- waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
 - switch from WebSocket to Socket.IO for its fallback to long-polling capabilities
 - solve all linting problems
 + multiple maps (from multiple countries, 1 additional country introduced)
@@ -20,6 +20,7 @@ v0.3
 + separate VFRFunctionRoute class from the rest (~geometry.py)
 + limit the session connections based on number of open sessions & visual feedback if no connection available
 + server setup moved into `api` package
++ waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format) in step1
 
 
 v0.2

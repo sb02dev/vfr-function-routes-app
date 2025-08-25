@@ -1,0 +1,50 @@
+<h2 mat-dialog-title>Edit Longitude-Latitude coordinates</h2>
+<mat-dialog-content>
+    <mat-button-toggle-group [value]="mode" (change)="onModeChange($event.value)">
+        <mat-button-toggle value="decimal">Decimal</mat-button-toggle>
+        <mat-button-toggle value="dms">Degrees</mat-button-toggle>
+    </mat-button-toggle-group>
+    <div *ngIf="mode === 'decimal'" class="decimal-mode">
+        <mat-form-field>
+            <mat-label>Longitude (°)</mat-label>
+            <input matInput title="londecimal" type="number" [(ngModel)]="lonDecimal" min="-180" max="180" step="0.0001">
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Latitude (°)</mat-label>
+            <input matInput title="latdecimal" type="number" [(ngModel)]="latDecimal" min="-90" max="90" step="0.0001">
+        </mat-form-field>
+    </div>
+    <div *ngIf="mode === 'dms'" class="dms-mode">
+        <!-- Longitude -->
+        <mat-form-field>
+            <mat-label>Longitude</mat-label>
+            <div fxLayout="row" fxLayoutGap="10px">
+                <input matInput type="number" name="lonDeg" [(ngModel)]="lonDeg" placeholder="°" min="0" max="180" step="1">°
+                <input matInput type="number" name="lonMin" [(ngModel)]="lonMin" placeholder="′" min="0" max="59" step="1">′
+                <input matInput type="number" name="lonSec" [(ngModel)]="lonSec" placeholder="″" min="0" max="59" step="1">″
+                <mat-select name="lonHem" [(ngModel)]="lonHem">
+                    <mat-option value="E">E</mat-option>
+                    <mat-option value="W">W</mat-option>
+                </mat-select>
+            </div>
+        </mat-form-field>
+        <!-- Latitude -->
+        <mat-form-field>
+            <mat-label>Latitude</mat-label>
+            <div fxLayout="row" fxLayoutGap="10px">
+                <input matInput type="number" name="latDeg" [(ngModel)]="latDeg" placeholder="°" min="0" max="90" step="1">°
+                <input matInput type="number" name="latMin" [(ngModel)]="latMin" placeholder="′" min="0" max="59" step="1">′
+                <input matInput type="number" name="latSec" [(ngModel)]="latSec" placeholder="″" min="0" max="59" step="1">″
+                <mat-select name="latHem" [(ngModel)]="latHem">
+                    <mat-option value="N">N</mat-option>
+                    <mat-option value="S">S</mat-option>
+                </mat-select>
+            </div>
+        </mat-form-field>
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+    <button mat-button (click)="close(false)">Cancel</button>
+    <button mat-raised-button color="primary" (click)="close(true)">Save</button>
+</mat-dialog-actions>

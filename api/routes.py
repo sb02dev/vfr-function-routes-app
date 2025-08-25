@@ -372,7 +372,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 elif msgtype=='set-area-of-interest':
                     tl = msg.get("topleft")
                     br = msg.get("bottomright")
-                    rte.set_area_of_interest(tl.get("x"), tl.get("y"), br.get("x"), br.get("y"))
+                    if 'x' in tl and 'y' in tl and 'x' in br and 'y' in br:
+                        rte.set_area_of_interest(tl.get("x"), tl.get("y"), br.get("x"), br.get("y"))
+                    else:
+                        rte.set_area_of_interest_lonlat(tl.get("lon"), tl.get("lat"), br.get("lon"), br.get("lat"))
                     _vfrroutes.set(session_id, rte)
                     tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
                     br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)

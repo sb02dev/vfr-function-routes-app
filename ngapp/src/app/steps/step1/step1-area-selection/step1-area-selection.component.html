@@ -39,7 +39,10 @@
                     <mat-header-cell *matHeaderCellDef> Lon/Lat </mat-header-cell>
                     <mat-cell *matCellDef="let corner; let i=index">
                         <span [className]="lonlatValid[i]?'':'lonlat-invalid'">
-                            {{corner.lon | number:'1.2-2'}} {{corner.lat | number:'1.2-2'}}</span>
+                            <a (click)="editLonLatDialog(i, corner)">
+                                {{corner.lon | number:'1.2-6'}} {{corner.lat | number:'1.2-6'}}
+                            </a>
+                        </span>
                     </mat-cell>
                 </ng-container>
 
