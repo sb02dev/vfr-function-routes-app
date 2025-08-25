@@ -5,14 +5,15 @@ import uuid
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import RedirectResponse
 
-from api import routes, session_cleanup_loop, pregenerate_tiles
-from api.staticfilesfallback import StaticFilesFallback
+from .routes import routes, cleanup_loop, pregenerate_tiles
+from .staticfilesfallback import StaticFilesFallback
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(base_app: FastAPI):
+    """Resources initialization and cleanup function"""
     # setup the session cleanup (expiry) checking
-    asyncio.create_task(session_cleanup_loop())
+    asyncio.create_task(cleanup_loop())
     # setup the initial tile cache generation
     p = multiprocessing.Process(target=pregenerate_tiles, daemon=True)
     p.start()
@@ -22,7 +23,7 @@ async def lifespan(app: FastAPI):
     pass
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(title="VFRFunctionRoutes WebApp", lifespan=lifespan)
 
 app.mount("/frontend",
           StaticFilesFallback(directory="frontend/browser", html=True),
@@ -33,6 +34,7 @@ SESSION_COOKIE_NAME = "session_id"
 
 @app.middleware("http")
 async def assign_session_id(request: Request, call_next):
+    """A middleware to assign a session_id to all incoming requests"""
     session_id = request.cookies.get(SESSION_COOKIE_NAME)
     if not session_id:
         session_id = str(uuid.uuid4())
@@ -58,12 +60,3 @@ async def root():
 
 
 app.include_router(routes, prefix="/api")
-
-if __name__=="__main__":
-    import uvicorn
-    uvicorn.run("main:app",
-                host="0.0.0.0", port=8000,
-                log_level="debug",
-                reload=True,
-                reload_includes="**/*.{py,htm*,js}"
-               )

@@ -41,4 +41,4 @@ EXPOSE 8080
 
 # The command to run the application
 WORKDIR /app
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "debug"]
+CMD ["uvicorn", "vfr_function_routes_server:app", "--host", "0.0.0.0", "--port", "8080", "--log-level", "debug"]

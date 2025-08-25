@@ -1,6 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 
 import { environment } from '../../environments/environment';
 import { ImageEditMessage } from '../models/image-edit-msg';
@@ -14,7 +15,8 @@ export class ImageEditService implements OnDestroy {
     private socket!: WebSocket;
 
     private reconnectAttempts = 0;
-    private readonly maxReconnectDelay = 30000; // 30s max wait
+    private lastReconnectAttempts = 0;
+    private readonly maxReconnectDelay = 60000; // 60s max wait
     private reconnectTimer: any;
 
     public channel = new Subject<ImageEditMessage>();
@@ -24,7 +26,7 @@ export class ImageEditService implements OnDestroy {
 
     public expectedResponses = new Map<string, string[]>();
   
-    constructor(private session: SessionService, private snackbar: MatSnackBar) { 
+    constructor(private router: Router, private session: SessionService, private snackbar: MatSnackBar) { 
         this.scheduleReconnect();        
     }
 
@@ -54,6 +56,7 @@ export class ImageEditService implements OnDestroy {
 
         this.socket.onopen = () => {
             console.log('WebSocket connected');
+            this.lastReconnectAttempts = this.reconnectAttempts;
             this.reconnectAttempts = 0;
             this.connected.next(true);
         };
@@ -83,9 +86,22 @@ export class ImageEditService implements OnDestroy {
             }
         };
 
-        this.socket.onclose = () => {
-            console.log('WebSocket closed, retrying…');
+        this.socket.onclose = (event) => {
             this.connected.next(false);
+            if (event.code === 1008) {
+                console.log('WebSocket rejected, retrying…');
+                this.snackbar.open(
+                    "Server has reached the maximum session limit. Please wait until another user finishes work and retry.",
+                    undefined,
+                    { duration: 10000, panelClass: 'snackbar-error' }
+                );
+                if (!this.router.isActive('/step0', { paths: 'subset', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' })) {
+                    this.router.navigateByUrl('/step0');
+                }
+                this.reconnectAttempts = this.lastReconnectAttempts;
+            } else {
+                console.log('WebSocket closed, ');
+            }
             this.scheduleReconnect();
         };
 
@@ -111,8 +127,11 @@ export class ImageEditService implements OnDestroy {
     }
 
     private scheduleReconnect() {
+        const delay = Math.min(1000 * 2 ** (this.reconnectAttempts + 1), this.maxReconnectDelay);
+        if (this.reconnectAttempts > 0) {
+            console.log(`retrying in ${delay / 1000} seconds…`);
+        }
         this.reconnectAttempts++;
-        const delay = Math.min(1000 * 2 ** this.reconnectAttempts, this.maxReconnectDelay);
         clearTimeout(this.reconnectTimer);
         this.reconnectTimer = setTimeout(() => this.connect(), delay);
     }

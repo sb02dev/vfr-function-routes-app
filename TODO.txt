@@ -1,13 +1,15 @@
-v0.3
-- limit the session connections based on number of open sessions & visual feedback if no connection available
-- limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
-- waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
-- solve all linting problems
+v1.0
 - colorpicker default listed colors revised (high contrast)
 - bubbles' content revised/customizable
 - journey log created, content revised
 - consider tracks from various sources (SkyDemon, ForeFlight, GeoTracker, Garmin5)
 - consider place-name based waypoint selection (based on a public database)
+
+v0.3
+- limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
+- waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format)
+- switch from WebSocket to Socket.IO for its fallback to long-polling capabilities
+- solve all linting problems
 + multiple maps (from multiple countries, 1 additional country introduced)
 + bugfix: server could not start when no map was downloaded
 + limit tile download to 3 simultaneous
@@ -16,6 +18,8 @@ v0.3
 + tile cache pre-generation included in main server as a background process
 + bugfix: invalid-step-value error was sent regardless of error condition
 + separate VFRFunctionRoute class from the rest (~geometry.py)
++ limit the session connections based on number of open sessions & visual feedback if no connection available
++ server setup moved into `api` package
 
 
 v0.2

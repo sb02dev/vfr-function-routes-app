@@ -11,7 +11,7 @@ import uuid
 import unicodedata
 import re
 import traceback
-from fastapi import APIRouter, HTTPException, Response, WebSocket, WebSocketException, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, Response, WebSocket, WebSocketException, WebSocketDisconnect, status
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -19,6 +19,11 @@ load_dotenv()
 import requests
 
 from VFRFunctionRoutes import *
+
+
+
+# Max number of concurrent sessions allowed
+MAX_SESSIONS = int(os.getenv('MAX_SESSIONS', '10'))
 
 
 rootpath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -71,6 +76,10 @@ class SessionStore:
             del self._store[session_id]  # expire
             return None
         return data
+    
+    def count(self) -> int:
+        """Gets the number of open sessions"""
+        return len(self._store.keys())
     
     def touch(self, session_id: str) -> None:
         """Sets the expiry of the given session to now+ttl (no expiry while used)"""
@@ -129,7 +138,7 @@ class SessionStore:
 
 
 
-_vfrroutes = SessionStore(ttl_seconds=3600)
+_vfrroutes = SessionStore(ttl_seconds=int(os.getenv('SESSION_TTL', '300')))
 _vfrroutes.load()
 
 
@@ -201,17 +210,32 @@ async def get_cache_status():
 
 @routes.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
-    await websocket.accept()
-
+    # get the session id
     if not session_id:
         session_id = websocket.cookies.get("session_id")
+    new_session_id = None
     if not session_id:
-        session_id = str(uuid.uuid4())
+        new_session_id = str(uuid.uuid4())
+
+    # load the session
+    rte: Union[VFRFunctionRoute, None] = _vfrroutes.get(session_id)
+
+    # limit connections
+    if rte is None and _vfrroutes.count() >= MAX_SESSIONS:
+        await websocket.accept()
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason='max-session-limit')
+        return
+
+    # otherwise accept connection
+    await websocket.accept()
+
+    # if a new session id is issued, communicate it
+    if new_session_id is not None:
+        session_id = new_session_id
         await websocket.send_json({"type": "new_session", "session_id": session_id})
     print("Session id:", session_id)
 
-    rte: Union[VFRFunctionRoute, None] = _vfrroutes.get(session_id)
-
+    # handle communication
     while True:
         try:
             data = await websocket.receive_text()
