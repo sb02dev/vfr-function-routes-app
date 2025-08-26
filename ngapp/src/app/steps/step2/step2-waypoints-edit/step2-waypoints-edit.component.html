@@ -16,8 +16,11 @@
 >
         <mat-card>
             <mat-card-header>
-                <mat-card-title>
-                    Waypoints
+                <mat-card-title fxLayout="row">
+                    <span fxLayoutAlign="start center">Waypoints</span>
+                    <a mat-icon-button (click)="addPointAtLonLat()" matTooltip="Add point by coordinates" matTooltipShowDelay="500" fxLayoutAlign="end center">
+                        <mat-icon aria-hidden="false" aria-label="Add point" fontIcon="add"></mat-icon>
+                    </a>
                 </mat-card-title>
             </mat-card-header>
 
@@ -36,7 +39,11 @@
                     <ng-container matColumnDef="lonlat">
                         <mat-header-cell *matHeaderCellDef> Lon/Lat </mat-header-cell>
                         <mat-cell *matCellDef="let wp; let i=index">
-                            <span [className]="wp.lonlat_valid?'':'lonlat-invalid'">{{wp.lon | number:'1.2-2'}} {{wp.lat | number:'1.2-2'}}</span>
+                            <span [className]="wp.lonlat_valid?'':'lonlat-invalid'">
+                                <a (click)="editLonLatDialog(i, wp)">
+                                    {{wp.lon | number:'1.2-2'}} {{wp.lat | number:'1.2-2'}}
+                                </a>
+                            </span>
                         </mat-cell>
                     </ng-container>
             

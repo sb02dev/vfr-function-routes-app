@@ -280,7 +280,12 @@ class VFRFunctionRoute:
 
     def update_waypoints(self, wps: list[dict]):
         # calculate new waypoints
-        self.waypoints = [(wp["name"], VFRPoint(wp["x"], wp["y"], VFRCoordSystem.MAPCROP_XY, self).project_point(VFRCoordSystem.LONLAT)) for wp in wps]
+        self.waypoints = [(
+            wp["name"],
+                VFRPoint(wp["x"], wp["y"], VFRCoordSystem.MAPCROP_XY, self).project_point(VFRCoordSystem.LONLAT)
+            if 'x' in wp and 'y' in wp else
+                VFRPoint(wp["lon"], wp["lat"], VFRCoordSystem.LONLAT, self)
+        ) for wp in wps]
 
 
     def update_legs(self, legs: list[dict]):
@@ -303,8 +308,12 @@ class VFRFunctionRoute:
                 elif j==len(leg["points"])-1:
                     newpoints.append((lp_end[0], pt["func_x"]))
                 else:
+                    if 'x' in pt and 'y' in pt:
+                        p = VFRPoint(pt["x"], pt["y"], VFRCoordSystem.MAPCROP_XY, self, curleg).project_point(VFRCoordSystem.LONLAT)
+                    else:
+                        p = VFRPoint(pt["lon"], pt["lat"], VFRCoordSystem.LONLAT, self, curleg)
                     newpoints.append((
-                        VFRPoint(pt["x"], pt["y"], VFRCoordSystem.MAPCROP_XY, self, curleg).project_point(VFRCoordSystem.LONLAT),
+                        p,
                         pt["func_x"]
                     ))
             curleg.points = newpoints

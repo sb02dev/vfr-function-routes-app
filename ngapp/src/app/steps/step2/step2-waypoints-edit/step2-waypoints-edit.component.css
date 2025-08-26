@@ -37,7 +37,7 @@
 }
 
 .table-container-landscape {
-    height: calc(100dvh - 48px - 36px);
+    height: calc(100dvh - 63.98px - 36px);
     overflow: auto;
 }
 

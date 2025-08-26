@@ -6,6 +6,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
+import { MatDialog } from '@angular/material/dialog';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 
@@ -14,6 +15,7 @@ import { HeaderComponent } from "../../../components/header/header/header.compon
 import { Leg, LegPoint } from '../../../models/leg';
 import { MathEditComponent } from "../../../components/mathedit/math-edit/math-edit.component";
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
+import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon-lat-edit-dialog/lon-lat-edit-dialog.component';
 
 @Component({
     selector: 'app-step3-legs-edit',
@@ -45,7 +47,7 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
 
     extrapoint: [number, number] | null = null;
 
-    constructor(public router: Router, private imgsrv: ImageEditService) {
+    constructor(public router: Router, private imgsrv: ImageEditService, private dialog: MatDialog) {
         this.subs = imgsrv.channel.subscribe((msg) => {
             if (msg.type === "legs") {
                 this.legs = msg['legs'].map((leg: any) => {
@@ -159,24 +161,57 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
         this.matheditrange.setLatex(rng);
     }
 
-    updateLegs() {
-        this.imgsrv.send({
-            type: 'update-legs',
-            legs: this.legs.map((leg: Leg) => {
-                return {
-                    name: leg.name,
-                    function_name: leg.function_latex,
-                    function_range: leg.function_range,
-                    points: leg.points.map((pt: LegPoint) => {
-                        return {
-                            x: pt.x,
-                            y: pt.y,
-                            func_x: pt.func_x,
-                        }
-                    })
-                }
-            }),
-        }, ['legs', 'result']);
+    editLonLatDialog(index: number, legpoint: LegPoint) {
+        const dialogRef = this.dialog.open(LonLatEditDialogComponent, {
+            data: {"lon": legpoint.lon, "lat": legpoint.lat}
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            legpoint.lon = result.lon;
+            legpoint.lat = result.lat;
+            legpoint.lonlat_valid = false;
+            this.updateLegs(true);
+        });
+    }
+
+    updateLegs(byLonLat: boolean = false) {
+        if (!byLonLat) {
+            this.imgsrv.send({
+                type: 'update-legs',
+                legs: this.legs.map((leg: Leg) => {
+                    return {
+                        name: leg.name,
+                        function_name: leg.function_latex,
+                        function_range: leg.function_range,
+                        points: leg.points.map((pt: LegPoint) => {
+                            return {
+                                x: pt.x,
+                                y: pt.y,
+                                func_x: pt.func_x,
+                            }
+                        })
+                    }
+                }),
+            }, ['legs', 'result']);
+        } else {
+            this.imgsrv.send({
+                type: 'update-legs',
+                legs: this.legs.map((leg: Leg) => {
+                    return {
+                        name: leg.name,
+                        function_name: leg.function_latex,
+                        function_range: leg.function_range,
+                        points: leg.points.map((pt: LegPoint) => {
+                            return {
+                                lon: pt.lon,
+                                lat: pt.lat,
+                                func_x: pt.func_x,
+                            }
+                        })
+                    }
+                }),
+            }, ['legs', 'result']);
+        }
     }
 
     finalizeMove() {
@@ -228,6 +263,26 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
         });
         event.callback();
         this.updateLegs();
+    }
+
+    addPointAtLonLat() {
+        const dialogRef = this.dialog.open(LonLatEditDialogComponent, {
+            data: { "lon": this.legs[this.leg_index].points[0].lon, "lat": this.legs[this.leg_index].points[0].lat }
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result.save) {
+                this.legs[this.leg_index].points.push({
+                    x: 0,
+                    y: 0,
+                    func_x: 0,
+                    lon: result.lon,
+                    lat: result.lat,
+                    lonlat_valid: false
+                });
+                this.updateLegs(true);
+            }
+        });
     }
 
 

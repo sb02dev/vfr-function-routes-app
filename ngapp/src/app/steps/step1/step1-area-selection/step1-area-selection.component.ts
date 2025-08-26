@@ -85,14 +85,16 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
         });
 
         dialogRef.afterClosed().subscribe(result => {
-            if (index == 0) { // top-left
-                this.lonlat = [result.lon, result.lat, this.lonlat[2], this.lonlat[3]];
-                this.lonlatValid[0] = false;
-            } else if (index == 2) { // bottom-right
-                this.lonlat = [this.lonlat[0], this.lonlat[1], result.lon, result.lat];
-                this.lonlatValid[1] = false;
+            if (result.save) {
+                if (index == 0) { // top-left
+                    this.lonlat = [result.lon, result.lat, this.lonlat[2], this.lonlat[3]];
+                    this.lonlatValid[0] = false;
+                } else if (index == 2) { // bottom-right
+                    this.lonlat = [this.lonlat[0], this.lonlat[1], result.lon, result.lat];
+                    this.lonlatValid[1] = false;
+                }
+                this.setAreaOfInterest(true);
             }
-            this.setAreaOfInterest(true);
         });
     }
 

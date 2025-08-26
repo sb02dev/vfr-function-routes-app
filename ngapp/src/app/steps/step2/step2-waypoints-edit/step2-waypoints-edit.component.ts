@@ -6,6 +6,7 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from "@angular/material/card";
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
@@ -13,6 +14,7 @@ import { ImageEditService } from '../../../services/image-edit.service';
 import { Waypoint } from '../../../models/waypoint';
 import { HeaderComponent } from "../../../components/header/header/header.component";
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
+import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon-lat-edit-dialog/lon-lat-edit-dialog.component';
 
 @Component({
     selector: 'app-step2-waypoints-edit',
@@ -37,7 +39,7 @@ export class Step2WaypointsEditComponent implements AfterContentInit, OnDestroy 
 
     waypoints: Waypoint[] = [];
 
-    constructor(public router: Router, private imgsrv: ImageEditService) {
+    constructor(public router: Router, private imgsrv: ImageEditService, private dialog: MatDialog) {
         this.subs = imgsrv.channel.subscribe((msg) => {
             if (msg.type === 'waypoints') {
                 this.waypoints = msg['waypoints'].map((wp: any) => { 
@@ -100,17 +102,45 @@ export class Step2WaypointsEditComponent implements AfterContentInit, OnDestroy 
         this.mapedit.drawOverlayTransformed();
     }
 
-    updateWaypoints() {
-        this.imgsrv.send({
-            type: 'update-wps',
-            waypoints: this.waypoints.map((wp: Waypoint) => {
-                return {
-                    name: wp.name,
-                    x: wp.x,
-                    y: wp.y,
-                }
-            }),
-        }, ['waypoints', 'result']);
+    editLonLatDialog(index: number, wp: Waypoint) {
+        const dialogRef = this.dialog.open(LonLatEditDialogComponent, {
+            data: {"lon": wp.lon, "lat": wp.lat}
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result.save) {
+                this.waypoints[index].lon = result.lon;
+                this.waypoints[index].lat = result.lat;
+                this.waypoints[index].lonlat_valid = false;
+                this.updateWaypoints(true);
+            }
+        });
+    }
+
+    updateWaypoints(byLonLat: boolean = false) {
+        if (!byLonLat) {
+            this.imgsrv.send({
+                type: 'update-wps',
+                waypoints: this.waypoints.map((wp: Waypoint) => {
+                    return {
+                        name: wp.name,
+                        x: wp.x,
+                        y: wp.y,
+                    }
+                }),
+            }, ['waypoints', 'result']);
+        } else {
+            this.imgsrv.send({
+                type: 'update-wps',
+                waypoints: this.waypoints.map((wp: Waypoint) => {
+                    return {
+                        name: wp.name,
+                        lon: wp.lon,
+                        lat: wp.lat,
+                    }
+                }),
+            }, ['waypoints', 'result']);
+        }
     }
 
     enumPoints(enumerate: (i: number, map_coords: boolean, x: number, y: number, w: number | undefined, h: number | undefined) => boolean) {
@@ -133,6 +163,26 @@ export class Step2WaypointsEditComponent implements AfterContentInit, OnDestroy 
         });
         event.callback();
         this.updateWaypoints();
+    }
+
+    addPointAtLonLat() {
+        const dialogRef = this.dialog.open(LonLatEditDialogComponent, {
+            data: { "lon": this.waypoints[0].lon, "lat": this.waypoints[0].lat }
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result.save) {
+                this.waypoints.push({
+                    name: '???',
+                    x: 0,
+                    y: 0,
+                    lon: result.lon,
+                    lat: result.lat,
+                    lonlat_valid: false
+                });
+                this.updateWaypoints(true);
+            }
+        });
     }
 
     movePointTo(event: { i: number, x: number, y: number, callback: () => void }) {
