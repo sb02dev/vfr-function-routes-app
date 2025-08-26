@@ -44,6 +44,7 @@ from .docxutils import add_formula_par
 from .rendering import SimpleRect
 from .maps import MapDefinition, MapManager
 from .geometry import VFRRouteState, VFRLeg, VFRTrack, VFRPoint, VFRCoordSystem, VFRAnnotation
+from .linear_approximation import rdp, piecewise_linear_fit
 
 
 class VFRFunctionRoute:
@@ -729,9 +730,10 @@ class VFRFunctionRoute:
         for leg in self.legs:
             x = np.linspace(min([x for p, x in leg.points]),
                             max([x for p, x in leg.points]),
-                            100
+                            500
                             )
-            psrc = [VFRPoint(x, leg.function(x), VFRCoordSystem.FUNCTION, self, leg) for x in x]
+            breakpoints = rdp(np.column_stack((x, np.array([leg.function(xx) for xx in x]))), 0.025)
+            psrc = [VFRPoint(x, y, VFRCoordSystem.FUNCTION, self, leg) for x, y in breakpoints]
             ps = [p.project_point(VFRCoordSystem.LONLAT) for p in psrc]
             pt = [gpxpy.gpx.GPXRoutePoint(p.lat, p.lon, name=leg.name if i==0 else None) for i, p in enumerate(ps)]
             rte.points.extend(pt)
