@@ -30,6 +30,7 @@ import { ImageEditService } from '../../../services/image-edit.service';
 export class HeaderComponent implements AfterViewInit {
 
     public isFullScreen$ = new BehaviorSubject<boolean>(false);
+    public allow_next = true;
 
     subs: Subscription;
     

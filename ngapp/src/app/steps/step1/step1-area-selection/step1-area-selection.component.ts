@@ -7,6 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
@@ -36,13 +37,17 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
     
     subs: Subscription;
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
+    @ViewChild(HeaderComponent) header!: HeaderComponent;
 
     // area of interest edit variables
     rect: [number, number, number, number] = [100, 100, 200, 200];
     lonlat: [number, number, number, number] = [0, 0, 0, 0];
     lonlatValid: [boolean, boolean] = [false, false];
 
-    constructor(public router: Router, private imgsrv: ImageEditService, private dialog: MatDialog) {
+    // size status
+    status: string = 'ok';
+
+    constructor(public router: Router, private imgsrv: ImageEditService, private dialog: MatDialog, private snackbar: MatSnackBar) {
         this.subs = imgsrv.channel.subscribe((msg) => {
             if (msg.type === 'area-of-interest') {
                 this.rect = [
@@ -60,6 +65,16 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
                 this.lonlatValid[0] = true;
                 this.lonlatValid[1] = true;
                 this.mapedit.drawOverlayTransformed();
+                this.status = msg['status'];
+                if (msg['status'] == 'ok') {
+                    this.header.allow_next = true;
+                } else if (msg['status'] == 'warning') {
+                    this.header.allow_next = true;
+                    this.snackbar.open('WARNING: Area may be too large to create the final image/document', undefined, { duration: 3000, panelClass: 'snackbar-warning' });
+                } else if (msg['status'] == 'error') {
+                    this.header.allow_next = false;
+                    this.snackbar.open('ERROR: Area is too large to create the final image/document', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+                }
             }
         });
     }

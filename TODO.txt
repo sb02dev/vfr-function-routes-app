@@ -6,7 +6,6 @@ v1.0
 - consider place-name based waypoint selection (based on a public database)
 
 v0.3
-- limit the area of interest based on expected memory consumption (with fallback to low dpi on final doc generation)
 - switch from WebSocket to Socket.IO for its fallback to long-polling capabilities
 - solve all linting problems
 + multiple maps (from multiple countries, 1 additional country introduced)
@@ -23,6 +22,7 @@ v0.3
 + points lon-lat editable all steps, addable by lon-lat
 + best linear approximation for GPX export
 + optimize memory consumption during final image generation
++ limit the area of interest based on expected memory consumption
 
 
 v0.2

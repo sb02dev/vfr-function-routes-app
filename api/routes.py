@@ -349,6 +349,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                 elif msgtype=='get-area-of-interest':
                     tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
                     br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
+                    low_dpi = int(os.getenv('LOW_DPI', '72'))
+                    doc_dpi = int(os.getenv('DOC_DPI', '200'))
+                    mem_usage = abs((br.x-tl.x)/low_dpi*doc_dpi*(br.y-tl.y)/low_dpi*doc_dpi*4)
                     await websocket.send_text(json.dumps({
                         "type": "area-of-interest",
                         "top-left": {
@@ -363,6 +366,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                             "lon": rte.area_of_interest["bottom-right"].lon,
                             "lat": rte.area_of_interest["bottom-right"].lat,
                         },
+                        "status": "ok" if mem_usage < int(os.getenv('IMG_SIZE_WARN_MB', '30'))*1024*1024 else
+                                  "warning" if mem_usage < int(os.getenv('IMG_SIZE_ERR_MB', '50'))*1024*1024 else
+                                  "error"
                     }))
 
                 elif msgtype == 'get-low-res-map':
@@ -379,6 +385,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                     _vfrroutes.set(session_id, rte)
                     tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
                     br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
+                    low_dpi = int(os.getenv('LOW_DPI', '72'))
+                    doc_dpi = int(os.getenv('DOC_DPI', '200'))
+                    mem_usage = abs((br.x-tl.x)/low_dpi*doc_dpi*(br.y-tl.y)/low_dpi*doc_dpi*4)
                     await websocket.send_text(json.dumps({
                         "type": "area-of-interest",
                         "top-left": {
@@ -393,6 +402,9 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str = None):
                             "lon": rte.area_of_interest["bottom-right"].lon,
                             "lat": rte.area_of_interest["bottom-right"].lat,
                         },
+                        "status": "ok" if mem_usage < int(os.getenv('IMG_SIZE_WARN_MB', '30'))*1024*1024 else
+                                  "warning" if mem_usage < int(os.getenv('IMG_SIZE_ERR_MB', '50'))*1024*1024 else
+                                  "error"
                     }))
 
                 ####################################################################

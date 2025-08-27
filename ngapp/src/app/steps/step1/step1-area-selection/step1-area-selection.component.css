@@ -2,6 +2,16 @@
     height: 36px;
 }
 
+.status-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.ok { background-color: #59f086d2; }
+.warning { background-color: #f5e723ec; }
+.error { background-color: #FF005D; }
+
 .lonlat-invalid {
     color: lightgray;
 }

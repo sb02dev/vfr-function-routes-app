@@ -28,7 +28,7 @@
                       [matTooltip]="tooltip">
             </mat-icon>
         </div>
-        <a mat-raised-button [disabled]="last_step" (click)="stepForward()">
+        <a mat-raised-button [disabled]="last_step || !allow_next" (click)="stepForward()">
             Step {{step_index+1}}
             <mat-icon aria-hidden="false" aria-label="Step forward" fontIcon="arrow_forward"></mat-icon>
         </a>
