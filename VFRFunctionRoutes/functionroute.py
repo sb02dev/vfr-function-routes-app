@@ -45,6 +45,7 @@ from .rendering import SimpleRect
 from .maps import MapDefinition, MapManager
 from .geometry import VFRRouteState, VFRLeg, VFRTrack, VFRPoint, VFRCoordSystem, VFRAnnotation
 from .linear_approximation import rdp, piecewise_linear_fit
+from .imageutils import paste_img, alpha_composite_np_loops
 
 
 class VFRFunctionRoute:
@@ -531,17 +532,34 @@ class VFRFunctionRoute:
         """
         self._ensure_state(VFRRouteState.FINALIZED)
 
+        # save the realtime data usage status
         setRTD, oldRTD = False, self.use_realtime_data
         if use_realtime is not None:
             if use_realtime!=self.use_realtime_data:
                 oldRTD, self.use_realtime_data, setRTD = self.use_realtime_data, True, True
 
+        # save the original clear function (to be restored in finally)
+        from matplotlib.backends import backend_agg
+        orig_clear = backend_agg.RendererAgg.clear
+
         try:
-            # draw background
-            bg_img = self.calc_basemap()
-            
+            # setup clear function to draw background
+            tiles = self.map.get_tilerenderer(int(os.getenv('DOC_DPI', '200')))
+            tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(self.calc_basemap_clip())
+            def custom_background(renderer):
+                arr = np.asarray(renderer.buffer_rgba())
+                for p in tile_list:
+                    tile = np.asarray(tiles.get_tile(p.x, p.y, return_format='image'))
+                    # we need to shift the images, other cropping not needed (its outside anyway)
+                    x = int((p.x - tile_range[0])*tiles.tile_size[0] - crop.p0.x)
+                    y = int((p.y - tile_range[2])*tiles.tile_size[1] - crop.p0.y)
+                    paste_img(arr, tile, x, y)
+            backend_agg.RendererAgg.clear = custom_background
+
             # initialize map
+            from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
             fig = plt.figure()
+            canvas = FigureCanvas(fig)
             ax = plt.Axes(fig, [0., 0., 1., 1.])
             ax.set_axis_off()
             fig.add_axes(ax)
@@ -553,21 +571,27 @@ class VFRFunctionRoute:
                 t.draw(ax)
             
             # render the overlay
-            fig.set_size_inches((c/self.DOC_DPI for c in [bg_img.width, bg_img.height]))
-            ax.set_xlim(0, bg_img.size[0]/self.DOC_DPI*self.HIGH_DPI)
-            ax.set_ylim(bg_img.size[1]/self.DOC_DPI*self.HIGH_DPI, 0)
-            overlay_pngbuf = self._get_image_from_figure(fig, dpi=self.DOC_DPI)
-            overlay_img = PIL.Image.open(overlay_pngbuf)
+            fig.patch.set_alpha(0.0)      # transparent background instead of white
+            ax.patch.set_alpha(0.0)       # same for axes
+            fig.set_dpi(self.DOC_DPI)
+            fig.set_size_inches((c/self.DOC_DPI for c in image_size))
+            ax.set_xlim(0, image_size.x/self.DOC_DPI*self.HIGH_DPI)
+            ax.set_ylim(image_size.y/self.DOC_DPI*self.HIGH_DPI, 0)
+            canvas.draw()
+            img_buf = canvas.buffer_rgba()
+            img = PIL.Image.frombuffer("RGBA", (int(image_size.x), int(image_size.y)), img_buf, "raw", "RGBA", 0, 1)
             plt.close(fig)
 
         finally:
+            # restore realtime wind state
             if setRTD:
                 self.use_realtime_data = oldRTD
+            # restore matplotlib default
+            backend_agg.RendererAgg.clear = orig_clear
 
         # return the composited
-        composited = PIL.Image.alpha_composite(bg_img.convert('RGBA'), overlay_img.convert('RGBA'))
         buf = io.BytesIO()
-        composited.save(buf, 'png')
+        img.save(buf, 'png')
         buf.seek(0)
         return buf.getvalue()
         
@@ -596,20 +620,6 @@ class VFRFunctionRoute:
         ((xm, ym), (_, _)) = self.map.margins
         ((x0, y0), (x1, y1)) = ((xm+x0, ym+y0), (xm+x1, ym+y1))
         return SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
-
-
-    def calc_basemap(self):
-        # clip the image
-        tiles = self.map.get_tilerenderer(int(os.getenv('DOC_DPI', '200')))
-        tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(self.calc_basemap_clip())
-        composite = PIL.Image.new("RGBA", [int(s) for s in image_size], (0, 0, 0, 0))
-        for p in tile_list:
-            tile = tiles.get_tile(p.x, p.y, return_format='image')
-            # we need to shift the images, other cropping not needed (its outside anyway)
-            x = int((p.x - tile_range[0])*tiles.tile_size[0] - crop.p0.x)
-            y = int((p.y - tile_range[2])*tiles.tile_size[1] - crop.p0.y)
-            composite.paste(tile, (x, y))
-        return composite
             
             
     def create_doc(self, save: bool = True) -> Union[io.BytesIO, None]:

@@ -125,7 +125,8 @@ class TileRenderer:
             if return_format=='none':
                 return
             if return_format=='image':
-                return PIL.Image.open(tilecache_fname)
+                img = PIL.Image.open(tilecache_fname)
+                return img if img.mode=='RGBA' else img.convert('RGBA')
             with open(tilecache_fname, "rb") as f:
                 return f.read()
             
@@ -152,7 +153,8 @@ class TileRenderer:
             if return_format=='buf':
                 return buf
             bufio = io.BytesIO(buf)
-            return PIL.Image.open(bufio).convert("RGBA")
+            img = PIL.Image.open(bufio)
+            return img if img.mode=='RGBA' else img.convert("RGBA")
 
         # get the image as a Pillow Image object
         bg_img: PIL.Image = PIL.Image.open(io.BytesIO(pixmap.tobytes("png"))).convert("RGBA")

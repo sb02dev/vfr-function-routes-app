@@ -22,6 +22,7 @@ v0.3
 + waypoints/constraint points lon-lat editable (in degrees/minutes/seconds and decimal format) in step1
 + points lon-lat editable all steps, addable by lon-lat
 + best linear approximation for GPX export
++ optimize memory consumption during final image generation
 
 
 v0.2
