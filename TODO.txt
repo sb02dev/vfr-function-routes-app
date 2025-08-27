@@ -23,6 +23,7 @@ v0.3
 + best linear approximation for GPX export
 + optimize memory consumption during final image generation
 + limit the area of interest based on expected memory consumption
++ changed use_sample_weather setting to always_use_real_weather (can be set if annotation edit page also uses)
 
 
 v0.2

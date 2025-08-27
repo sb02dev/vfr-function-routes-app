@@ -157,7 +157,7 @@ class VFRAnnotation:
     """
     """
 
-    USE_SAMPLE_WEATHER = os.getenv('USE_SAMPLE_WEATHER', "True").lower() in ["true", "yes", "on", "1"]
+    ALWAYS_USE_REAL_WEATHER = os.getenv('ALWAYS_USE_REAL_WEATHER', "True").lower() in ["true", "yes", "on", "1"]
     BACKGROUND_COLOR = (1.0, 0.7, 0.7, 0.99)
 
     def __init__(self, 
@@ -283,7 +283,7 @@ class VFRAnnotation:
         # only download once
         if not self._weather:
             # download weather at from point
-            if not self.USE_SAMPLE_WEATHER and self._leg._route.use_realtime_data:
+            if self.ALWAYS_USE_REAL_WEATHER or self._leg._route.use_realtime_data: # either forced by settings or requested by user (situation)
                 p = VFRPoint(self.x, self._leg.function(self.x), VFRCoordSystem.FUNCTION, self._leg._route, self._leg)
                 p = p.project_point(VFRCoordSystem.LONLAT)
                 response = self._leg._route._session.get(OPENWEATHER_ENDPOINT.format(
@@ -302,7 +302,7 @@ class VFRAnnotation:
         if self._declination:
             return self._declination
         try:
-            if not self.USE_SAMPLE_WEATHER and self._leg._route.use_realtime_data:
+            if self.ALWAYS_USE_REAL_WEATHER or self._leg._route.use_realtime_data: # either forced by settings or requested by user (situation)
                 p = VFRPoint(self.x, self._leg.function(self.x), VFRCoordSystem.FUNCTION, self._leg._route, self._leg)
                 p = p.project_point(VFRCoordSystem.LONLAT)
                 api_res = self._leg._route._session.get(MAGDEV_ENDPOINT.format(
