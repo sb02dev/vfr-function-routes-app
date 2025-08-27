@@ -22,13 +22,15 @@ idna==3.10
 isort==6.0.1
 kiwisolver==1.4.8
 latex2mathml==3.78.0
+llvmlite==0.44.0
 lxml==6.0.0
 matplotlib==3.10.3
 mccabe==0.7.0
 mpmath==1.3.0
 mypy==1.17.1
 mypy_extensions==1.1.0
-numpy==2.3.1
+numba==0.61.2
+numpy==2.2.6
 packaging==25.0
 pathspec==0.12.1
 pillow==11.3.0
