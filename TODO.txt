@@ -6,7 +6,6 @@ v1.0
 - consider place-name based waypoint selection (based on a public database)
 
 v0.3
-- switch from WebSocket to Socket.IO for its fallback to long-polling capabilities
 - solve all linting problems
 + multiple maps (from multiple countries, 1 additional country introduced)
 + bugfix: server could not start when no map was downloaded
@@ -24,6 +23,7 @@ v0.3
 + optimize memory consumption during final image generation
 + limit the area of interest based on expected memory consumption
 + changed use_sample_weather setting to always_use_real_weather (can be set if annotation edit page also uses)
++ switch from WebSocket to Socket.IO for its fallback to long-polling capabilities
 
 
 v0.2

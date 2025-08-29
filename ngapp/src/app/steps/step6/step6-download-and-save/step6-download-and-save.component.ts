@@ -8,10 +8,10 @@ import { ReactiveFormsModule, FormsModule, FormGroup, FormBuilder, Validators } 
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { Subscription } from 'rxjs';
 
 import { HeaderComponent } from '../../../components/header/header/header.component';
 import { ImageEditService } from '../../../services/image-edit.service';
+import { ImageEditMessage } from '../../../models/image-edit-msg';
 
 @Component({
     selector: 'app-step6-download-and-save',
@@ -31,10 +31,7 @@ import { ImageEditService } from '../../../services/image-edit.service';
     templateUrl: './step6-download-and-save.component.html',
     styleUrl: './step6-download-and-save.component.css'
 })
-export class Step6DownloadAndSaveComponent implements AfterContentInit, OnDestroy {
-
-    subs: Subscription;
-    binary_subs: Subscription;
+export class Step6DownloadAndSaveComponent implements AfterContentInit {
 
     form: FormGroup;
 
@@ -44,38 +41,6 @@ export class Step6DownloadAndSaveComponent implements AfterContentInit, OnDestro
     private pendingMeta: any = null;
 
     constructor(private imgsrv: ImageEditService, private fb: FormBuilder, private snackbar: MatSnackBar) {
-        this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'docx' || msg.type === 'png') {                
-                this.pendingMeta = msg;
-            } else if (msg.type === 'gpx' || msg.type === 'vfr') {
-                const blob = new Blob([msg['data']], { type: msg['mime'] });
-                this.downloadFile(msg['filename'], blob);
-            } else if (msg.type === 'route-data') {
-                this.dof = new Date(msg['dof']);
-                this.tof = ("00" + this.dof.getUTCHours()).slice(-2) + ":" + ("00" + this.dof.getUTCMinutes()).slice(-2) + ":" + ("00" + this.dof.getUTCSeconds()).slice(-2);
-                this.form.patchValue({
-                    rteName: msg['name'],
-                    speed: msg['speed'],
-                    dof: this.dof,
-                    tof: this.tof,
-                });
-            } else if (msg.type === 'save-to-cloud-result') {
-                if (msg['result'] === 'success') {
-                    this.snackbar.open(`Route saved on server (name: ${msg['fname']})`, undefined, { duration: 5000, panelClass: 'snackbar-success' });
-                } else if (msg['result'] === 'fail') {
-                    this.snackbar.open('Save of route on server failed', undefined, { duration: 3000, panelClass: 'snackbar-error' });
-                } else if (msg['result'] === 'too-many-files') {
-                    this.snackbar.open('Did not save! Too many published routes, contact the system administrator', undefined, { duration: 3000, panelClass: 'snackbar-error' });
-                } else if (msg['result'] === 'no-route') {
-                    this.snackbar.open('No route open on server', undefined, { duration: 3000, panelClass: 'snackbar-warning' });
-                }
-            }
-        });
-        this.binary_subs = imgsrv.binary_channel.subscribe((msg: Blob) => {
-            if (this.pendingMeta) {
-                this.downloadFile(this.pendingMeta['filename'], msg);
-            }
-        });
         this.form = this.fb.group({
             rteName: [null, Validators.required],
             speed: [90, Validators.required],
@@ -85,12 +50,18 @@ export class Step6DownloadAndSaveComponent implements AfterContentInit, OnDestro
     }
 
     ngAfterContentInit(): void {
-        this.imgsrv.send({ type: 'get-route-data' }, ['route-data', 'result']);
+        this.imgsrv.send('get-route-data', this.gotRouteData.bind(this));
     }
 
-    ngOnDestroy(): void {
-        this.subs.unsubscribe();
-        this.binary_subs.unsubscribe();
+    gotRouteData(result: ImageEditMessage) {
+        this.dof = new Date(result['dof']);
+        this.tof = ("00" + this.dof.getUTCHours()).slice(-2) + ":" + ("00" + this.dof.getUTCMinutes()).slice(-2) + ":" + ("00" + this.dof.getUTCSeconds()).slice(-2);
+        this.form.patchValue({
+            rteName: result['name'],
+            speed: result['speed'],
+            dof: this.dof,
+            tof: this.tof,
+        });
     }
 
     changeRouteData() {
@@ -99,30 +70,39 @@ export class Step6DownloadAndSaveComponent implements AfterContentInit, OnDestro
         this.tof = val['tof'];
         const dofs = this.dof.getFullYear() + "-" + ("00" + (this.dof.getMonth()+1)).slice(-2) + "-" + ("00" + this.dof.getDate()).slice(-2) + "T" +
             this.tof + ".000Z"
-        this.imgsrv.send({
-            type: 'set-route-data',
+        this.imgsrv.send('set-route-data', this.gotRouteData.bind(this), {
             name: val['rteName'],
             speed: val['speed'],
             dof: dofs,
-        }, ['route-data', 'result'])
+        })
     }
 
-    downloadDOCX() { this.imgsrv.send({ type: 'get-docx' }, ['docx', 'result']); }
-    downloadVFR() { this.imgsrv.send({ type: 'get-vfr' }, ['vfr', 'result']); }
-    downloadGPX() { this.imgsrv.send({ type: 'get-gpx' }, ['gpx', 'result']); }
-    downloadPNG() { this.imgsrv.send({ type: 'get-png' }, ['png', 'result']); }
-    saveToServer() { this.imgsrv.send({ type: 'save-to-cloud' }, ['save-to-cloud-result', 'result']); }
+    downloadDOCX() { this.imgsrv.send('get-docx', this.gotFileAsBinary.bind(this)); }
+    downloadVFR() { this.imgsrv.send('get-vfr', this.gotFileAsText.bind(this)); }
+    downloadGPX() { this.imgsrv.send('get-gpx', this.gotFileAsText.bind(this)); }
+    downloadPNG() { this.imgsrv.send('get-png', this.gotFileAsBinary.bind(this)); }
+    saveToServer() { this.imgsrv.send('save-to-cloud', this.gotSaveToCloudResult.bind(this)); }
 
-    private base64ToBlob(base64: string, mime: string): Blob {
-        const byteChars = atob(base64);
-        const byteNumbers = new Array(byteChars.length);
-
-        for (let i = 0; i < byteChars.length; i++) {
-            byteNumbers[i] = byteChars.charCodeAt(i);
+    gotSaveToCloudResult(result: ImageEditMessage) {
+        if (result['result'] === 'success') {
+            this.snackbar.open(`Route saved on server (name: ${result['fname']})`, undefined, { duration: 5000, panelClass: 'snackbar-success' });
+        } else if (result['result'] === 'fail') {
+            this.snackbar.open('Save of route on server failed', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+        } else if (result['result'] === 'too-many-files') {
+            this.snackbar.open('Did not save! Too many published routes, contact the system administrator', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+        } else if (result['result'] === 'no-route') {
+            this.snackbar.open('No route open on server', undefined, { duration: 3000, panelClass: 'snackbar-warning' });
         }
+    }
 
-        const byteArray = new Uint8Array(byteNumbers);
-        return new Blob([byteArray], { type: mime });
+    gotFileAsText(result: ImageEditMessage) {
+        const blob = new Blob([result['data']], { type: result['mime'] });
+        this.downloadFile(result['filename'], blob);
+    }
+
+    gotFileAsBinary(meta: ImageEditMessage, file: BlobPart) {
+        const blob = new Blob([file], { type: meta['mime'] });
+        this.downloadFile(meta['filename'], blob);
     }
 
     private downloadFile(filename: string, blob: Blob) {

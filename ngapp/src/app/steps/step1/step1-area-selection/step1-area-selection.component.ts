@@ -9,7 +9,6 @@ import { MatTableModule } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { HeaderComponent } from "../../../components/header/header/header.component";
@@ -33,9 +32,8 @@ import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon
   templateUrl: './step1-area-selection.component.html',
   styleUrl: './step1-area-selection.component.css'
 })
-export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy {
+export class Step1AreaSelectionComponent implements AfterContentInit {
     
-    subs: Subscription;
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
     @ViewChild(HeaderComponent) header!: HeaderComponent;
 
@@ -48,46 +46,40 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
     status: string = 'ok';
 
     constructor(public router: Router, private imgsrv: ImageEditService, private dialog: MatDialog, private snackbar: MatSnackBar) {
-        this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'area-of-interest') {
-                this.rect = [
-                    msg['top-left'].x,
-                    msg['top-left'].y,
-                    msg['bottom-right'].x - msg['top-left'].x,
-                    msg['bottom-right'].y - msg['top-left'].y
-                ];
-                this.lonlat = [
-                    msg['top-left'].lon,
-                    msg['top-left'].lat,
-                    msg['bottom-right'].lon,
-                    msg['bottom-right'].lat
-                ];
-                this.lonlatValid[0] = true;
-                this.lonlatValid[1] = true;
-                this.mapedit.drawOverlayTransformed();
-                this.status = msg['status'];
-                if (msg['status'] == 'ok') {
-                    this.header.allow_next = true;
-                } else if (msg['status'] == 'warning') {
-                    this.header.allow_next = true;
-                    this.snackbar.open('WARNING: Area may be too large to create the final image/document', undefined, { duration: 3000, panelClass: 'snackbar-warning' });
-                } else if (msg['status'] == 'error') {
-                    this.header.allow_next = false;
-                    this.snackbar.open('ERROR: Area is too large to create the final image/document', undefined, { duration: 3000, panelClass: 'snackbar-error' });
-                }
-            }
-        });
     }
 
     ngAfterContentInit(): void { 
         // initiate image load
-        this.imgsrv.send({ type: 'get-area-of-interest' }, ['area-of-interest', 'result']);
-        this.imgsrv.send({ type: 'get-low-res-map' }, ['tiled-image']);
+        this.imgsrv.send('get-area-of-interest', this.gotAreaOfInterest.bind(this));
+        this.imgsrv.send('get-low-res-map', (result) => { this.mapedit.gotTiledImage(result) });
     }
 
-    ngOnDestroy(): void {
-        // stop observers
-        this.subs.unsubscribe();
+    gotAreaOfInterest(result: any) {
+        this.rect = [
+            result['top-left'].x,
+            result['top-left'].y,
+            result['bottom-right'].x - result['top-left'].x,
+            result['bottom-right'].y - result['top-left'].y
+        ];
+        this.lonlat = [
+            result['top-left'].lon,
+            result['top-left'].lat,
+            result['bottom-right'].lon,
+            result['bottom-right'].lat
+        ];
+        this.lonlatValid[0] = true;
+        this.lonlatValid[1] = true;
+        this.mapedit.drawOverlayTransformed();
+        this.status = result['status'];
+        if (result['status'] == 'ok') {
+            this.header.allow_next = true;
+        } else if (result['status'] == 'warning') {
+            this.header.allow_next = true;
+            this.snackbar.open('WARNING: Area may be too large to create the final image/document', undefined, { duration: 3000, panelClass: 'snackbar-warning' });
+        } else if (result['status'] == 'error') {
+            this.header.allow_next = false;
+            this.snackbar.open('ERROR: Area is too large to create the final image/document', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+        }
     }
 
     stepForward() {
@@ -147,17 +139,15 @@ export class Step1AreaSelectionComponent implements AfterContentInit, OnDestroy 
 
     setAreaOfInterest(byLonLat: boolean = false) {
         if (!byLonLat) {
-            this.imgsrv.send({
-                type: 'set-area-of-interest',
+            this.imgsrv.send('set-area-of-interest', this.gotAreaOfInterest.bind(this), {
                 topleft: { x: this.rect[0], y: this.rect[1] },
                 bottomright: { x: this.rect[0] + this.rect[2], y: this.rect[1] + this.rect[3] },
-            }, ['area-of-interest', 'result']);
+            });
         } else {
-            this.imgsrv.send({
-                type: 'set-area-of-interest',
+            this.imgsrv.send('set-area-of-interest', this.gotAreaOfInterest.bind(this), {
                 topleft: { lon: this.lonlat[0], lat: this.lonlat[1] },
                 bottomright: { lon: this.lonlat[2], lat: this.lonlat[3] },
-            }, ['area-of-interest', 'result']);
+            });
         }
     }
 

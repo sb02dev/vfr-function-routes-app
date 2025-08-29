@@ -7,7 +7,6 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatCardModule } from '@angular/material/card';
 import { MatTableModule } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
-import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 
 import { ImageEditService } from '../../../services/image-edit.service';
@@ -16,6 +15,7 @@ import { Leg, LegPoint } from '../../../models/leg';
 import { MathEditComponent } from "../../../components/mathedit/math-edit/math-edit.component";
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
 import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon-lat-edit-dialog/lon-lat-edit-dialog.component';
+import { ImageEditMessage } from '../../../models/image-edit-msg';
 
 @Component({
     selector: 'app-step3-legs-edit',
@@ -35,9 +35,8 @@ import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon
     templateUrl: './step3-legs-edit.component.html',
     styleUrl: './step3-legs-edit.component.css'
 })
-export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
+export class Step3LegsEditComponent implements AfterContentInit {
 
-    subs: Subscription;
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
     @ViewChild('functionEdit') mathedit!: MathEditComponent;
     @ViewChild('functionRangeEdit') matheditrange!: MathEditComponent;
@@ -48,42 +47,36 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
     extrapoint: [number, number] | null = null;
 
     constructor(public router: Router, private imgsrv: ImageEditService, private dialog: MatDialog) {
-        this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === "legs") {
-                this.legs = msg['legs'].map((leg: any) => {
-                    return {
-                        name: leg.name,
-                        function_latex: leg.function_name,
-                        function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name)).compile(),
-                        function_range: leg.function_range,
-                        matrix_func2cropmap: leg.matrix_func2cropmap,
-                        matrix_cropmap2func: leg.matrix_cropmap2func,
-                        points: leg.points.map((pt: any) => {
-                            return {
-                                x: pt.x,
-                                y: pt.y,
-                                lon: pt.lon,
-                                lat: pt.lat,
-                                func_x: pt.func_x,
-                                lonlat_valid: true,
-                            }
-                        }),
-                    }
-                });
-                this.changeLeg(0);
-            }
-        });
     }
 
     ngAfterContentInit(): void {
         // initiate image load
-        this.imgsrv.send({ type: 'get-legs' }, ['legs', 'result']);
-        this.imgsrv.send({ type: 'get-legs-map' }, ['tiled-image']);
+        this.imgsrv.send('get-legs', this.gotLegs.bind(this));
+        this.imgsrv.send('get-legs-map', (result) => { this.mapedit.gotTiledImage(result) });
     }
 
-    ngOnDestroy(): void {
-        // stop observers
-        this.subs.unsubscribe();
+    gotLegs(result: ImageEditMessage): void {
+        this.legs = result['legs'].map((leg: any) => {
+            return {
+                name: leg.name,
+                function_latex: leg.function_name,
+                function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name)).compile(),
+                function_range: leg.function_range,
+                matrix_func2cropmap: leg.matrix_func2cropmap,
+                matrix_cropmap2func: leg.matrix_cropmap2func,
+                points: leg.points.map((pt: any) => {
+                    return {
+                        x: pt.x,
+                        y: pt.y,
+                        lon: pt.lon,
+                        lat: pt.lat,
+                        func_x: pt.func_x,
+                        lonlat_valid: true,
+                    }
+                }),
+            }
+        });
+        this.changeLeg(0);
     }
 
     getLatexMarkup() {
@@ -176,8 +169,7 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
 
     updateLegs(byLonLat: boolean = false) {
         if (!byLonLat) {
-            this.imgsrv.send({
-                type: 'update-legs',
+            this.imgsrv.send('update-legs', this.gotLegs.bind(this), {
                 legs: this.legs.map((leg: Leg) => {
                     return {
                         name: leg.name,
@@ -192,10 +184,9 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
                         })
                     }
                 }),
-            }, ['legs', 'result']);
+            });
         } else {
-            this.imgsrv.send({
-                type: 'update-legs',
+            this.imgsrv.send('update-legs', this.gotLegs.bind(this), {
                 legs: this.legs.map((leg: Leg) => {
                     return {
                         name: leg.name,
@@ -210,7 +201,7 @@ export class Step3LegsEditComponent implements AfterContentInit, OnDestroy {
                         })
                     }
                 }),
-            }, ['legs', 'result']);
+            });
         }
     }
 

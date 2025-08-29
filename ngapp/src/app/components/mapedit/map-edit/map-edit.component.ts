@@ -28,9 +28,6 @@ import { environment } from '../../../../environments/environment';
 })
 export class MapEditComponent implements AfterViewInit, OnDestroy {
 
-    // the message subscriptions
-    subs: Subscription;
-
     // inputs and events
     @Input() panelWidth: string = '50px';
     @Output() drawOverlay = new EventEmitter();
@@ -81,9 +78,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 private tilesvc: TileService,
                 private sanitizer: DomSanitizer,
                 public mediaq: BreakpointObserver) {
-        this.subs = this.imgsrv.channel.subscribe((msg: ImageEditMessage) => {
-            this.receiveServerMessage(msg);
-        });
+        this.imgsrv.onSocketIO<ImageEditMessage>('tiled-image', this.gotTiledImage);
         this.isLandscape$ = mediaq.observe(['(orientation: portrait)',
                                             '(orientation: landscape)'])
             .pipe(
@@ -104,7 +99,7 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
     ngOnDestroy(): void {
         // stop observers
         this.bgResize.disconnect();
-        this.subs.unsubscribe();
+        this.imgsrv.offSocketIO('tiled-image', this.gotTiledImage);
     }
 
     
@@ -118,28 +113,26 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
 
 
     // ---------- communication with server ----------
-    private receiveServerMessage(msg: ImageEditMessage) {
-        if (msg.type === 'tiled-image') {
-            // we have an image header, get ready to receive the image tiles
-            // save the image data (tilesize & tilecount)
-            this.tilesetParams = { tilesetName: msg['tilesetname'], dpi: msg['dpi'] };
-            this.tileSize = msg['tilesize'];
-            this.tileCount = msg['tilecount'];
-            this.imageSize = msg['imagesize'];
-            this.tileRange = msg['tilerange'];
-            this.tileCrop = msg['tilecrop'];
-            // setup the SVG container
-            if (msg['additional_data'] && msg['additional_data']['svg_overlay']) {
-                this.setSVG(msg['additional_data']['svg_overlay']);
-            }
-            // delayed because for some reason zoom is not always done if immediate
-            setTimeout(() => {
-                // zoom to fit
-                this.zoomToAll();
-                // redraw with no image
-                this.drawBackgroundTransformed();
-            }, 500);
+    public gotTiledImage(msg: ImageEditMessage) {
+        // we have an image header, get ready to receive the image tiles
+        // save the image data (tilesize & tilecount)
+        this.tilesetParams = { tilesetName: msg['tilesetname'], dpi: msg['dpi'] };
+        this.tileSize = msg['tilesize'];
+        this.tileCount = msg['tilecount'];
+        this.imageSize = msg['imagesize'];
+        this.tileRange = msg['tilerange'];
+        this.tileCrop = msg['tilecrop'];
+        // setup the SVG container
+        if (msg['additional_data'] && msg['additional_data']['svg_overlay']) {
+            this.setSVG(msg['additional_data']['svg_overlay']);
         }
+        // delayed because for some reason zoom is not always done if immediate
+        setTimeout(() => {
+            // zoom to fit
+            this.zoomToAll();
+            // redraw with no image
+            this.drawBackgroundTransformed();
+        }, 500);
     }
 
     // ---------- button events ----------

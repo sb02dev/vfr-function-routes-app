@@ -2,7 +2,6 @@ import { CommonModule } from '@angular/common';
 import { AfterContentInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { Subscription } from 'rxjs';
 import { ColorSketchModule } from 'ngx-color/sketch';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { ColorPickerDialogComponent } from '../../../components/colorpicker/color-picker-dialog/color-picker-dialog.component';
@@ -14,6 +13,7 @@ import { HeaderComponent } from '../../../components/header/header/header.compon
 import { Track } from '../../../models/track';
 import { MapEditComponent } from '../../../components/mapedit/map-edit/map-edit.component';
 import { ImageEditService } from '../../../services/image-edit.service';
+import { ImageEditMessage } from '../../../models/image-edit-msg';
 
 @Component({
     selector: 'app-step5-add-tracks',
@@ -33,8 +33,7 @@ import { ImageEditService } from '../../../services/image-edit.service';
     templateUrl: './step5-add-tracks.component.html',
     styleUrl: './step5-add-tracks.component.css'
 })
-export class Step5AddTracksComponent implements AfterContentInit, OnDestroy {
-    subs: Subscription;
+export class Step5AddTracksComponent implements AfterContentInit {
 
     tracks: Track[] = [];
 
@@ -42,31 +41,25 @@ export class Step5AddTracksComponent implements AfterContentInit, OnDestroy {
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
 
     constructor(private imgsrv: ImageEditService, private dialog: MatDialog) {
-        this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'tracks') {
-                this.tracks = msg['tracks'].map((trk: any) => {
-                    return {
-                        name: trk.name,
-                        color: trk.color,
-                        num_points: trk.num_points,
-                    }
-                });
-                if (msg['svg_overlay'] && msg['svg_overlay'] !== '-') {
-                    this.mapedit.setSVG(msg['svg_overlay']);
-                }
-            }
-        });
     }
 
     ngAfterContentInit(): void {
         // initiate image load
-        this.imgsrv.send({ type: 'get-tracks' }, ['tracks', 'result']);
-        this.imgsrv.send({ type: 'get-tracks-map' }, ['tiled-image']);
+        this.imgsrv.send('get-tracks', this.gotTracks.bind(this));
+        this.imgsrv.send('get-tracks-map', (result) => { this.mapedit.gotTiledImage(result) });
     }
 
-    ngOnDestroy(): void {
-        // stop observers
-        this.subs.unsubscribe();
+    gotTracks(result: ImageEditMessage) {
+        this.tracks = result['tracks'].map((trk: any) => {
+            return {
+                name: trk.name,
+                color: trk.color,
+                num_points: trk.num_points,
+            }
+        });
+        if (result['svg_overlay'] && result['svg_overlay'] !== '-') {
+            this.mapedit.setSVG(result['svg_overlay']);
+        }
     }
     
     loadTrack() {
@@ -79,11 +72,10 @@ export class Step5AddTracksComponent implements AfterContentInit, OnDestroy {
                 for (var i = 0; i < fs.files.length; i++) {
                     const fbuf = await fs.files[i].arrayBuffer()
                     fstr = this.arrayBufferToBase64(fbuf); // no base64 because it is JSON anyway
-                    this.imgsrv.send({
-                        type: 'load-track',
+                    this.imgsrv.send('load-track', this.gotTracks.bind(this), {
                         filename: fs.files[i].name,
                         data: fstr
-                    }, ['tracks', 'result']);
+                    });
                     break; // don't upload multiple files
                 };
             }
@@ -114,15 +106,14 @@ export class Step5AddTracksComponent implements AfterContentInit, OnDestroy {
         });
     }
     updateTracks() {
-        this.imgsrv.send({
-            type: 'update-tracks',
+        this.imgsrv.send('update-tracks', this.gotTracks.bind(this), {
             tracks: this.tracks.map((t: Track) => {
                 return {
                     name: t.name, // to identify on server if something was deleted
                     color: t.color
                 }
             })
-        }, ['tracks', 'result']);
+        });
     }
 
     drawOverlayTransformed(event: { canvas: HTMLCanvasElement, imgWidth: number, imgHeight: number }) {

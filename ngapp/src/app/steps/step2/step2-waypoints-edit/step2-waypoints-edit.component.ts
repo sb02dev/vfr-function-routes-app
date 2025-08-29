@@ -8,13 +8,13 @@ import { MatCardModule } from "@angular/material/card";
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { Waypoint } from '../../../models/waypoint';
 import { HeaderComponent } from "../../../components/header/header/header.component";
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
 import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon-lat-edit-dialog/lon-lat-edit-dialog.component';
+import { ImageEditMessage } from '../../../models/image-edit-msg';
 
 @Component({
     selector: 'app-step2-waypoints-edit',
@@ -33,51 +33,33 @@ import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon
     templateUrl: './step2-waypoints-edit.component.html',
     styleUrl: './step2-waypoints-edit.component.css'
 })
-export class Step2WaypointsEditComponent implements AfterContentInit, OnDestroy {
-    subs: Subscription;
+export class Step2WaypointsEditComponent implements AfterContentInit {
+
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
 
     waypoints: Waypoint[] = [];
 
     constructor(public router: Router, private imgsrv: ImageEditService, private dialog: MatDialog) {
-        this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'waypoints') {
-                this.waypoints = msg['waypoints'].map((wp: any) => { 
-                    return {
-                        name: wp.name,
-                        x: wp.x,
-                        y: wp.y,
-                        lon: wp.lon,
-                        lat: wp.lat,
-                        lonlat_valid: true,
-                    }
-                });
-                this.mapedit.drawOverlayTransformed();
-            } else if (msg.type === "waypoints") {
-                this.waypoints = msg['waypoints'].map((wp: any) => {
-                    return {
-                        name: wp.name,
-                        x: wp.x,
-                        y: wp.y,
-                        lon: wp.lon,
-                        lat: wp.lat,
-                        lonlat_valid: true,
-                    }
-                });
-                this.mapedit.drawOverlayTransformed();
-            }
-        });
     }
 
     ngAfterContentInit(): void {
         // initiate image load
-        this.imgsrv.send({ type: 'get-waypoints' }, ['waypoints', 'result']);
-        this.imgsrv.send({ type: 'get-waypoints-map' }, ['tiled-image']);
+        this.imgsrv.send('get-waypoints', this.gotWaypoints.bind(this));
+        this.imgsrv.send('get-waypoints-map', (result) => { this.mapedit.gotTiledImage(result) });
     }
 
-    ngOnDestroy(): void {
-        // stop observers
-        this.subs.unsubscribe();
+    gotWaypoints(result: ImageEditMessage) {
+        this.waypoints = result['waypoints'].map((wp: any) => {
+            return {
+                name: wp.name,
+                x: wp.x,
+                y: wp.y,
+                lon: wp.lon,
+                lat: wp.lat,
+                lonlat_valid: true,
+            }
+        });
+        this.mapedit.drawOverlayTransformed();
     }
 
     deleteWaypoint(index: number) {
@@ -119,8 +101,7 @@ export class Step2WaypointsEditComponent implements AfterContentInit, OnDestroy 
 
     updateWaypoints(byLonLat: boolean = false) {
         if (!byLonLat) {
-            this.imgsrv.send({
-                type: 'update-wps',
+            this.imgsrv.send('update-wps', this.gotWaypoints.bind(this), {
                 waypoints: this.waypoints.map((wp: Waypoint) => {
                     return {
                         name: wp.name,
@@ -128,10 +109,9 @@ export class Step2WaypointsEditComponent implements AfterContentInit, OnDestroy 
                         y: wp.y,
                     }
                 }),
-            }, ['waypoints', 'result']);
+            });
         } else {
-            this.imgsrv.send({
-                type: 'update-wps',
+            this.imgsrv.send('update-wps', this.gotWaypoints.bind(this), {
                 waypoints: this.waypoints.map((wp: Waypoint) => {
                     return {
                         name: wp.name,
@@ -139,7 +119,7 @@ export class Step2WaypointsEditComponent implements AfterContentInit, OnDestroy 
                         lat: wp.lat,
                     }
                 }),
-            }, ['waypoints', 'result']);
+            });
         }
     }
 

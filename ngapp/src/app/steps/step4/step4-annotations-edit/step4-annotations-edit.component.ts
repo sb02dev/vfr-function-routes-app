@@ -5,7 +5,6 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { Subscription } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
@@ -16,6 +15,7 @@ import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.
 import { HeaderComponent } from '../../../components/header/header/header.component';
 import { AnnLeg, Annotation } from '../../../models/annotations'
 import { MathEditComponent } from '../../../components/mathedit/math-edit/math-edit.component';
+import { ImageEditMessage } from '../../../models/image-edit-msg';
 
 @Component({
     selector: 'app-step4-annotations-edit',
@@ -37,11 +37,9 @@ import { MathEditComponent } from '../../../components/mathedit/math-edit/math-e
     templateUrl: './step4-annotations-edit.component.html',
     styleUrl: './step4-annotations-edit.component.css'
 })
-export class Step4AnnotationsEditComponent implements AfterContentInit, OnDestroy {
+export class Step4AnnotationsEditComponent implements AfterContentInit {
 
     private readonly numPieces: number = 100;
-
-    subs: Subscription;
 
     legs: AnnLeg[] = [];
     leg_index: number = 0;
@@ -62,42 +60,36 @@ export class Step4AnnotationsEditComponent implements AfterContentInit, OnDestro
     @ViewChild(MathEditComponent) mathedit!: MathEditComponent;
 
     constructor(public router: Router, private imgsrv: ImageEditService) {
-        this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === "annotations") {
-                if (msg['svg_overlay'] && msg['svg_overlay']!=='-') {
-                    this.mapedit.setSVG(msg['svg_overlay']);
-                }
-                this.legs = msg['annotations'].map((leg: any) => {
-                    return {
-                        name: leg.name,
-                        function_latex: leg.function_name,
-                        function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name)).compile(),
-                        matrix_func2cropmap: leg.matrix_func2cropmap,
-                        matrix_cropmap2func: leg.matrix_cropmap2func,
-                        annotations: leg.annotations.map((ann: any) => {
-                            return {
-                                name: ann.name,
-                                func_x: ann.func_x,
-                                ofs_x: ann.ofs.x,
-                                ofs_y: ann.ofs.y,
-                            }
-                        }),
-                    }
-                });
-                this.changeLeg(0);
-            }
-        });
     }
 
     ngAfterContentInit(): void {
         // initiate image load
-        this.imgsrv.send({ type: 'get-annotations' }, ['annotations', 'result']);
-        this.imgsrv.send({ type: 'get-annotations-map' }, ['tiled-image']);
+        this.imgsrv.send('get-annotations', this.gotAnnotations.bind(this));
+        this.imgsrv.send('get-annotations-map', (result) => { this.mapedit.gotTiledImage(result) });
     }
 
-    ngOnDestroy(): void {
-        // stop observers
-        this.subs.unsubscribe();
+    gotAnnotations(msg: ImageEditMessage) {
+        if (msg['svg_overlay'] && msg['svg_overlay'] !== '-') {
+            this.mapedit.setSVG(msg['svg_overlay']);
+        }
+        this.legs = msg['annotations'].map((leg: any) => {
+            return {
+                name: leg.name,
+                function_latex: leg.function_name,
+                function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name)).compile(),
+                matrix_func2cropmap: leg.matrix_func2cropmap,
+                matrix_cropmap2func: leg.matrix_cropmap2func,
+                annotations: leg.annotations.map((ann: any) => {
+                    return {
+                        name: ann.name,
+                        func_x: ann.func_x,
+                        ofs_x: ann.ofs.x,
+                        ofs_y: ann.ofs.y,
+                    }
+                }),
+            }
+        });
+        this.changeLeg(0);
     }
 
     changeLeg(increment: number) {
@@ -116,8 +108,7 @@ export class Step4AnnotationsEditComponent implements AfterContentInit, OnDestro
     }
 
     updateAnnotations() {
-        this.imgsrv.send({
-            type: 'update-annotations',
+        this.imgsrv.send('update-annotations', this.gotAnnotations.bind(this), {
             annotations: this.legs.map((leg: AnnLeg) => {
                 return {
                     name: leg.name,
@@ -130,7 +121,7 @@ export class Step4AnnotationsEditComponent implements AfterContentInit, OnDestro
                     })
                 }
             }),
-        }, ['annotations', 'result']);
+        });
     }
     
 

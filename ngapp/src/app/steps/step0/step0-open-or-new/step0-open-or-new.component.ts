@@ -12,12 +12,10 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatSelectModule } from '@angular/material/select';
-import { Subscription } from 'rxjs';
 
 import { ImageEditService } from '../../../services/image-edit.service';
 import { HeaderComponent } from '../../../components/header/header/header.component';
 
-const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'ANNOTATIONS', 'FINALIZED'];
 
 @Component({
     selector: 'app-step0-open-or-new',
@@ -40,9 +38,7 @@ const steps: string[] = ['INITIATED', 'AREAOFINTEREST', 'WAYPOINTS', 'LEGS', 'AN
     templateUrl: './step0-open-or-new.component.html',
     styleUrl: './step0-open-or-new.component.css'
 })
-export class Step0OpenOrNewComponent implements AfterContentInit, OnDestroy {
-
-    subs: Subscription;
+export class Step0OpenOrNewComponent implements AfterContentInit {
 
     @ViewChild(HeaderComponent) header!: HeaderComponent;
     @ViewChild('file_selector') file_selector!: ElementRef<HTMLInputElement>;
@@ -67,31 +63,16 @@ export class Step0OpenOrNewComponent implements AfterContentInit, OnDestroy {
             "dof": new Date(2025, 8, 1, 7, 0),
             "tof": "07:00"
         });
-        this.subs = imgsrv.channel.subscribe((msg) => {
-            if (msg.type === 'published-routes') {
-                this.publishedRouteList = msg['routes'];
-                this.hasOpenRoute = msg['has_open_route'];
-                this.mapsList = msg['maps'];
-            } else if (msg.type === 'load-result') {
-                if (msg['result'] === 'success') {
-                    this.snackbar.open('Route loaded', undefined, { duration: 5000, panelClass: 'snackbar-success' });
-                    // now we can go to the first step
-                    if (msg['step']) {
-                        this.router.navigateByUrl(`/step${msg['step']}`);
-                    } else {
-                        this.router.navigateByUrl('/step1');
-                    }
-                } else if (msg['result'] === 'failed') {
-                    this.snackbar.open('Load of route failed', undefined, { duration: 3000, panelClass: 'snackbar-error' });
-                }
-            }
-        });
     }
-    ngOnDestroy(): void {
-        this.subs.unsubscribe();
-    }
+
     ngAfterContentInit(): void {
-        this.imgsrv.send({ type: 'get-published-routes' }, ['published-routes', 'result']);
+        this.imgsrv.send('get-published-routes', this.gotPublishedRoutes.bind(this));
+    }
+
+    gotPublishedRoutes(result: { routes: string[], has_open_route: boolean, maps: string[]}) {
+        this.publishedRouteList = result['routes'];
+        this.hasOpenRoute = result['has_open_route'];
+        this.mapsList = result['maps'];
     }
 
 
@@ -109,10 +90,7 @@ export class Step0OpenOrNewComponent implements AfterContentInit, OnDestroy {
                 for (var i = 0; i < fs.files.length; i++) {
                     const fbuf = await fs.files[i].arrayBuffer()
                     fstr = String.fromCharCode(...new Uint8Array(fbuf)); // no base64 because it is JSON anyway
-                    this.imgsrv.send({
-                        type: 'load',
-                        data: fstr
-                    }, ['load-result', 'result']);
+                    this.imgsrv.send('load', this.routeLoaded.bind(this), { data: fstr });
                     break; // don't upload multiple files
                 };
             }
@@ -126,29 +104,37 @@ export class Step0OpenOrNewComponent implements AfterContentInit, OnDestroy {
         const val = this.form.value;
         const dof = val.dof.getFullYear() + "-" + ("00" + (val.dof.getMonth()+1)).slice(-2) + "-" + ("00" + val.dof.getDate()).slice(-2) + "T" +
                     val.tof + ":00.000Z"
-        this.imgsrv.send({
-            type: 'create',
+        this.imgsrv.send('create', this.routeLoaded.bind(this), {
             name: val.rteName,
             mapname: val.map,
             speed: val.speed,
             dof: dof
-        }, ['load-result', 'result'])
+        })
     }
 
 
     loadSample() {
         // load sample route and go to its current step (last)
-        this.imgsrv.send({
-            type: 'sample'
-        }, ['load-result', 'result'])
+        this.imgsrv.send('sample', this.routeLoaded.bind(this));
     }
 
     publishedRoute(index: number) {
         // load sample route and go to its current step (last)
-        this.imgsrv.send({
-            type: 'load-published',
-            fname: this.publishedRouteList[index],
-        }, ['load-result', 'result'])
+        this.imgsrv.send('load-published', this.routeLoaded.bind(this), { fname: this.publishedRouteList[index] });
+    }
+
+    routeLoaded(result: any) {
+        if (result['result'] === 'success') {
+            this.snackbar.open('Route loaded', undefined, { duration: 5000, panelClass: 'snackbar-success' });
+            // now we can go to the first step
+            if (result['step']) {
+                this.router.navigateByUrl(`/step${result['step']}`);
+            } else {
+                this.router.navigateByUrl('/step1');
+            }
+        } else if (result['result'] === 'failed') {
+            this.snackbar.open('Load of route failed', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+        }
     }
 
     changeRouteData() {
