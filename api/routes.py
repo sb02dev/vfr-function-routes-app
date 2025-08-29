@@ -22,7 +22,8 @@ load_dotenv()
 import requests
 
 from VFRFunctionRoutes import *
-from .sockets import sio, SESSION_COOKIE_NAME
+from . import sockets
+from .sockets import sio
 
 
 
@@ -233,7 +234,7 @@ async def connect(sid, environ, auth):
     session_id = cookies.get("session_id").value if "session_id" in cookies else None
 
     if not session_id and isinstance(auth, dict):
-        session_id = auth.get(SESSION_COOKIE_NAME)
+        session_id = auth.get(sockets.SESSION_COOKIE_NAME)
 
     new_session = False
     if not session_id:
@@ -270,7 +271,7 @@ def _get_session_id_from_room(sid: str) -> str:
     return next(r for r in sio._sio.rooms(sid) if r != sid)
 
 def _get_session_id_from_environ(sid: str) -> str:
-    return sio._sio.get_environ(sid).get(SESSION_COOKIE_NAME)
+    return sio._sio.get_environ(sid).get(sockets.SESSION_COOKIE_NAME)
 
 def _get_session_id_from_dict(sid: str) -> str:
     return _sid_to_session_id.get(sid, '---')
@@ -357,7 +358,9 @@ async def do_step(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], ms
 @require_session(False)
 @error_handler
 async def get_published_routes(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
-    routefiles = [f for f in os.listdir(os.path.join(rootpath, "routes")) if os.path.isfile(os.path.join(rootpath, "routes", f)) and f.endswith('.vfr')]
+    async with sockets.pool.acquire() as conn:
+        rows = await conn.fetch(f"SELECT id, filename FROM {sockets.TABLE_NAME} ORDER BY filename")
+    routefiles = [{'id': row['id'], 'name': row["filename"]} for row in rows]
     return {"type": "published-routes",
             "routes": routefiles,
             "has_open_route": rte is not None,
@@ -427,15 +430,16 @@ async def load_local_route(sid: str, session_id: str, rte: Optional[VFRFunctionR
 @sio.on('load-published')
 @require_session(False)
 @error_handler
-async def load_published_route(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
+async def load_published_route(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], published_route_id: int):
     try:
-        with open(os.path.join(rootpath, "routes", msg["fname"]), 'rt', encoding='utf8') as f:
-            rte = VFRFunctionRoute.fromJSON(''.join(f.readlines()),
-                                            global_requests_session,
-                                            workfolder=os.path.join(rootpath, "data"),
-                                            outfolder=os.path.join(rootpath, "output"),
-                                            tracksfolder=os.path.join(rootpath, "data")
-                                           )
+        async with sockets.pool.acquire() as conn:
+            row = await conn.fetchrow(f"SELECT content FROM {sockets.TABLE_NAME} WHERE id=$1", published_route_id)
+        rte = VFRFunctionRoute.fromJSON(row['content'],
+                                        global_requests_session,
+                                        workfolder=os.path.join(rootpath, "data"),
+                                        outfolder=os.path.join(rootpath, "output"),
+                                        tracksfolder=os.path.join(rootpath, "data")
+                                        )
         _vfrroutes.set(session_id, rte)
         return {"type": "load-result", "result": "success", "step": rte._state.value}
     except Exception as e:
@@ -594,7 +598,7 @@ async def get_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
 @sio.on('get-legs-map')
 @require_session(True)
 @error_handler
-async def get_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_legs_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
     renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
     return await get_tiled_image_header(renderer, rte.calc_basemap_clip())
 
@@ -843,22 +847,25 @@ async def set_route_data(sid: str, session_id: str, rte: Optional[VFRFunctionRou
 @error_handler
 async def save_to_cloud(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
     try:
-        if len(os.listdir(os.path.join(rootpath, 'routes'))) < 100:
-            rtename_normalized = re.sub(r'[^a-zA-Z0-9\- !@#$%\^\(\)]',
-                                        '_',
-                                        unicodedata.normalize('NFKD', rte.name).
-                                        encode('ascii', errors='replace').decode('ascii'))
-            fname = f"{rtename_normalized}.vfr"
-            cnt = 0
-            while os.path.isfile(os.path.join(rootpath, 'routes', fname)):
-                fname = f"{rtename_normalized}-{cnt:04d}.vfr"
-                cnt += 1
-            with open(os.path.join(rootpath, 'routes', fname), "wt", encoding='utf8') as f:
-                f.write(rte.toJSON())
-            return {"type": "save-to-cloud-result",
-                    "result": "success",
-                    "fname": fname
-                   }
+        async with sockets.pool.acquire() as conn:
+            rows = await conn.fetch(f"SELECT id, filename FROM {sockets.TABLE_NAME} ORDER BY filename")
+        if len(rows) < int(os.getenv("MAX_PUBLISHED_ROUTES", "100")):
+            if rte.name not in [row["filename"] for row in rows]:
+                async with sockets.pool.acquire() as conn:
+                    await conn.execute(
+                                f"""
+                                INSERT INTO {sockets.TABLE_NAME} (filename, content)
+                                VALUES ($1, $2::jsonb)
+                                """,
+                                rte.name,
+                                rte.toJSON(),
+                            )
+                return {"type": "save-to-cloud-result",
+                        "result": "success",
+                        "fname": rte.name
+                    }
+            else:
+                return {"type": "save-to-cloud-result", "result": "filename-already-exists"}
         else:
             return {"type": "save-to-cloud-result", "result": "too-many-files"}
     except Exception as e:

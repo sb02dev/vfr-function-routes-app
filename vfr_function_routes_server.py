@@ -1,4 +1,6 @@
 """Script to run the main server"""
+from dotenv import load_dotenv
+load_dotenv()
 from api import app
 
 print(app.title)

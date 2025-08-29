@@ -88,6 +88,8 @@ export class Step6DownloadAndSaveComponent implements AfterContentInit {
             this.snackbar.open(`Route saved on server (name: ${result['fname']})`, undefined, { duration: 5000, panelClass: 'snackbar-success' });
         } else if (result['result'] === 'fail') {
             this.snackbar.open('Save of route on server failed', undefined, { duration: 3000, panelClass: 'snackbar-error' });
+        } else if (result['result'] === 'filename-already-exists') {
+            this.snackbar.open('Cannot save, this name already exists', undefined, { duration: 3000, panelClass: 'snackbar-error' });
         } else if (result['result'] === 'too-many-files') {
             this.snackbar.open('Did not save! Too many published routes, contact the system administrator', undefined, { duration: 3000, panelClass: 'snackbar-error' });
         } else if (result['result'] === 'no-route') {

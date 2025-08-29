@@ -44,7 +44,7 @@ export class Step0OpenOrNewComponent implements AfterContentInit {
     @ViewChild('file_selector') file_selector!: ElementRef<HTMLInputElement>;
     form: FormGroup;
 
-    publishedRouteList: string[] = [];
+    publishedRouteList: {id: number, name: string}[] = [];
     hasOpenRoute: boolean = false;
     mapsList: string[] = [];
 
@@ -69,7 +69,7 @@ export class Step0OpenOrNewComponent implements AfterContentInit {
         this.imgsrv.send('get-published-routes', this.gotPublishedRoutes.bind(this));
     }
 
-    gotPublishedRoutes(result: { routes: string[], has_open_route: boolean, maps: string[]}) {
+    gotPublishedRoutes(result: { routes: {id: number, name: string}[], has_open_route: boolean, maps: string[]}) {
         this.publishedRouteList = result['routes'];
         this.hasOpenRoute = result['has_open_route'];
         this.mapsList = result['maps'];
@@ -120,7 +120,7 @@ export class Step0OpenOrNewComponent implements AfterContentInit {
 
     publishedRoute(index: number) {
         // load sample route and go to its current step (last)
-        this.imgsrv.send('load-published', this.routeLoaded.bind(this), { fname: this.publishedRouteList[index] });
+        this.imgsrv.send('load-published', this.routeLoaded.bind(this), index);
     }
 
     routeLoaded(result: any) {

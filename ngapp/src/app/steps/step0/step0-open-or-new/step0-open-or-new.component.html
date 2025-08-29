@@ -23,8 +23,8 @@
         &nbsp;
         <a mat-raised-button [matMenuTriggerFor]="publishedRoutes">Load published route</a>
         <mat-menu #publishedRoutes="matMenu">
-            @for (rname of publishedRouteList; track $index) {
-                <button type="button" mat-menu-item (click)="publishedRoute($index)">{{rname}}</button>
+            @for (pubrte of publishedRouteList; track $index) {
+                <button type="button" mat-menu-item (click)="publishedRoute(pubrte.id)">{{pubrte.name}}</button>
             }
         </mat-menu>
     </div>
