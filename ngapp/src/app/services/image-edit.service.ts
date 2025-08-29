@@ -5,7 +5,6 @@ import { Router } from '@angular/router';
 import { io, Socket } from 'socket.io-client';
 
 import { environment } from '../../environments/environment';
-import { ImageEditMessage } from '../models/image-edit-msg';
 import { SessionService } from './session.service';
 
 
@@ -21,7 +20,7 @@ export class ImageEditService implements OnDestroy {
 
     constructor(private router: Router, private session: SessionService, private snackbar: MatSnackBar) { 
         const storedId = this.session.getStoredSessionId();
-        this.socketio = io('http://localhost:8000', {
+        this.socketio = io(`${environment.WS_URL}`, {
             transports: ['websocket', 'polling'], // enable fallbacks
             path: "/socket.io",
             auth: { session_id: storedId },
