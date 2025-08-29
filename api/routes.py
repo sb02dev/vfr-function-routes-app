@@ -60,8 +60,11 @@ def pregenerate_tiles():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
                     #print(f"Generating {mapname}-{dpi}-x{xi}-y{yi} ({count_finished_tiles}/{count_all_tiles})", flush=True)
-                    tr.get_tile(xi, yi, return_format='none')
-                    count_finished_tiles += 1
+                    try:
+                        tr.get_tile(xi, yi, return_format='none')
+                        count_finished_tiles += 1
+                    except:
+                        _logger.error(traceback.format_exc())
 
 
 class SessionStore:
@@ -243,15 +246,15 @@ async def connect(sid, environ, auth):
 
     # limit connections
     if rte is None and _vfrroutes.count() >= MAX_SESSIONS:
-        return False
-    
+        raise ConnectionRefusedError("session limit reached")
+
     # if a new session id is issued, communicate it
     if new_session:
         await sio.emit("new_session", {"session_id": session_id}, to=sid)
 
     # log
-    _logger.info(f"New connection to session {session_id} from {sid}")
-    
+    _logger.info("New connection to session %s from %s", session_id, sid)
+
     # set the session id enter that as a room and accept connection
     environ["session_id"] = session_id
     _sid_to_session_id[sid] = session_id
