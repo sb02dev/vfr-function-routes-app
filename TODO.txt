@@ -6,6 +6,8 @@ v1.0
 - consider place-name based waypoint selection (based on a public database)
 
 v0.3
+- review socket.io handlers for async friendlyness
+- published routes on postgres (to not lose on redeploy)
 - solve all linting problems
 + multiple maps (from multiple countries, 1 additional country introduced)
 + bugfix: server could not start when no map was downloaded

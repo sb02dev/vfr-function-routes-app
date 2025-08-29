@@ -34,12 +34,8 @@ export class ImageEditService implements OnDestroy {
             console.log(reason);
         });
         this.socketio.on("connect_error", (err: Error) => {
-            console.error("🚫 Connection rejected:", err.message);
-            // If your server rejects with a reason:
-            // (e.g. socket.io(server).use((socket,next)=>next(new Error("unauthorized"))))
-            // you get that string here as err.message
-            if (err.cause === 1008) { // TODO: test it
-                console.log('WebSocket rejected, retrying…');
+            console.error("🚫 Connection rejected:", err);
+            if (err.message === "session limit reached") {
                 this.snackbar.open(
                     "Server has reached the maximum session limit. Please wait until another user finishes work and retry.",
                     undefined,
@@ -48,10 +44,11 @@ export class ImageEditService implements OnDestroy {
                 if (!this.router.isActive('/step0', { paths: 'subset', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' })) {
                     this.router.navigateByUrl('/step0');
                 }
-                // TODO: schedule reconnect
-                //this.reconnectAttempts = this.lastReconnectAttempts;
-            } else {
-                console.log('WebSocket closed, ');
+                // schedule reconnect
+                setTimeout(() => {
+                    console.log('🔄 Retrying after reject...');
+                    this.socketio?.connect();
+                }, 60000); // wait 60s before retry
             }
         });
         this.socketio.on('error', (err) => {
