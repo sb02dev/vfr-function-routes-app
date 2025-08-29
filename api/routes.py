@@ -554,7 +554,8 @@ async def get_waypoints_map(sid: str, session_id: str, rte: Optional[VFRFunction
 @require_session(True)
 @error_handler
 async def update_waypoints(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
-    rte.update_waypoints(msg.get("waypoints"))
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, rte.update_waypoints, msg.get("waypoints"))
     _vfrroutes.set(session_id, rte)
     wps = [{
         "name": name,
@@ -607,7 +608,8 @@ async def get_legs_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute
 @require_session(True)
 @error_handler
 async def update_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
-    rte.update_legs(msg.get("legs"))
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, rte.update_legs, msg.get("legs"))
     _vfrroutes.set(session_id, rte)
     return {
         "type": "legs",
@@ -658,9 +660,11 @@ async def get_annotations_map(sid: str, session_id: str, rte: Optional[VFRFuncti
     clip = rte.calc_basemap_clip()
     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
     renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
+    loop = asyncio.get_running_loop()
+    svg = await loop.run_in_executor(None, svgrenderer.get_svg)
     return await get_tiled_image_header(renderer,
                                         clip, {
-                                            "svg_overlay": svgrenderer.get_svg(),
+                                            "svg_overlay": svg,
                                         }
                                        )
 
@@ -673,9 +677,11 @@ async def update_annotations(sid: str, session_id: str, rte: Optional[VFRFunctio
     _vfrroutes.set(session_id, rte)
     clip = rte.calc_basemap_clip()
     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
+    loop = asyncio.get_running_loop()
+    svg = await loop.run_in_executor(None, svgrenderer.get_svg)
     return {
         "type": "annotations",
-        "svg_overlay": svgrenderer.get_svg(),
+        "svg_overlay": svg,
         "annotations": [{
                     "name": leg.name,
                     "function_name": leg.function_name,
@@ -714,9 +720,11 @@ async def get_tracks_map(sid: str, session_id: str, rte: Optional[VFRFunctionRou
     clip = rte.calc_basemap_clip()
     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
     renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
+    loop = asyncio.get_running_loop()
+    svg = await loop.run_in_executor(None, svgrenderer.get_svg)
     return await get_tiled_image_header(renderer,
                                         clip, {
-                                            "svg_overlay": svgrenderer.get_svg(),
+                                            "svg_overlay": svg,
                                         }
                                        )
 
@@ -729,9 +737,11 @@ async def load_track(sid: str, session_id: str, rte: Optional[VFRFunctionRoute],
     _vfrroutes.set(session_id, rte)
     clip = rte.calc_basemap_clip()
     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
+    loop = asyncio.get_running_loop()
+    svg = await loop.run_in_executor(None, svgrenderer.get_svg)
     return {
         "type": "tracks",
-        "svg_overlay": svgrenderer.get_svg(),
+        "svg_overlay": svg,
         "tracks": [{
             "name": trk.fname,
             "color": trk.color,
@@ -748,9 +758,11 @@ async def update_tracks(sid: str, session_id: str, rte: Optional[VFRFunctionRout
     _vfrroutes.set(session_id, rte)
     clip = rte.calc_basemap_clip()
     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
+    loop = asyncio.get_running_loop()
+    svg = await loop.run_in_executor(None, svgrenderer.get_svg)
     return {
         "type": "tracks",
-        "svg_overlay": svgrenderer.get_svg(),
+        "svg_overlay": svg,
         "tracks": [{
             "name": trk.fname,
             "color": trk.color,
@@ -766,7 +778,8 @@ async def update_tracks(sid: str, session_id: str, rte: Optional[VFRFunctionRout
 @require_session(True)
 @error_handler
 async def get_docx(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
-    buf = rte.create_doc(False)
+    loop = asyncio.get_running_loop()
+    buf = await loop.run_in_executor(None, rte.create_doc, False)
     if buf:
         return {
             "type": "docx",
@@ -779,7 +792,8 @@ async def get_docx(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
 @require_session(True)
 @error_handler
 async def get_png(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
-    image = rte.draw_map(True)
+    loop = asyncio.get_running_loop()
+    image = await loop.run_in_executor(None, rte.draw_map, True)
     return {
         "type": "png",
         "mime": 'image/png',
@@ -791,9 +805,11 @@ async def get_png(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
 @require_session(True)
 @error_handler
 async def get_gpx(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+    loop = asyncio.get_running_loop()
+    plan = await loop.run_in_executor(None, rte.save_plan)
     return {
         "type": "gpx",
-        "data":  rte.save_plan(),
+        "data":  plan,
         "mime": 'application/gpx+xml',
         "filename": f"{rte.name}.gpx"
     }

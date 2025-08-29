@@ -6,7 +6,6 @@ v1.0
 - consider place-name based waypoint selection (based on a public database)
 
 v0.3
-- review socket.io handlers for async friendlyness
 - solve all linting problems
 + multiple maps (from multiple countries, 1 additional country introduced)
 + bugfix: server could not start when no map was downloaded
@@ -26,6 +25,7 @@ v0.3
 + changed use_sample_weather setting to always_use_real_weather (can be set if annotation edit page also uses)
 + switch from WebSocket to Socket.IO for its fallback to long-polling capabilities
 + published routes on postgres (to not lose on redeploy)
++ review socket.io handlers for async friendlyness
 
 
 v0.2
