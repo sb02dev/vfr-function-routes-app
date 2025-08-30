@@ -316,9 +316,11 @@ export class MapEditComponent implements AfterViewInit, OnDestroy {
                 this.panStart = null;
             } else if (this.selectedTool == 'edit') {
                 this.panStart = null;
-                this.selectedPoint = null;
-                this.drawOverlayTransformed();
-                this.finalizePoints.emit();
+                if (this.selectedPoint !== null) {
+                    this.selectedPoint = null;
+                    this.drawOverlayTransformed();
+                    this.finalizePoints.emit();
+                }
             }
         } else if (this.pointers.size === 1) {
             // promote remaining pointer to pan
