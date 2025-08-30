@@ -4,25 +4,31 @@ Map managing utilities
 import os
 import io
 from typing import Union
-import requests
 import json
+import requests
 
 # pdf and imaging related packages
 import pymupdf
 import PIL
 import matplotlib
 matplotlib.use("Agg")
+# pylint: disable=wrong-import-position
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 from matplotlib.backend_bases import MouseButton
 import numpy as np
 
 from .projutils import PointLonLat, PointXY
 from .rendering import SimpleRect, TileRenderer
+# pylint: enable=wrong-import-position
 
 
 class MapDefinition:
-    def __init__(self,
+    """The definition of how to use an official map from PDF form
+    Download URL, crop regions, transformation from x-y to lon-lat,
+    projection string, etc.
+    """
+
+    def __init__(self,  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
                  name: str,
                  url: str,
                  projection_string: str,
@@ -52,6 +58,7 @@ class MapDefinition:
                                                 ) for dpi in dpis}
 
     def download_map(self):
+        """Downloads the map in PDF form from the Internet and stores it locally."""
         pdf_destination = os.path.join(self.datafolder, self.name+".pdf")
         if not os.path.isfile(pdf_destination):
             response = self.request_session.get(self.url, timeout=10)
@@ -60,20 +67,29 @@ class MapDefinition:
 
 
     def get_tilerenderer(self, dpi: int) -> Union[TileRenderer, None]:
+        """Get the TileRenderer for the specified resolution"""
         return self.tilerenderers.get(dpi, None)
 
 
     @classmethod
-    def fromDict(cls, dct: dict, dpis: list[int], datadir: str, request_session: requests.Session):
+    def from_dict(cls, dct: dict, dpis: list[int], datadir: str, request_session: requests.Session):
+        """A factory method to be able to load the object from file."""
         return MapDefinition(dct["name"],
                              dct["url"],
                              dct["projection_string"],
                              dct["pagenum"],
-                             SimpleRect(PointXY(dct["margins"]["left"], dct["margins"]["top"]),
-                                        PointXY(dct["margins"]["right"], dct["margins"]["bottom"])),
-                             {"top-left": PointLonLat(dct["defaultarea"]["top-left"]["lon"], dct["defaultarea"]["top-left"]["lat"]),
-                             "bottom-right": PointLonLat(dct["defaultarea"]["bottom-right"]["lon"], dct["defaultarea"]["bottom-right"]["lat"])},
-                             {PointLonLat(p["lon"], p["lat"]): PointXY(p["x"], p["y"]) for p in dct["projectionpoints"]},
+                             SimpleRect(PointXY(dct["margins"]["left"],
+                                                dct["margins"]["top"]),
+                                        PointXY(dct["margins"]["right"],
+                                                dct["margins"]["bottom"])),
+                             {"top-left": PointLonLat(
+                                 dct["defaultarea"]["top-left"]["lon"],
+                                 dct["defaultarea"]["top-left"]["lat"]),
+                             "bottom-right": PointLonLat(
+                                 dct["defaultarea"]["bottom-right"]["lon"],
+                                 dct["defaultarea"]["bottom-right"]["lat"])},
+                             {PointLonLat(p["lon"], p["lat"]): PointXY(p["x"], p["y"])
+                              for p in dct["projectionpoints"]},
                              dpis,
                              datadir,
                              request_session
@@ -96,7 +112,8 @@ class MapManager:
                                      self.dpis,
                                      self.datadir)
                 for n in os.listdir(self.mapsdir)
-                if os.path.isfile(os.path.join(self.mapsdir, n)) and os.path.basename(n).lower().endswith('.json')
+                if os.path.isfile(os.path.join(self.mapsdir, n)) and \
+                   os.path.basename(n).lower().endswith('.json')
         ]
         self.maps = {map.name: map for map in maps}
         # save the first instance
@@ -106,30 +123,40 @@ class MapManager:
 
     @classmethod
     def instance(cls):
+        """Singleton pattern accessor"""
         if hasattr(cls, "_instance"):
             return cls._instance
         return None
 
 
     def read_map_config(self, fname: str, dpis: list[int], datadir: str) -> MapDefinition:
+        """Load the definition of a map from disk"""
         with open(fname, "rt", encoding="utf8") as f:
-            return MapDefinition.fromDict(json.load(f), dpis, datadir, self.request_session)
+            return MapDefinition.from_dict(json.load(f), dpis, datadir, self.request_session)
 
 
     def download_maps(self):
-        for _, map in self.maps.items():
-            map.download_map(self.request_session)
+        """Download all maps"""
+        for _, curmap in self.maps.items():
+            curmap.download_map(self.request_session)
 
 
     def get_tilerenderer(self, mapname: str, dpi: int) -> TileRenderer:
-        map = self.maps.get(mapname, None)
-        if map is None:
+        """Get TileRenderer based on the name of the map and the resolution"""
+        curmap = self.maps.get(mapname, None)
+        if curmap is None:
             return None
-        return map.get_tilerenderer(dpi)
+        return curmap.get_tilerenderer(dpi)
 
-    
+
     @staticmethod
-    def map_areaselect_lowres(pdf_path: str, area: SimpleRect, fullmap_points: list[PointXY]) -> tuple[SimpleRect, bool]:
+    def map_areaselect_lowres(pdf_path: str,  # pylint: disable=too-many-statements
+                              area: SimpleRect,
+                              fullmap_points: list[PointXY]
+                             ) -> tuple[SimpleRect, bool]:
+        """An interactive 'clicker' to find coordinates of points.
+        Helper for defining a new map
+        """
         # load pdf as image
         pdf_document = pymupdf.open(pdf_path)
         page = pdf_document[0]
@@ -148,8 +175,8 @@ class MapManager:
             PointXY(area.p1.x, area.p1.y),
             PointXY(area.p0.x, area.p1.y)
         ]
-        pts_artist = ax.scatter([p[0] for p in fullmap_points],
-                                [p[1] for p in fullmap_points], c="red", marker="X")
+        _ = ax.scatter([p[0] for p in fullmap_points],
+                       [p[1] for p in fullmap_points], c="red", marker="X")
         sc = ax.scatter([p.x for p in points], [p.y for p in points], s=100, zorder=3, picker=True)
         rect_line, = ax.plot([p.x for p in points] + [points[0].x],
                              [p.y for p in points] + [points[0].y],
@@ -161,11 +188,14 @@ class MapManager:
         cont = True
         # set up interaction
         def on_press(event):
-            nonlocal dragging_idx, points
+            nonlocal dragging_idx
+            nonlocal points
             # Skip if not inside axes or not left click
-            if event.inaxes != ax: return
+            if event.inaxes != ax:
+                return
             # Skip if toolbar is in zoom or pan mode
-            if plt.get_current_fig_manager().toolbar.mode != "": return
+            if plt.get_current_fig_manager().toolbar.mode != "":
+                return
             # Find nearest corner (if within threshold)
             if event.button == 1:
                 pts = np.column_stack([[p.x for p in points], [p.y for p in points]])
@@ -176,11 +206,13 @@ class MapManager:
                     dragging_idx = idx
         def on_motion(event):
             nonlocal dragging_idx, area, points
-            if dragging_idx is None: return
-            if event.inaxes != ax: return
+            if dragging_idx is None:
+                return
+            if event.inaxes != ax:
+                return
             # Update dragged corner
             if dragging_idx == 0: # top-left
-                area = SimpleRect(PointXY(event.xdata, event.ydata), 
+                area = SimpleRect(PointXY(event.xdata, event.ydata),
                                   PointXY(area.p1.x, area.p1.y))
             elif dragging_idx == 1: # top-right
                 area = SimpleRect(PointXY(area.p0.x, event.ydata),
@@ -202,7 +234,7 @@ class MapManager:
             rect_line.set_data([p.x for p in points] + [points[0].x],
                                [p.y for p in points] + [points[0].y])
             fig.canvas.draw_idle()
-        def on_release(event):
+        def on_release(event): # pylint: disable=unused-argument
             nonlocal dragging_idx
             dragging_idx = None
         def on_key(event):
@@ -221,9 +253,17 @@ class MapManager:
 
 
     @staticmethod
-    def map_clicker_highres(pdf_path: str, area: SimpleRect, fullmap_points: list[PointXY]) -> tuple[list[PointXY], bool]:
+    def map_clicker_highres(pdf_path: str,
+                            area: SimpleRect,
+                            fullmap_points: list[PointXY]
+                           ) -> tuple[list[PointXY], bool]:
+        """An interactive 'clicker' to find coordinates of points.
+        Helper for defining a new map
+        """
         # convert fullmap_points to cropmap_points
-        points = [PointXY((p.x - area.p0.x)/72*600, (p.y - area.p0.y)/72*600) for p in fullmap_points]
+        points = [PointXY((p.x - area.p0.x)/72*600,
+                          (p.y - area.p0.y)/72*600)
+                  for p in fullmap_points]
         # load pdf as image
         pdf_document = pymupdf.open(pdf_path)
         page = pdf_document[0]
@@ -244,9 +284,11 @@ class MapManager:
         def on_click(event):
             nonlocal points
             # Skip if not inside axes or not left click
-            if event.inaxes != ax: return
+            if event.inaxes != ax:
+                return
             # Skip if toolbar is in zoom or pan mode
-            if plt.get_current_fig_manager().toolbar.mode != "": return
+            if plt.get_current_fig_manager().toolbar.mode != "":
+                return
             # add or remove point
             if event.button is MouseButton.LEFT:
                 points.append(PointXY(event.xdata, event.ydata))
@@ -283,28 +325,30 @@ class MapManager:
 
     @staticmethod
     def setup_new_map():
+        """The main loop of the helper script for defining a new map."""
         print("Let's setup a new map.")
         # get the basic data
-        name = "AUSTRIA" # input("Enter the name of the new map: ")
-        url = "https://www.austrocontrol.at/jart/prj3/ac/data/dokumente/ICAO500_20250320_v1-1_VS_rgb_digital_2025-03-20_070310.pdf" # input("Enter the URL: ")
+        name = input("Enter the name of the new map: ")
+        url = input("Enter the URL: ")
         # get folder paths
         rootdir = os.path.dirname(os.path.dirname(__file__))
         datadir = os.path.join(rootdir, "data")
-        mapsdir = os.path.join(rootdir, "maps")
+        #mapsdir = os.path.join(rootdir, "maps")
         # download map
         pdf_destination = os.path.join(datadir, name+".pdf")
         if not os.path.isfile(pdf_destination):
             response = requests.get(url, timeout=10)
             with open(pdf_destination, 'wb') as pdf_file:
                 pdf_file.write(response.content)
-        # TODO: iterate while user exits
+        # iterate while user exits
         points: list[PointXY] = []
         area = SimpleRect(PointXY(0, 0), PointXY(100, 100))
         cont = True
         while cont:
             # draw full map in low resolution and select area
             area, cont = MapManager.map_areaselect_lowres(pdf_destination, area, points)
-            if not cont: break
+            if not cont:
+                break
             # zoom in on area and on point click print the coordinates in pdf system
             points, cont = MapManager.map_clicker_highres(pdf_destination, area, points)
         print(points)
@@ -313,8 +357,10 @@ class MapManager:
         # collect: margins
         left = input("  Left margin of the PDF: ")
         top = input("  Top margin of the PDF: ")
-        right = input("  Right margin of the PDF (Don't forget to substract the X value from Page rect right): ")
-        bottom = input("  Bottom margin of the PDF (Don't forget to substract the Y value from Page rect bottom): ")
+        right = input("  Right margin of the PDF " + \
+                      "(Don't forget to substract the X value from Page rect right): ")
+        bottom = input("  Bottom margin of the PDF " + \
+                       "(Don't forget to substract the Y value from Page rect bottom): ")
         # TODO: collect: projection points and their lon-lat values
         projpoints = []
         # write json definition
@@ -331,9 +377,3 @@ class MapManager:
             "projectionpoints": projpoints
         }
         print(json.dumps(def_obj))
-
-
-"""
-Austrian map points:
-[PointXY(x=np.float64(178.3682466270111), y=np.float64(657.3812676864529)), PointXY(x=np.float64(178.36231419240585), y=np.float64(2255.057002918269)), PointXY(x=np.float64(492.3465348764139), y=np.float64(198.14025513196498)), PointXY(x=np.float64(3473.336503538005), y=np.float64(198.0934202549679)), PointXY(x=np.float64(3473.2077702136576), y=np.float64(2254.915523669879)), PointXY(x=np.float64(639.9921568962159), y=np.float64(975.8947350851413)), PointXY(x=np.float64(1692.7422824644639), y=np.float64(1942.3935651129834)), PointXY(x=np.float64(3176.7798226785567), y=np.float64(970.400788671502))]
-"""

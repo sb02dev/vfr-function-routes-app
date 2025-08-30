@@ -1,14 +1,14 @@
 """
 An example use of VFRFunctionRoutes library
 """
+import os
 import math
 import datetime
 import requests
 from dotenv import load_dotenv
 load_dotenv()
-import os
 
-from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, VFRRouteState
+from VFRFunctionRoutes import VFRFunctionRoute, VFRPoint, VFRRouteState, MapManager #pylint: disable=wrong-import-position
 
 
 sess = requests.Session()
@@ -17,9 +17,9 @@ rootpath = os.path.dirname(os.path.abspath(__file__))
 
 rgen = VFRFunctionRoute(
     "LHFH--Lovasberény--Császár--Nyergesújfalu--LHFH",
+    MapManager.instance().maps.get("HUNGARY", None),
     100,
-    #datetime.datetime(2025, 6, 9, 7, 0, tzinfo=datetime.timezone.utc),
-    datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(days=2),
+    dof=datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(days=2),
     session=sess,
     workfolder=os.path.join(rootpath, "data"),
     outfolder=os.path.join(rootpath, "output"),
@@ -32,7 +32,6 @@ rgen.add_leg(
     'LHFH->Lovasberény',
     r'\sqrt[3]{{x}}',
     '$x=0$ at Lovasberény, $x=1.5$ at LHFH',
-    lambda x: x ** (1. / 3.),
     [
         # (lat, lon, x),
         (VFRPoint(18.55314689455907, 47.31145066437747), 0),
@@ -48,7 +47,6 @@ rgen.add_leg(
     'Lovasberény->Császár',
     r'\frac{1}{e^x}',
     r'$x=\pi$ at Lovasberény, $x=-\frac{\pi}{2}$ at Császár',
-    lambda x: 1. / math.exp(x),
     [
         (VFRPoint(18.55314689455907, 47.31145066437747), math.pi),
         (VFRPoint(18.13993451767051, 47.50100085714328), -math.pi/2)
@@ -63,7 +61,6 @@ rgen.add_leg(
     'Császár->LHFH',
     r'\sin(x)',
     r'$x=0$ at Császár, $x=\pi$ at LHFH, $x=\frac{\pi}{2}$ at Nyergesújfalu',
-    lambda x: math.sin(x),
     [
         (VFRPoint(18.13993451767051, 47.50100085714328), 0),
         (VFRPoint(18.912424867046774, 47.48950030173632), math.pi),

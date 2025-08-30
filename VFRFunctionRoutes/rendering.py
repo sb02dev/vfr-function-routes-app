@@ -5,13 +5,16 @@ import io
 import math
 import os
 from typing import Callable, Iterator, NamedTuple, Optional, Literal, Union
+import time
 import matplotlib
 matplotlib.use("Agg")
+# pylint: disable=wrong-import-position
 from matplotlib import pyplot as plt
 import PIL
 import pymupdf
 
 from .projutils import PointXY
+# pylint: enable=wrong-import-position
 
 
 SimpleRect = NamedTuple('SimpleRect', [('p0', PointXY), ('p1', PointXY)])
@@ -22,9 +25,17 @@ class TileRenderer:
     A class rendering tiles from a map in a pdf.
 
     Parameters:
+        tileset_name: A name for the map (user-facing)
+        datafolder:   A folder where we will search for and save the cached tiles
+        pdf_fname:    The PDF file to base our tiles on
+        page_num:     The page number of the map in the PDF
+        pdf_margins:  How much to crop on each side of the page (pdf coordinates@72DPI)
+        dpi:          What resolution we generate our tiles at
+        tile_size:    The pixel size of each tile
 
     """
-    def __init__(self,
+
+    def __init__(self,  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
                  tileset_name: str,
                  datafolder: str,
                  pdf_fname: str,
@@ -44,7 +55,8 @@ class TileRenderer:
         self._fig = None
 
         # open pdf
-        self._pdf_document: pymupdf.Document = pymupdf.open(os.path.join(self.datafolder, self.pdf_fname))
+        self._pdf_document: pymupdf.Document = pymupdf.open(
+            os.path.join(self.datafolder, self.pdf_fname))
         self._page = self._pdf_document[self.page_num]
 
         # calculate image and tile sizes
@@ -56,18 +68,28 @@ class TileRenderer:
             (self._page_rect.y1 - self.pdf_margins.p1.y)
         )
         self._scale = 1 / 72 * self.dpi
-        self.image_size: PointXYInt = PointXYInt((self._crop_rect.x1 - self._crop_rect.x0) * self._scale,
-                                                (self._crop_rect.y1 - self._crop_rect.y0) * self._scale)
-        self.tile_count: PointXYInt  = PointXYInt(math.ceil(self.image_size.x / self.tile_size.x),
-                                                  math.ceil(self.image_size.y / self.tile_size.y))
-        
+        self.image_size: PointXYInt = PointXYInt(
+            (self._crop_rect.x1 - self._crop_rect.x0) * self._scale,
+            (self._crop_rect.y1 - self._crop_rect.y0) * self._scale)
+        self.tile_count: PointXYInt  = PointXYInt(
+            math.ceil(self.image_size.x / self.tile_size.x),
+            math.ceil(self.image_size.y / self.tile_size.y))
+
 
     def __del__(self):
         self._pdf_document.close()
         self._pdf_document = None
 
 
-    def get_tile_list_for_area(self, crop_rect: SimpleRect) -> tuple[list[PointXYInt], SimpleRect, PointXY, tuple[float, float, float, float]]:
+    @property
+    def crop_rect(self):
+        """A read-only accessor to our region"""
+        return self._crop_rect
+
+
+    def get_tile_list_for_area(self, crop_rect: SimpleRect) -> tuple[
+            list[PointXYInt], SimpleRect, PointXY, tuple[float, float, float, float]
+        ]:
         """
         Get a list of tiles needed for a given area along with the neccessary cropping (in pixels).
 
@@ -88,17 +110,20 @@ class TileRenderer:
             for tx in range(tile_x0, tile_x1)
         ]
 
-        ordered_tile_list = list(self.get_tile_order(tile_list, (tile_x1 + tile_x0)/2, (tile_y1 + tile_y0)/2))
+        ordered_tile_list = list(self.get_tile_order(tile_list,
+                                                     (tile_x1 + tile_x0)/2,
+                                                     (tile_y1 + tile_y0)/2))
 
         # calculate right and bottom to handle the edge case when the last tile is shorter
         tileright = min(self._crop_rect.x1, self._crop_rect.x0 + tile_x1 * tile_size_pdf.x)
         tilebottom = min(self._crop_rect.y1, self._crop_rect.y0 + tile_y1 * tile_size_pdf.y)
 
         # calculate the region to be cropped
-        crop_pdf = SimpleRect(PointXY(max(0, (crop_rect.p0.x - self._crop_rect.x0) - tile_x0 * tile_size_pdf.x),
-                                      max(0, (crop_rect.p0.y - self._crop_rect.y0) - tile_y0 * tile_size_pdf.y)),
-                              PointXY(max(0, tileright - crop_rect.p1.x),
-                                      max(0, tilebottom - crop_rect.p1.y)))
+        crop_pdf = SimpleRect(
+            PointXY(max(0, (crop_rect.p0.x - self._crop_rect.x0) - tile_x0 * tile_size_pdf.x),
+                    max(0, (crop_rect.p0.y - self._crop_rect.y0) - tile_y0 * tile_size_pdf.y)),
+            PointXY(max(0, tileright - crop_rect.p1.x),
+                    max(0, tilebottom - crop_rect.p1.y)))
 
         cropping: SimpleRect = SimpleRect(PointXYInt(crop_pdf.p0.x * self._scale,
                                                      crop_pdf.p0.y * self._scale),
@@ -114,22 +139,24 @@ class TileRenderer:
         return ordered_tile_list, cropping, image_size, [tile_x0, tile_x1, tile_y0, tile_y1]
 
 
-    def get_tile(self, x: int, y: int, return_format: Literal['buf', 'image', 'none'] = 'buf') -> Union[bytes, PIL.Image, None]:
+    def get_tile(self, x: int, y: int,  # pylint: disable=too-many-return-statements
+                 return_format: Literal['buf', 'image', 'none'] = 'buf'
+                ) -> Union[bytes, PIL.Image, None]:
         """
         Get the tile at the xth row yth column as a PNG bytes array
         """
         # check cache
-        tile_id = self._get_tile_id(x, y)
+        tile_id = self.get_tile_id(x, y)
         tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
         if os.path.isfile(tilecache_fname):
             if return_format=='none':
-                return
+                return None
             if return_format=='image':
                 img = PIL.Image.open(tilecache_fname)
                 return img if img.mode=='RGBA' else img.convert('RGBA')
             with open(tilecache_fname, "rb") as f:
                 return f.read()
-            
+
 
         # calculate the clip coordinates
         x_pixels = x * self.tile_size[0]
@@ -137,8 +164,10 @@ class TileRenderer:
         clip = pymupdf.Rect(
             self._crop_rect.x0 + x_pixels/self._scale,
             self._crop_rect.y0 + y_pixels/self._scale,
-            min(self._crop_rect.x1, self._crop_rect.x0 + (x_pixels + self.tile_size.x - 1)/self._scale),
-            min(self._crop_rect.y1, self._crop_rect.y0 + (y_pixels + self.tile_size.y - 1)/self._scale)
+            min(self._crop_rect.x1,
+                self._crop_rect.x0 + (x_pixels + self.tile_size.x - 1)/self._scale),
+            min(self._crop_rect.y1,
+                self._crop_rect.y0 + (y_pixels + self.tile_size.y - 1)/self._scale)
         )
 
         pixmap: pymupdf.Pixmap = self._page.get_pixmap(clip=clip, dpi=self.dpi)
@@ -149,7 +178,7 @@ class TileRenderer:
             with open(tilecache_fname, "wb") as f:
                 f.write(buf)
             if return_format=='none':
-                return
+                return None
             if return_format=='buf':
                 return buf
             bufio = io.BytesIO(buf)
@@ -168,7 +197,9 @@ class TileRenderer:
         ax.set_ylim(min(self.image_size.y-1, (y+1)*self.tile_size.y-1),
                     y*self.tile_size.y)
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', bbox_inches="tight", pad_inches=0, dpi=self.dpi, transparent=True)
+        fig.savefig(buf, format='png',
+                    bbox_inches="tight", pad_inches=0,
+                    dpi=self.dpi, transparent=True)
         buf.seek(0)
         overlay_img = PIL.Image.open(buf).convert("RGBA")
 
@@ -180,7 +211,7 @@ class TileRenderer:
         with open(tilecache_fname, "wb") as f:
             f.write(buf.getvalue())
         if return_format=='none':
-            return
+            return None
         if return_format == 'image':
             return final_img
 
@@ -189,12 +220,14 @@ class TileRenderer:
         return buf.getvalue()
 
 
-    def get_tile_order(self, in_tiles = Optional[list[PointXYInt]], center_x: float = None, center_y: float = None) -> Iterator[PointXYInt]:
+    def get_tile_order(self, in_tiles = Optional[list[PointXYInt]],
+                       center_x: float = None, center_y: float = None
+                      ) -> Iterator[PointXYInt]:
         """
         Get a list of tile coordinates ordered by priority (closer to center)
-        """            
-        cx = self.tile_count.x / 2 if not center_x else center_x;
-        cy = self.tile_count.y / 2 if not center_y else center_y;
+        """
+        cx = self.tile_count.x / 2 if not center_x else center_x
+        cy = self.tile_count.y / 2 if not center_y else center_y
 
         if in_tiles:
             tiles: list[tuple[PointXYInt, float]] = [
@@ -219,18 +252,19 @@ class TileRenderer:
         for item in tiles:
             yield item[0]
 
-    
-    def _get_tile_id(self, x: int, y: int) -> str:
+
+    def get_tile_id(self, x: int, y: int) -> str:
+        """Return a tile id (for the cache naming)"""
         return f"tilecache_{self.tileset_name}_{self.dpi}DPI_x{x}_y{y}"
-    
+
     @staticmethod
     def rect_to_simplerect(rect: pymupdf.Rect) -> SimpleRect:
+        """Helper method to convert from pymupdf.Rect to our own format"""
         return SimpleRect(PointXY(rect.x0, rect.y0),
                           PointXY(rect.x1, rect.y1))
 
 
-
-class SVGRenderer():
+class SVGRenderer():  # pylint: disable=too-few-public-methods
     """
     Renders overlays (no map background) with Matplotlib into svg byte arrays
     """
@@ -253,13 +287,12 @@ class SVGRenderer():
             self.image_size = PointXY((crop_rect.p1.x-crop_rect.p0.x),
                                       (crop_rect.p1.y-crop_rect.p0.y))
 
-    
-    def get_svg(self):
 
-        import time
+    def get_svg(self):
+        """A converter of matplotlib plots to svg"""
 
         matplotlib.rcParams['svg.fonttype'] = 'none'  # Use text, not curves
-    
+
         start = time.perf_counter_ns()
         fig=self._draw_func()
 
@@ -277,4 +310,3 @@ class SVGRenderer():
         print(f"total time: {time.perf_counter_ns() - start:15,d}")
 
         return buf.getvalue()
-

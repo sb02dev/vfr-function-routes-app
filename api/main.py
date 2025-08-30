@@ -1,3 +1,4 @@
+"""The server, socketio server and database setup"""
 import asyncio
 from contextlib import asynccontextmanager
 import multiprocessing
@@ -67,9 +68,9 @@ app.mount("/frontend",
 sockets.sio = SocketManager(app=app,
                             cors_allowed_origins="*",#cors_origins,
                             mount_location="/socket.io"
-                           ) 
+                           )
 
-from .routes import routes, cleanup_loop, pregenerate_tiles
+from .routes import routes, cleanup_loop, pregenerate_tiles #pylint: disable=wrong-import-position
 
 
 @app.middleware("http")

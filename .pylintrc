@@ -1,0 +1,18 @@
+[MASTER]
+unsafe-load-any-extension = y
+
+[DESIGN]
+# Maximum number of lines in a module
+max-module-lines=1100
+
+# Maximum number of attributes for a class (R0902)
+max-attributes=15
+
+# Allow functions with multiple params but discourage big "kitchen sink" APIs
+max-args=6
+
+# Limit positional args separately (forces use of keywords/defaults)
+max-positional-arguments=6
+
+# Maximum number of local variables in a function (R0914)
+max-locals=20

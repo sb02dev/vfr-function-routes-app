@@ -22,6 +22,7 @@ import numpy as np
 import PIL
 import matplotlib
 matplotlib.use("Agg")
+# pylint: disable=wrong-import-position
 import matplotlib.pyplot as plt
 
 # document creation related packages
@@ -44,11 +45,12 @@ from .docxutils import add_formula_par
 from .rendering import SimpleRect
 from .maps import MapDefinition, MapManager
 from .geometry import VFRRouteState, VFRLeg, VFRTrack, VFRPoint, VFRCoordSystem, VFRAnnotation
-from .linear_approximation import rdp, piecewise_linear_fit
-from .imageutils import paste_img, alpha_composite_np_loops
+from .linear_approximation import rdp
+from .imageutils import paste_img
+# pylint: enable=wrong-import-position
 
 
-class VFRFunctionRoute:
+class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=too-many-public-methods
     """
     A class that can be used to
       - gradually build up a route
@@ -57,7 +59,7 @@ class VFRFunctionRoute:
       - generate a flight plan document
       - generate a flight plan file for SkyDaemon
     """
-    
+
     HIGH_DPI = int(os.getenv("HIGH_DPI", "600"))
     LOW_DPI = int(os.getenv("LOW_DPI", "72"))
     DOC_DPI = int(os.getenv("DOC_DPI", "200"))
@@ -65,17 +67,62 @@ class VFRFunctionRoute:
 
     @property
     def use_realtime_data(self):
+        """A property returning the current value of wheater we should use
+        realtime data in our image drawing
+        """
         return self._use_realtime_data
-    
+
     @use_realtime_data.setter
     def use_realtime_data(self, val):
+        """A property setter for wheater we should use
+        realtime data in our image drawing
+        """
         self._use_realtime_data = val
         for l in self.legs:
             for a in l.annotations:
-                a._clear_cache()
+                a.clear_cache()
 
-    
-    def __init__(self,
+    @property
+    def state(self):
+        """A read-only property to access the current state"""
+        return self._state
+
+    @property
+    def session(self):
+        """A read-only property to access the requests.session assigned to this route"""
+        return self._session
+
+    @property
+    def proj(self):
+        """A read-only property to access the projection object"""
+        return self._proj
+
+    @property
+    def geod(self):
+        """A read-only property to access the geod calculation object"""
+        return self._geod
+
+    @property
+    def matrix_fullmap2map(self):
+        """A read-only property to access the transformation matrix"""
+        return self._matrix_fullmap2map
+
+    @property
+    def matrix_map2fullmap(self):
+        """A read-only property to access the inverse transformation matrix"""
+        return self._matrix_map2fullmap
+
+    @property
+    def matrix_map2cropmap(self):
+        """A read-only property to access the transformation matrix"""
+        return self._matrix_map2cropmap
+
+    @property
+    def matrix_cropmap2map(self):
+        """A read-only property to access the inverse transformation matrix"""
+        return self._matrix_cropmap2map
+
+    def __init__(self,  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
                  name: str,
                  mapdef: MapDefinition,
                  speed: float,
@@ -100,22 +147,31 @@ class VFRFunctionRoute:
         self._session = session if session else requests.Session()
         self.waypoints: list[tuple[str, VFRPoint]] = []
         self.area_of_interest = {
-            'top-left': VFRPoint(self.map.area["top-left"].lon, self.map.area["top-left"].lat, VFRCoordSystem.LONLAT, self),
-            'bottom-right': VFRPoint(self.map.area["bottom-right"].lon, self.map.area["bottom-right"].lat, VFRCoordSystem.LONLAT, self)
+            'top-left': VFRPoint(
+                self.map.area["top-left"].lon,
+                self.map.area["top-left"].lat,
+                VFRCoordSystem.LONLAT, self),
+            'bottom-right': VFRPoint(
+                self.map.area["bottom-right"].lon,
+                self.map.area["bottom-right"].lat,
+                VFRCoordSystem.LONLAT, self)
         }
         self._use_realtime_data = False
         self.calc_extents()
         self.calc_transformations()
-        
 
-    def _ensure_state(self, required_state: VFRRouteState, ensure_minimum: bool = True, ensure_exactly: bool = False):
+
+    def ensure_state(self,
+                      required_state: VFRRouteState,
+                      ensure_minimum: bool = True,
+                      ensure_exactly: bool = False):
         """
         Ensure the object is in the desired state. Otherwise raise an exception.
 
         Args
             required_state: VFRRouteState
                 The state we compare to
-            
+
             ensure_minimum: bool
                 The direction we compare: if True we need to have at least
                 the given state, if False we need to have at most the given
@@ -126,16 +182,32 @@ class VFRFunctionRoute:
         """
         if ensure_exactly:
             if self._state.value!=required_state.value:
-                raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required exact state: {required_state}.")
+                raise RuntimeError(
+                    "VFRFunctionRoutes object not in required state: " + \
+                    f"Current {self._state}, required exact state: {required_state}."
+                )
         elif ensure_minimum:
             if self._state.value<required_state.value:
-                raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required minimum state: {required_state}.")
+                raise RuntimeError(
+                    "VFRFunctionRoutes object not in required state: " + \
+                    f"Current {self._state}, required minimum state: {required_state}."
+                )
         else:
             if self._state.value>required_state.value:
-                raise RuntimeError(f"VFRFunctionRoutes object not in required state: Current {self._state}, required maximum state: {required_state}.")
-        
-    
+                raise RuntimeError(
+                    "VFRFunctionRoutes object not in required state: " + \
+                    f"Current {self._state}, required maximum state: {required_state}."
+                )
+
+
     def set_state(self, required_state: VFRRouteState):
+        """Set the state of the route. It does the neccessary calculations
+        for the state transitions
+
+        Args
+            required_state: VFRRouteState
+                The state we transition to
+        """
         if self._state==required_state:
             return
         if self._state.value<required_state.value: # forward stepping
@@ -159,11 +231,11 @@ class VFRFunctionRoute:
             if self._state == VFRRouteState.LEGS and required_state.value > self._state.value:
                 # LEGS -> ANNOTATIONS
                 self._state = VFRRouteState.ANNOTATIONS
-            if self._state == VFRRouteState.ANNOTATIONS and required_state.value > self._state.value:
+            if self._state == VFRRouteState.ANNOTATIONS and \
+                    required_state.value > self._state.value:
                 # ANNOTATIONS -> FINALIZED
                 self.finalize()
         else: # backward stepping
-            # TODO: currently nothing is done (we could free up resources, etc)
             self._state = required_state
 
 
@@ -172,12 +244,19 @@ class VFRFunctionRoute:
         Converts waypoints to legs considering the already existing ones
         """
         for i, wp_start in enumerate(self.waypoints):
-            wp_end = self.waypoints[i+1 if i+1<len(self.waypoints) else 0] # circle around (last point is the same as first)
+            wp_end = self.waypoints[i+1 if i+1<len(self.waypoints) else 0]
+                # circle around (last point is the same as first)
             if len(self.legs)>i: # we have a leg at that position
                 leg = self.legs[i]
                 # so we adjust its endpoints position (not the x value)
-                leg.points[0] = (VFRPoint(wp_start[1].lon, wp_start[1].lat, VFRCoordSystem.LONLAT, self), leg.points[0][1])
-                leg.points[-1] = (VFRPoint(wp_end[1].lon, wp_end[1].lat, VFRCoordSystem.LONLAT, self), leg.points[-1][1])
+                leg.points[0] = (VFRPoint(wp_start[1].lon,
+                                          wp_start[1].lat,
+                                          VFRCoordSystem.LONLAT, self),
+                                 leg.points[0][1])
+                leg.points[-1] = (VFRPoint(wp_end[1].lon,
+                                           wp_end[1].lat,
+                                           VFRCoordSystem.LONLAT, self),
+                                  leg.points[-1][1])
                 # we adjust the name of the leg
                 leg.name = f"{wp_start[0]} -- {wp_end[0]}"
                 # we adjust the annotations so we have the first and last match
@@ -192,10 +271,17 @@ class VFRFunctionRoute:
             else: # we don't have a leg yet
                 # so we add a new one
                 func_range = f"x=0\\textrm{{ at {wp_start[0]}, }}x=1\\textrm{{ at {wp_end[0]}}}"
-                self.add_leg(f"{wp_start[0]} -- {wp_end[0]}", f"x^{i+1}", func_range, lambda x: x**i,
+                self.add_leg(f"{wp_start[0]} -- {wp_end[0]}", f"x^{i+1}",
+                             func_range,
                              [
-                                 (VFRPoint(wp_start[1].lon, wp_start[1].lat, VFRCoordSystem.LONLAT, self), 0),
-                                 (VFRPoint(wp_end[1].lon, wp_end[1].lat, VFRCoordSystem.LONLAT, self), 1)
+                                 (VFRPoint(wp_start[1].lon,
+                                           wp_start[1].lat,
+                                           VFRCoordSystem.LONLAT, self),
+                                  0),
+                                 (VFRPoint(wp_end[1].lon,
+                                           wp_end[1].lat,
+                                           VFRCoordSystem.LONLAT, self),
+                                  1)
                              ])
 
 
@@ -215,28 +301,59 @@ class VFRFunctionRoute:
 
 
     def finalize(self):
-        self._ensure_state(VFRRouteState.ANNOTATIONS)
+        """Put the object in the FINALIZED state"""
+        self.ensure_state(VFRRouteState.ANNOTATIONS)
         self.calc_extents()
         self.calc_transformations()
-        # TODO: obtain live data (from internet)
         self._state = VFRRouteState.FINALIZED
-        
 
-    def set_area_of_interest(self, top_left_x: float, top_left_y: float, bottom_right_x: float, bottom_right_y: float) -> None:
-        self._ensure_state(VFRRouteState.INITIATED)
+
+    def set_area_of_interest(self,
+                             top_left_x: float,
+                             top_left_y: float,
+                             bottom_right_x: float,
+                             bottom_right_y: float
+                            ) -> None:
+        """Change the area of interest rectangle based on
+        full map x-y coordinates.
+        """
+        self.ensure_state(VFRRouteState.INITIATED)
         self.area_of_interest = {
-            'top-left': VFRPoint(top_left_x, top_left_y, VFRCoordSystem.MAP_XY, self).project_point(VFRCoordSystem.LONLAT),
-            'bottom-right': VFRPoint(bottom_right_x, bottom_right_y, VFRCoordSystem.MAP_XY, self).project_point(VFRCoordSystem.LONLAT)
+            'top-left': VFRPoint(top_left_x,
+                                 top_left_y,
+                                 VFRCoordSystem.MAP_XY, self)
+                                 .project_point(VFRCoordSystem.LONLAT),
+            'bottom-right': VFRPoint(bottom_right_x,
+                                     bottom_right_y,
+                                     VFRCoordSystem.MAP_XY, self)
+                                     .project_point(VFRCoordSystem.LONLAT)
         }
 
-    def set_area_of_interest_lonlat(self, top_left_lon: float, top_left_lat: float, bottom_right_lon: float, bottom_right_lat: float) -> None:
-        self._ensure_state(VFRRouteState.INITIATED)
+    def set_area_of_interest_lonlat(self,
+                                    top_left_lon: float,
+                                    top_left_lat: float,
+                                    bottom_right_lon: float,
+                                    bottom_right_lat: float
+                                   ) -> None:
+        """Change the area of interest rectangle based on
+        world longitude-latitude coordinates.
+        """
+        self.ensure_state(VFRRouteState.INITIATED)
         self.area_of_interest = {
             'top-left': VFRPoint(top_left_lon, top_left_lat, VFRCoordSystem.LONLAT, self),
-            'bottom-right': VFRPoint(bottom_right_lon, bottom_right_lat, VFRCoordSystem.LONLAT, self)
+            'bottom-right': VFRPoint(bottom_right_lon,
+                                     bottom_right_lat,
+                                     VFRCoordSystem.LONLAT, self)
         }
 
-    def _get_image_from_figure(self, fig, size: tuple[float, float] = None, dpi: float = None) -> bytes:
+    def _get_image_from_figure(self,
+                               fig,
+                               size: tuple[float, float] = None,
+                               dpi: float = None
+                              ) -> bytes:
+        """Private helper function to get a MatPlotLib Figure converted
+        to a byte buffer with PNG format image data.
+        """
         buf = io.BytesIO()
         if size:
             figsize = fig.get_size_inches()
@@ -247,6 +364,9 @@ class VFRFunctionRoute:
 
 
     def draw_annotations(self):
+        """Draw the route with annotations into a MatPlotLib Figure.
+        Used for SVG conversion to later serve to the frontend for local drawing.
+        """
         fig = plt.figure()
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
@@ -257,11 +377,14 @@ class VFRFunctionRoute:
             calc_time += l.draw(ax, True)
 
         print(f'calculation time: {calc_time:15,d}')
-        
+
         return fig
 
 
     def draw_tracks(self):
+        """Draw the Route without annotations into a MatPlotLib Figure.
+        Used for SVG conversion to later serve to the frontend for local drawing.
+        """
         fig = plt.figure()
         ax = plt.Axes(fig, [0., 0., 1., 1.])
         ax.set_axis_off()
@@ -276,21 +399,29 @@ class VFRFunctionRoute:
 
 
     def add_waypoint(self, name: str, point: VFRPoint):
+        """Add a new waypoint to the Route"""
         point.route = self
         self.waypoints.append((name, point.project_point(VFRCoordSystem.LONLAT)))
 
 
     def update_waypoints(self, wps: list[dict]):
+        """Update the waypoints based on the data received from the frontend."""
         # calculate new waypoints
         self.waypoints = [(
             wp["name"],
-                VFRPoint(wp["x"], wp["y"], VFRCoordSystem.MAPCROP_XY, self).project_point(VFRCoordSystem.LONLAT)
+                VFRPoint(wp["x"],
+                         wp["y"],
+                         VFRCoordSystem.MAPCROP_XY, self)
+                         .project_point(VFRCoordSystem.LONLAT)
             if 'x' in wp and 'y' in wp else
-                VFRPoint(wp["lon"], wp["lat"], VFRCoordSystem.LONLAT, self)
+                VFRPoint(wp["lon"],
+                         wp["lat"],
+                         VFRCoordSystem.LONLAT, self)
         ) for wp in wps]
 
 
     def update_legs(self, legs: list[dict]):
+        """Update the legs based on the data received from the frontend."""
         # set legs according to edits
         for i, leg in enumerate(legs):
             curleg = self.legs[i]
@@ -311,9 +442,14 @@ class VFRFunctionRoute:
                     newpoints.append((lp_end[0], pt["func_x"]))
                 else:
                     if 'x' in pt and 'y' in pt:
-                        p = VFRPoint(pt["x"], pt["y"], VFRCoordSystem.MAPCROP_XY, self, curleg).project_point(VFRCoordSystem.LONLAT)
+                        p = VFRPoint(pt["x"],
+                                     pt["y"],
+                                     VFRCoordSystem.MAPCROP_XY, self, curleg) \
+                                     .project_point(VFRCoordSystem.LONLAT)
                     else:
-                        p = VFRPoint(pt["lon"], pt["lat"], VFRCoordSystem.LONLAT, self, curleg)
+                        p = VFRPoint(pt["lon"],
+                                     pt["lat"],
+                                     VFRCoordSystem.LONLAT, self, curleg)
                     newpoints.append((
                         p,
                         pt["func_x"]
@@ -324,11 +460,13 @@ class VFRFunctionRoute:
 
 
     def update_annotations(self, legs: list[dict]):
+        """Update the annotations based on the data received from the frontend."""
         for i, l in enumerate(legs):
             if i>len(self.legs)-1:
                 break
             if self.legs[i].name!=l['name']:
-                print(f"WARNING: leg number {i} name does not match ({self.legs[i].name}!={l['name']})")
+                print(f"WARNING: leg number {i} name does not match "+
+                      f"({self.legs[i].name}!={l['name']})")
             self.legs[i].annotations = [VFRAnnotation(self.legs[i],
                                                       a['name'],
                                                       a['func_x'],
@@ -337,21 +475,19 @@ class VFRFunctionRoute:
                                        ]
 
 
-    def add_leg(self, 
+    def add_leg(self,
                 name: str,
                 function_name: str,
                 function_range: str,
-                function,
                 points: list[tuple[VFRPoint, float]]) -> VFRLeg:
-        """
-        """
-        self._ensure_state(VFRRouteState.WAYPOINTS)
-        for p, x in points:
+        """Initialize and add a leg to the current route"""
+        self.ensure_state(VFRRouteState.WAYPOINTS)
+        for p, _ in points:
             p.route = self
-        newleg = VFRLeg(self, name, function_name, function_range, function, points)
+        newleg = VFRLeg(self, name, function_name, function_range, points)
         self.legs.append(newleg)
         return newleg
-        
+
     def add_track(self,
                   fname: Union[str, Path],
                   color: str,
@@ -364,20 +500,21 @@ class VFRFunctionRoute:
                 if xmlstring is not given)
             color: str
         """
-        self._ensure_state(VFRRouteState.ANNOTATIONS)
+        self.ensure_state(VFRRouteState.ANNOTATIONS)
         self.tracks.append(VFRTrack(self, fname, color, xmlb=xmlb))
         return self
-    
+
 
     def update_tracks(self, tracks):
+        """Update the tracks based on the data received from the frontend."""
         newtracks: list[VFRTrack] = []
         for t in self.tracks:
             if t.fname in [nt['name'] for nt in tracks]:
                 newtracks.append(t)
                 t.color = [nt['color'] for nt in tracks if nt['name']==t.fname][0]
         self.tracks = newtracks
-        
-        
+
+
     def calc_transformations(self):
         """Calculates and saves the transformations between coordinate systems.
         
@@ -406,20 +543,26 @@ class VFRFunctionRoute:
         #print(self._proj(16,48.5))
         #print(self._proj(17,47.5))
         # calculate transformations for FULL_WORLD_XY<->MAP_XY
-        p = [self._proj(ll.lon, ll.lat) for ll in self.map.points.keys()] # convert to fullworld map coord
-        pp = [PointXY(pxy.x/72*self.LOW_DPI, pxy.y/72*self.LOW_DPI) for pxy in self.map.points.values()] # must scale it to LOW_DPI from default pdf metric of 72
-        self._matrix_fullmap2map = _calculate_2d_transformation_matrix(p, pp) # calc matrix from fullworld map coord to map coord
+        p = [self._proj(ll.lon, ll.lat)
+             for ll in self.map.points.keys()] # convert to fullworld map coord
+        pp = [PointXY(pxy.x/72*self.LOW_DPI, pxy.y/72*self.LOW_DPI)
+              for pxy in self.map.points.values()]
+                # must scale it to LOW_DPI from default pdf metric of 72
+        self._matrix_fullmap2map = _calculate_2d_transformation_matrix(p, pp)
+            # calc matrix from fullworld map coord to map coord
         self._matrix_map2fullmap = np.linalg.inv(self._matrix_fullmap2map)
         #print("TEST lonlat to mapxy:")
         #for i, (lonlat, xy) in enumerate(self.PDF_IN_WORLD_XY.items()):
-        #    print(f"  {lonlat} -> {p[i]} -> {xy} vs {_apply_transformation_matrix(p[i], self._matrix_fullmap2map)}")
+        #    print(f"  {lonlat} -> {p[i]} -> {xy} vs "+
+        #          f"{_apply_transformation_matrix(p[i], self._matrix_fullmap2map)}")
         # calculate transformations for MAP_XY<->MAPCROP_XY
         p = self.get_mapxyextent()
         pp = [
             (0, 0),
             (0, (p.maxy-p.miny)*self.HIGH_DPI/self.LOW_DPI),
             ((p.maxx-p.minx)*self.HIGH_DPI/self.LOW_DPI, 0),
-            ((p.maxx-p.minx)*self.HIGH_DPI/self.LOW_DPI, (p.maxy-p.miny)*self.HIGH_DPI/self.LOW_DPI),
+            ((p.maxx-p.minx)*self.HIGH_DPI/self.LOW_DPI,
+             (p.maxy-p.miny)*self.HIGH_DPI/self.LOW_DPI),
         ]  # also scale it up!
         p = [
             (p.minx, p.miny),
@@ -431,12 +574,13 @@ class VFRFunctionRoute:
         self._matrix_cropmap2map = np.linalg.inv(self._matrix_map2cropmap)
         #print("TEST mapxy to cropmapxy:")
         #for i, (mapxy, cropmapxy) in enumerate(zip(p, pp)):
-        #    print(f"  {mapxy} -> {cropmapxy} vs {_apply_transformation_matrix(mapxy, self._matrix_map2cropmap)}")
+        #    print(f"  {mapxy} -> {cropmapxy} vs "+
+        #          f"{_apply_transformation_matrix(mapxy, self._matrix_map2cropmap)}")
         # calculate transformations for each leg
         for leg in self.legs:
             leg.calc_transformations()
-        
-        
+
+
     def calc_extents(self, margin_x: float = .2, margin_y: Optional[float] = None):
         """Calculates and saves the extents of the neccessary map.
         
@@ -460,24 +604,30 @@ class VFRFunctionRoute:
                                     self.area_of_interest["bottom-right"].lat,
                                     self.area_of_interest["top-left"].lon,
                                     self.area_of_interest["bottom-right"].lon)
-        AOI = ExtentLonLat(
+        area_of_interest = ExtentLonLat(
             min(lon0, lon1),
             min(lat0, lat1),
             max(lon0, lon1),
             max(lat0, lat1)
         )
-        if self._state in [VFRRouteState.INITIATED, VFRRouteState.AREAOFINTEREST, VFRRouteState.WAYPOINTS]:
-            # at this stage we only have area of interest (which is always set, at least to a default)
-            self.extent = AOI
-        elif self._state in [VFRRouteState.LEGS, VFRRouteState.ANNOTATIONS, VFRRouteState.FINALIZED]:
+        if self._state in [VFRRouteState.INITIATED,
+                           VFRRouteState.AREAOFINTEREST,
+                           VFRRouteState.WAYPOINTS]:
+            # at this stage we only have area of interest
+            # (which is always set, at least to a default)
+            self.extent = area_of_interest
+        elif self._state in [VFRRouteState.LEGS,
+                             VFRRouteState.ANNOTATIONS,
+                             VFRRouteState.FINALIZED]:
             # get the automatic bounding box
             if len(self.legs)==0 and len(self.tracks)==0:
                 # no legs, no tracks fall back to waypoints extent
                 if len(self.waypoints)==0:
-                    self.extent = AOI
+                    self.extent = area_of_interest
                     return
-                else:
-                    extent = _get_extent_from_points([PointLonLat(p.lon, p.lat) for name, p in self.waypoints])
+
+                extent = _get_extent_from_points([PointLonLat(p.lon, p.lat)
+                                                  for name, p in self.waypoints])
             else:
                 # we have at least one leg or track, use those (leg points contain waypoints)
                 extent = _get_extent_from_extents(
@@ -496,15 +646,18 @@ class VFRFunctionRoute:
             # get the bounding box of the automatic and the manually defined
             # (i.e. only increase manually given box)
             extent_or_aoi = ExtentLonLat(
-                min(extent_with_margins.minlon, AOI.minlon),
-                min(extent_with_margins.minlat, AOI.minlat),
-                max(extent_with_margins.maxlon, AOI.maxlon),
-                max(extent_with_margins.maxlat, AOI.maxlat)
+                min(extent_with_margins.minlon, area_of_interest.minlon),
+                min(extent_with_margins.minlat, area_of_interest.minlat),
+                max(extent_with_margins.maxlon, area_of_interest.maxlon),
+                max(extent_with_margins.maxlat, area_of_interest.maxlat)
             )
             self.extent = extent_or_aoi
 
 
     def get_mapxyextent(self) -> ExtentXY:
+        """Get the extent of the Route.
+        It is calculated based on the points of the functions.
+        """
         p = [
             PointLonLat(self.extent.minlon, self.extent.minlat), # minlon-minlat -> leftbottom
             PointLonLat(self.extent.minlon, self.extent.maxlat), # minlon-maxlat -> lefttop
@@ -512,7 +665,8 @@ class VFRFunctionRoute:
             PointLonLat(self.extent.maxlon, self.extent.maxlat), # maxlon-maxlat -> righttop
         ]
         p = [self._proj(ll.lon, ll.lat) for ll in p] # projected to FULL_WORLD_XY
-        p = [_apply_transformation_matrix(pp, self._matrix_fullmap2map) for pp in p] # projected to MAP_XY (LOW_DPI)
+        p = [_apply_transformation_matrix(pp, self._matrix_fullmap2map)
+             for pp in p] # projected to MAP_XY (LOW_DPI)
         p = [PointXY(pp[0], pp[1]) for pp in p]
         return ExtentXY(
             min(pp.x for pp in p),
@@ -522,7 +676,7 @@ class VFRFunctionRoute:
         )
 
 
-    def draw_map(self, use_realtime: Optional[bool] = None):
+    def draw_map(self, use_realtime: Optional[bool] = None):  # pylint: disable=too-many-locals
         """Draws a matplotlib based map of the defined route.
         
         Args:
@@ -530,22 +684,23 @@ class VFRFunctionRoute:
         Returns:
             The matplotlib axes of the final plot.
         """
-        self._ensure_state(VFRRouteState.FINALIZED)
+        self.ensure_state(VFRRouteState.FINALIZED)
 
         # save the realtime data usage status
-        setRTD, oldRTD = False, self.use_realtime_data
+        set_rtd, old_rtd = False, self.use_realtime_data
         if use_realtime is not None:
             if use_realtime!=self.use_realtime_data:
-                oldRTD, self.use_realtime_data, setRTD = self.use_realtime_data, True, True
+                old_rtd, self.use_realtime_data, set_rtd = self.use_realtime_data, True, True
 
         # save the original clear function (to be restored in finally)
-        from matplotlib.backends import backend_agg
+        from matplotlib.backends import backend_agg # pylint: disable=import-outside-toplevel
         orig_clear = backend_agg.RendererAgg.clear
 
         try:
             # setup clear function to draw background
             tiles = self.map.get_tilerenderer(int(os.getenv('DOC_DPI', '200')))
-            tile_list, crop, image_size, tile_range = tiles.get_tile_list_for_area(self.calc_basemap_clip())
+            tile_list, crop, image_size, tile_range = \
+                tiles.get_tile_list_for_area(self.calc_basemap_clip())
             def custom_background(renderer):
                 arr = np.asarray(renderer.buffer_rgba())
                 for p in tile_list:
@@ -557,19 +712,19 @@ class VFRFunctionRoute:
             backend_agg.RendererAgg.clear = custom_background
 
             # initialize map
-            from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+            from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas  # pylint: disable=import-outside-toplevel
             fig = plt.figure()
             canvas = FigureCanvas(fig)
             ax = plt.Axes(fig, [0., 0., 1., 1.])
             ax.set_axis_off()
             fig.add_axes(ax)
-            
+
             # draw the map parts
             for l in self.legs:
                 l.draw(ax)
             for t in self.tracks:
                 t.draw(ax)
-            
+
             # render the overlay
             fig.patch.set_alpha(0.0)      # transparent background instead of white
             ax.patch.set_alpha(0.0)       # same for axes
@@ -579,13 +734,17 @@ class VFRFunctionRoute:
             ax.set_ylim(image_size.y/self.DOC_DPI*self.HIGH_DPI, 0)
             canvas.draw()
             img_buf = canvas.buffer_rgba()
-            img = PIL.Image.frombuffer("RGBA", (int(image_size.x), int(image_size.y)), img_buf, "raw", "RGBA", 0, 1)
+            img = PIL.Image.frombuffer("RGBA",
+                                       (int(image_size.x), int(image_size.y)),
+                                       img_buf,
+                                       "raw",
+                                       "RGBA", 0, 1)
             plt.close(fig)
 
         finally:
             # restore realtime wind state
-            if setRTD:
-                self.use_realtime_data = oldRTD
+            if set_rtd:
+                self.use_realtime_data = old_rtd
             # restore matplotlib default
             backend_agg.RendererAgg.clear = orig_clear
 
@@ -594,11 +753,15 @@ class VFRFunctionRoute:
         img.save(buf, 'png')
         buf.seek(0)
         return buf.getvalue()
-        
+
 
     def calc_basemap_clip(self) -> SimpleRect:
+        """Calculates the rectangle of the desired area on the map in
+        PDF coordinate system.
+        """
         # calc clip coordinates from the appropriate lon-lat corners
-        lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, self.extent.minlon, self.extent.maxlon
+        lat0, lat1, lon0, lon1 = self.extent.minlat, self.extent.maxlat, \
+                                 self.extent.minlon, self.extent.maxlon
         # adjust for non-rectangle because of projection type
         corners_lonlat = [
             VFRPoint(lon0, lat0, route=self),
@@ -607,10 +770,10 @@ class VFRFunctionRoute:
             VFRPoint(lon0, lat1, route=self)
         ]
         corners_map = [p.project_point(to_system=VFRCoordSystem.MAP_XY) for p in corners_lonlat]
-        x0 = min([p.x for p in corners_map])
-        y0 = min([p.y for p in corners_map])
-        x1 = max([p.x for p in corners_map])
-        y1 = max([p.y for p in corners_map])
+        x0 = min(p.x for p in corners_map)
+        y0 = min(p.y for p in corners_map)
+        x1 = max(p.x for p in corners_map)
+        y1 = max(p.y for p in corners_map)
         # the order of them is important
         if y1<y0:
             y0, y1 = y1, y0
@@ -620,9 +783,10 @@ class VFRFunctionRoute:
         ((xm, ym), (_, _)) = self.map.margins
         ((x0, y0), (x1, y1)) = ((xm+x0, ym+y0), (xm+x1, ym+y1))
         return SimpleRect(PointXY(x0, y0), PointXY(x1, y1))
-            
-            
-    def create_doc(self, save: bool = True) -> Union[io.BytesIO, None]:
+
+    def create_doc(self,  # pylint: disable=too-many-locals
+                   save: bool = True
+                  ) -> Union[io.BytesIO, None]:
         """
         Generates a report of the route as a Word document
         Argument: a list of a tuple
@@ -636,11 +800,11 @@ class VFRFunctionRoute:
             - 3rd element is the length of the curve segment in meters
             - 4th element is the time used for that curve segment
         """
-        self._ensure_state(VFRRouteState.FINALIZED)
+        self.ensure_state(VFRRouteState.FINALIZED)
         # draw map if we don't have it yet and save the image
-        oldRTD, setRTD = False, False
+        old_rtd, set_rtd = False, False
         if not self.use_realtime_data:
-            oldRTD, self.use_realtime_data, setRTD = self.use_realtime_data, True, True
+            old_rtd, self.use_realtime_data, set_rtd = self.use_realtime_data, True, True
         image = self.draw_map()
         imgname = os.path.join(self.outfolder, self.name+'.png')
         with open(imgname, "wb") as f:
@@ -676,91 +840,136 @@ class VFRFunctionRoute:
             tab.autofit = True
             tab.allow_autofit = True
             tab.style = "Colorful Shading Accent 1"
-            for i, hdr in enumerate(["Name", "Hdg", "Mag", "WCA", "Length", "Time", "Tme(WC)", "Wind"]):
+            for i, hdr in enumerate(["Name",
+                                     "Hdg",
+                                     "Mag",
+                                     "WCA",
+                                     "Length",
+                                     "Time",
+                                     "Tme(WC)",
+                                     "Wind"]):
                 tab.rows[0].cells[i].text = hdr
 
             # leg table rows (per annotations)
             for ann in leg.annotations:
-                seglen = ann.seglen
-                segtime = ann.segtime
-                segtime_wind = sum(ann.times_withwind)
-                seghdgs = ann.headings
-                seghdg = seghdgs[-1]
-                wind_corrs = ann.wind_corrections(headings=seghdgs)
-                wind_corr = wind_corrs[-1] if wind_corrs else None
-                magdev = ann.magnetic_deviation(self.dof)
-
-
-                row_cells = tab.add_row().cells
-            
-                row_cells[0].text = ann.name
-                #row_cells[0].width = Cm(2)
-                
-                row_cells[1].text = f"{seghdg:5.0f}\N{DEGREE SIGN}"
-                row_cells[2].text = f"{magdev:3.0f}\N{DEGREE SIGN}"
-                row_cells[3].text = f"{wind_corr:3.0f}\N{DEGREE SIGN}"
-                row_cells[4].text = f"{seglen/1852 if seglen is not None else '-':{'' if seglen is None else '.1f'}}NM"
-                row_cells[5].text = f"{math.floor(segtime) if segtime is not None else '-':{'' if segtime is None else '2d'}}"+\
-                                    f":{math.floor((segtime-math.floor(segtime))*60) if segtime is not None else '--':{'' if segtime is None else '02d'}}"
-                row_cells[6].text = f"{math.floor(segtime_wind) if segtime_wind is not None else '-':{'' if segtime_wind is None else '2d'}}"+\
-                                    f":{math.floor((segtime_wind-math.floor(segtime_wind))*60) if segtime_wind is not None else '--':{'' if segtime_wind is None else '02d'}}"
-                row_cells[7].text = f"{ann.wind_dir:3d}\N{DEGREE SIGN} {ann.wind_speed:.0f}kts"
-
-                totdist+=seglen if seglen is not None else 0
-                tottime+=segtime if segtime is not None else 0
-                tottimewc+=segtime_wind if segtime_wind is not None else 0
+                curdist, curtime, curtimewc = self.add_annotation_to_doc(tab, ann)
+                totdist += curdist
+                tottime += curtime
+                tottimewc += curtimewc
 
         # total distance/time
         doc.add_paragraph(f"Total: {totdist/1852:.0f} NM, " +
-                          f"{math.floor(tottime):2d}:{math.floor((tottime-math.floor(tottime))*60):02d} / " +
-                          f"{math.floor(tottimewc):2d}:{math.floor((tottimewc-math.floor(tottimewc))*60):02d}"
+                          f"{math.floor(tottime):2d}: \
+                            {math.floor((tottime-math.floor(tottime))*60):02d} / " +
+                          f"{math.floor(tottimewc):2d}: \
+                            {math.floor((tottimewc-math.floor(tottimewc))*60):02d}"
                          )
 
 
         # save it
-        if setRTD:
-            self.use_realtime_data = oldRTD
+        if set_rtd:
+            self.use_realtime_data = old_rtd
         if save:
             docname = os.path.join(self.outfolder, self.name+'.docx')
             doc.save(docname)
-            return
-        else:
-            buf = io.BytesIO()
-            doc.save(buf)
-            buf.seek(0)
-            return buf
+            return None
+
+        buf = io.BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        return buf
+
+    def add_annotation_to_doc(self, tab, ann: VFRAnnotation):
+        """Adds an annotation to a table in a document.
+        
+        Args
+            tab: the table in the word document
+            ann: the annotation to add
+
+        Returns:
+            tuple: distance, time, wind corrected time of the current
+                   annotation segment of the route
+        """
+        seglen = ann.seglen
+        segtime = ann.segtime
+        segtime_wind = sum(ann.times_withwind)
+        seghdgs = ann.headings
+        seghdg = seghdgs[-1]
+        wind_corrs = ann.wind_corrections(headings=seghdgs)
+        wind_corr = wind_corrs[-1] if wind_corrs else None
+        magdev = ann.magnetic_deviation(self.dof)
+
+
+        row_cells = tab.add_row().cells
+
+        row_cells[0].text = ann.name
+                #row_cells[0].width = Cm(2)
+
+        row_cells[1].text = f"{seghdg:5.0f}\N{DEGREE SIGN}"
+        row_cells[2].text = f"{magdev:3.0f}\N{DEGREE SIGN}"
+        row_cells[3].text = f"{wind_corr:3.0f}\N{DEGREE SIGN}"
+        row_cells[4].text = \
+                    f"{seglen/1852 if seglen is not None else '-' \
+                       :{'' if seglen is None else '.1f'}}NM"
+        row_cells[5].text = f"{math.floor(segtime) if segtime is not None \
+                                       else '-':{'' if segtime is None else '2d'}}" + \
+                                    f":{math.floor((segtime-math.floor(segtime))*60) \
+                                        if segtime is not None else '--' \
+                                        :{'' if segtime is None else '02d'}}"
+        row_cells[6].text = f"{math.floor(segtime_wind) if segtime_wind is not None \
+                                       else '-':{'' if segtime_wind is None else '2d'}}"+\
+                                    f":{math.floor((segtime_wind-math.floor(segtime_wind))*60) \
+                                        if segtime_wind is not None else '--' \
+                                        :{'' if segtime_wind is None else '02d'}}"
+        row_cells[7].text = f"{ann.wind_dir:3d}\N{DEGREE SIGN} {ann.wind_speed:.0f}kts"
+
+        curdist = seglen if seglen is not None else 0
+        curtime = segtime if segtime is not None else 0
+        curtimewc = segtime_wind if segtime_wind is not None else 0
+        return curdist, curtime, curtimewc
 
 
     def save_plan(self):
-        self._ensure_state(VFRRouteState.FINALIZED)
+        """Get an XML string of a GPX format of the Route.
+        This is importable into SkyDemon.
+        The functions are approximated by straight lines
+        (otherwise SkyDemon really slows down).
+        """
+        self.ensure_state(VFRRouteState.FINALIZED)
         gpx = gpxpy.gpx.GPX()
         gpx.name = "Elmebeteg VFR útvonal"
         gpx.time = datetime.datetime.now()
         rte = gpxpy.gpx.GPXRoute(name="Elmebeteg VFR útvonal")
         for leg in self.legs:
-            x = np.linspace(min([x for p, x in leg.points]),
-                            max([x for p, x in leg.points]),
+            x = np.linspace(min(x for p, x in leg.points),
+                            max(x for p, x in leg.points),
                             500
                             )
             breakpoints = rdp(np.column_stack((x, np.array([leg.function(xx) for xx in x]))), 0.025)
-            psrc = [VFRPoint(x, y, VFRCoordSystem.FUNCTION, self, leg) for x, y in breakpoints]
+            psrc = [VFRPoint(x,
+                             y,
+                             VFRCoordSystem.FUNCTION, self, leg)
+                    for x, y in breakpoints]
             ps = [p.project_point(VFRCoordSystem.LONLAT) for p in psrc]
-            pt = [gpxpy.gpx.GPXRoutePoint(p.lat, p.lon, name=leg.name if i==0 else None) for i, p in enumerate(ps)]
+            pt = [gpxpy.gpx.GPXRoutePoint(p.lat,
+                                          p.lon,
+                                          name=leg.name if i==0 else None)
+                  for i, p in enumerate(ps)]
             rte.points.extend(pt)
         gpx.routes.append(rte)
         return gpx.to_xml()
 
 
     def __repr__(self):
-        """
-        """
+        """String representation of the object"""
         s = f"{type(self).__name__}({self.name})\n"
         for l in self.legs:
             s += textwrap.indent(repr(l), "  ")
         return s
-    
 
-    def toDict(self):
+
+    def to_dict(self):
+        """Converts the object to serializable dictionary."""
         # initiate json object with basic info
         jsonrte = {
             'name': self.name,
@@ -772,45 +981,52 @@ class VFRFunctionRoute:
         # step 1: area of interest
         #if self._state.value>=VFRRouteState.AREAOFINTEREST.value:
         jsonrte['step1'] = { 'area_of_interest': {
-            'top-left': self.area_of_interest['top-left'].toDict(),
-            'bottom-right': self.area_of_interest['bottom-right'].toDict(),
+            'top-left': self.area_of_interest['top-left'].to_dict(),
+            'bottom-right': self.area_of_interest['bottom-right'].to_dict(),
         }}
         # step 2: waypoints
         #if self._state.value>=VFRRouteState.WAYPOINTS.value:
-        jsonrte['step2'] = { 'waypoints': [(wp[0], wp[1].toDict()) for wp in self.waypoints] }
+        jsonrte['step2'] = { 'waypoints': [(wp[0], wp[1].to_dict()) for wp in self.waypoints] }
         # step 3: legs
         #if self._state.value>=VFRRouteState.LEGS.value:
-        jsonrte['step3'] = { 'legs': [leg.toDict() for leg in self.legs] }
+        jsonrte['step3'] = { 'legs': [leg.to_dict() for leg in self.legs] }
         # step 4: annotation points
         #if self._state.value>=VFRRouteState.ANNOTATIONS.value:
-        jsonrte['step4'] = { 'annotations': [[ann.toDict() for ann in leg.annotations] for leg in self.legs] }
+        jsonrte['step4'] = {
+            'annotations': [[ann.to_dict()
+                             for ann in leg.annotations]
+                            for leg in self.legs]
+            }
         # step 5: tracks
         #if self._state.value>=VFRRouteState.FINALIZED.value:
-        jsonrte['step5'] = { 'tracks': [t.toDict() for t in self.tracks]}
+        jsonrte['step5'] = { 'tracks': [t.to_dict() for t in self.tracks]}
         # return
         return jsonrte
-    
-    def toJSON(self):
-        return json.dumps(self.toDict(), indent=2)
-    
+
+    def to_json(self):
+        """Serializes the object to JSON string."""
+        return json.dumps(self.to_dict(), indent=2)
+
 
     @classmethod
-    def fromJSON(cls, jsonstring: str, 
+    def from_json(cls, jsonstring: str,
                  session: requests.Session = None,
                  workfolder: Union[str, Path, None] = None,
                  outfolder: Union[str, Path, None] = None,
                  tracksfolder: Union[str, Path, None] = None):
+        """Deserializes the object from a JSON string."""
         # decode json
         jsonrte = json.loads(jsonstring)
         # load it
-        return VFRFunctionRoute.fromDict(jsonrte, session, workfolder, outfolder, tracksfolder)
+        return VFRFunctionRoute.from_dict(jsonrte, session, workfolder, outfolder, tracksfolder)
 
     @classmethod
-    def fromDict(cls, jsonrte: dict,
+    def from_dict(cls, jsonrte: dict,
                  session: requests.Session = None,
                  workfolder: Union[str, Path, None] = None,
                  outfolder: Union[str, Path, None] = None,
                  tracksfolder: Union[str, Path, None] = None):
+        """Deserializes the object from a dictionary."""
         # initiate with basic info
         rte = VFRFunctionRoute(jsonrte['name'],
                                MapManager.instance().maps.get(jsonrte['mapname']),
@@ -821,27 +1037,35 @@ class VFRFunctionRoute:
         # step 1: area of interest
         #if state.value>=VFRRouteState.AREAOFINTEREST.value:
         rte.area_of_interest = {
-            'top-left': VFRPoint.fromDict(jsonrte['step1']['area_of_interest']['top-left'], rte),
-            'bottom-right': VFRPoint.fromDict(jsonrte['step1']['area_of_interest']['bottom-right'], rte),
+            'top-left': VFRPoint.from_dict(
+                jsonrte['step1']['area_of_interest']['top-left'],
+                rte),
+            'bottom-right': VFRPoint.from_dict(
+                jsonrte['step1']['area_of_interest']['bottom-right'],
+                rte),
         }
         #rte.set_state(VFRRouteState.AREAOFINTEREST)
         # step 2: waypoints
         #if state.value>=VFRRouteState.WAYPOINTS.value:
-        rte.waypoints = [(name, VFRPoint.fromDict(p, rte)) for name, p in jsonrte['step2']['waypoints']]
+        rte.waypoints = [(name, VFRPoint.from_dict(p, rte))
+                         for name, p in jsonrte['step2']['waypoints']]
         #rte.set_state(VFRRouteState.WAYPOINTS)
         # step 3: legs
         #if state.value>=VFRRouteState.LEGS.value:
-        rte.legs = [VFRLeg.fromDict(leg, rte) for leg in jsonrte['step3']['legs']]
+        rte.legs = [VFRLeg.from_dict(leg, rte)
+                    for leg in jsonrte['step3']['legs']]
         #rte.set_state(VFRRouteState.LEGS)
         # step 4: annotation points
         #if state.value>=VFRRouteState.ANNOTATIONS.value:
         for i, l in enumerate(jsonrte['step4']['annotations']):
             leg = rte.legs[i]
-            leg.annotations = [VFRAnnotation.fromDict(ann, leg) for ann in l]
+            leg.annotations = [VFRAnnotation.from_dict(ann, leg)
+                               for ann in l]
         #rte.set_state(VFRRouteState.ANNOTATIONS)
         # step 5: tracks
         #if state.value>=VFRRouteState.FINALIZED.value:
-        rte.tracks = [VFRTrack.fromDict(t, rte) for t in jsonrte['step5']['tracks']]
+        rte.tracks = [VFRTrack.from_dict(t, rte)
+                      for t in jsonrte['step5']['tracks']]
         #rte.set_state(VFRRouteState.FINALIZED)
         # set final state and return
         rte.set_state(state)

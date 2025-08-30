@@ -1,4 +1,5 @@
-import requests
+"""This script helps configuring a new map for the server"""
+#import requests
 
 from VFRFunctionRoutes import MapManager
 

@@ -1,21 +1,26 @@
+"""Helpers for projections
+"""
 from typing import NamedTuple
-import numpy as np
 import math
+import numpy as np
 
 from sympy import E, pi, oo, I, Symbol
 from sympy.parsing.latex import parse_latex
 
 
 class PointLonLat(NamedTuple):
+    """A point defined by longitude-latitude coordinates"""
     lon: float
     lat: float
 
 
 class PointXY(NamedTuple):
+    """A point defined by x-y coordinates"""
     x: float
     y: float
 
 class ExtentLonLat(NamedTuple):
+    """A rectangular extent defined by longitude-latitude coordinates (top-left, bottom-right)"""
     minlon: float
     minlat: float
     maxlon: float
@@ -23,6 +28,7 @@ class ExtentLonLat(NamedTuple):
 
 
 class ExtentXY(NamedTuple):
+    """A rectangular extent defined by longitude-latitude coordinates"""
     minx: float
     miny: float
     maxx: float
@@ -57,32 +63,37 @@ def _rotate_point(point, center, angle_degrees):
     return rotated_point
 
 
-def _calculate_2d_transformation_matrix(source_points: list[tuple[float, float]], destination_points: list[tuple[float, float]]):
+def _calculate_2d_transformation_matrix(
+        source_points: list[tuple[float, float]],
+        destination_points: list[tuple[float, float]]):
     """
-    Calculate a 2D transformation matrix given two sets of corresponding points in source and destination coordinate systems.
+    Calculate a 2D transformation matrix given two sets of corresponding
+    points in source and destination coordinate systems.
 
     Parameters:
-    - source_points: List of tuples (x, y) representing points in the source coordinate system.
-    - destination_points: List of tuples (x, y) representing corresponding points in the destination coordinate system.
+    - source_points: List of tuples (x, y) representing points in the
+                     source coordinate system.
+    - destination_points: List of tuples (x, y) representing corresponding
+                          points in the destination coordinate system.
 
     Returns:
-    - transformation_matrix: 3x3 numpy array representing the 2D transformation matrix.
+    - transformation_matrix: 3x3 numpy array representing the 2D
+      transformation matrix.
     """
     if len(source_points) != len(destination_points) or len(source_points) < 2:
         raise ValueError(
             "Invalid input. Must have at least 2 corresponding points.")
 
-    A = np.zeros((len(source_points), 3))
-    B = np.zeros((len(source_points), 3))
+    matirx_a = np.zeros((len(source_points), 3))
+    matrix_b = np.zeros((len(source_points), 3))
 
-    for i in range(len(source_points)):
-        x_s, y_s = source_points[i]
+    for i, (x_s, y_s) in enumerate(source_points):
         x_d, y_d = destination_points[i]
 
-        A[i] = [x_s, y_s, 1]
-        B[i] = [x_d, y_d, 1]
+        matirx_a[i] = [x_s, y_s, 1]
+        matrix_b[i] = [x_d, y_d, 1]
 
-    transformation_matrix, _, _, _ = np.linalg.lstsq(A, B, rcond=None)
+    transformation_matrix, _, _, _ = np.linalg.lstsq(matirx_a, matrix_b, rcond=None)
     transformation_matrix = np.transpose(transformation_matrix)
 
     return transformation_matrix
@@ -132,6 +143,7 @@ def _get_extent_from_extents(extents: list[ExtentLonLat]) -> ExtentLonLat:
 
 
 def parse_latex_with_constants(s: str):
+    """A helper method to handle known constants in latex conversion."""
     expr = parse_latex(s)
 
     replacements = {

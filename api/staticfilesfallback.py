@@ -19,6 +19,6 @@ class StaticFilesFallback(StaticFiles):
         """
         try:
             resp = await super().get_response(path, scope)
-        except HTTPException as e:
+        except HTTPException:
             resp = await super().get_response("index.html", scope)
         return resp

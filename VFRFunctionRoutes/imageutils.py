@@ -1,3 +1,5 @@
+"""Fast, memory-efficient Image compositing on numpy arrays
+"""
 import os
 import numpy as np
 
@@ -10,31 +12,33 @@ else:
     def dojit(func):
         """no-op decorator"""
         return func
-    
+
 
 @dojit
-def alpha_composite_np_loops(dest, src, x=0, y=0):
+def alpha_composite_np_loops(dest, src, x=0, y=0):  # pylint: disable=too-many-locals
     """
     In-place alpha composite `src` over `dst` using nested loops.
     Works entirely in-place, no full-size buffers allocated.
     Both arrays must be RGBA uint8.
     """
-    H, W, _ = dest.shape
-    h, w, _ = src.shape
+    dest_h, dest_w, _ = dest.shape
+    src_h, src_w, _ = src.shape
 
-    for j in range(h):
+    for j in range(src_h):
         y_dst = y + j
-        if y_dst < 0 or y_dst >= H:
+        if y_dst < 0 or y_dst >= dest_h:
             continue
-        for i in range(w):
+        for i in range(src_w):
             x_dst = x + i
-            if x_dst < 0 or x_dst >= W:
+            if x_dst < 0 or x_dst >= dest_w:
                 continue
 
             sr, sg, sb, sa = src[j, i, 0], src[j,
                                                i, 1], src[j, i, 2], src[j, i, 3]
-            dr, dg, db, da = dest[y_dst, x_dst, 0], dest[y_dst,
-                                                         x_dst, 1], dest[y_dst, x_dst, 2], dest[y_dst, x_dst, 3]
+            dr, dg, db, da = dest[y_dst, x_dst, 0], \
+                             dest[y_dst, x_dst, 1], \
+                             dest[y_dst, x_dst, 2], \
+                             dest[y_dst, x_dst, 3]
 
             inv_sa = 255 - sa
             out_a = sa + da * inv_sa // 255
@@ -55,14 +59,18 @@ def alpha_composite_np_loops(dest, src, x=0, y=0):
 
 
 @dojit
-def paste_img(dest: np.ndarray, src: np.ndarray, x: int, y: int):
-    H, W, _ = dest.shape
-    h, w, _ = src.shape
+def paste_img(dest: np.ndarray, src: np.ndarray, x: int, y: int): # pylint: disable=too-many-locals
+    """
+    Simple in-place copy of src onto dest at (x, y) without alpha blending.
+    Both dest and src are HxWx4 uint8 arrays.
+    """
+    dest_h, dest_w, _ = dest.shape
+    src_h, src_w, _ = src.shape
 
     x0 = max(x, 0)
     y0 = max(y, 0)
-    x1 = min(x + w, W)
-    y1 = min(y + h, H)
+    x1 = min(x + src_w, dest_w)
+    y1 = min(y + src_h, dest_h)
 
     sx0 = x0 - x
     sy0 = y0 - y

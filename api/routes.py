@@ -1,29 +1,36 @@
+"""
+The main route handlers of both HTTP and Socket.IO endpoints for
+communication with the frontend app
+"""
 import asyncio
 import base64
 import datetime
 from http import HTTPStatus
 from http.cookies import SimpleCookie
 from pathlib import Path
-import re
 import time
 import json
 import os
 import traceback
-from typing import Optional, Union
-import unicodedata
+from typing import Optional
 import uuid
 import logging
+import requests
 
-from fastapi import APIRouter, HTTPException, Response, WebSocket, WebSocketException, WebSocketDisconnect, status
+from fastapi import APIRouter, HTTPException, Response
 
 from dotenv import load_dotenv
 load_dotenv()
 
-import requests
-
-from VFRFunctionRoutes import *
+# pylint: disable=wrong-import-position
+from VFRFunctionRoutes import (
+    VFRFunctionRoute, VFRRouteState, VFRCoordSystem,
+    MapManager, TileRenderer, SVGRenderer,
+    SimpleRect
+)
 from . import sockets
 from .sockets import sio
+# pylint: enable=wrong-import-position
 
 
 
@@ -52,23 +59,26 @@ mapmanager = MapManager([int(os.getenv("LOW_DPI", "72")),
 def pregenerate_tiles():
     """Generates tile caches for all tiles in all maps"""
     count_all_tiles = 0
-    for mapname, curmap in mapmanager.maps.items():
-        for dpi, tr in curmap.tilerenderers.items():
+    for _, curmap in mapmanager.maps.items():
+        for _, tr in curmap.tilerenderers.items():
             count_all_tiles += tr.tile_count.x * tr.tile_count.y
     count_finished_tiles = 0
-    for mapname, curmap in mapmanager.maps.items():
-        for dpi, tr in curmap.tilerenderers.items():
+    for _, curmap in mapmanager.maps.items():
+        for _, tr in curmap.tilerenderers.items():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
-                    #print(f"Generating {mapname}-{dpi}-x{xi}-y{yi} ({count_finished_tiles}/{count_all_tiles})", flush=True)
                     try:
                         tr.get_tile(xi, yi, return_format='none')
                         count_finished_tiles += 1
-                    except:
+                    except Exception:  # pylint: disable=broad-exception-caught
                         _logger.error(traceback.format_exc())
 
 
 class SessionStore:
+    """A storage object and helper methods for in-memory session keeping.
+    Handles the time-to-live and expiry features.
+    Also supports flushing it to disk for resumes.
+    """
     def __init__(self, ttl_seconds: int = 600):
         # session_id -> (data, expiry_time)
         self._store: dict[str, tuple[time.time, VFRFunctionRoute]] = {}
@@ -89,11 +99,11 @@ class SessionStore:
             del self._store[session_id]  # expire
             return None
         return data
-    
+
     def count(self) -> int:
         """Gets the number of open sessions"""
         return len(self._store.keys())
-    
+
     def touch(self, session_id: str) -> None:
         """Sets the expiry of the given session to now+ttl (no expiry while used)"""
         expiry = time.time() + self.ttl
@@ -115,7 +125,7 @@ class SessionStore:
         """Saves the session store to disk. Call periodically."""
         json_store = {}
         for k, (exp, rte) in self._store.items():
-            json_store[k] = { "expiry": exp, "route": rte.toDict() }
+            json_store[k] = { "expiry": exp, "route": rte.to_dict() }
         with open(os.path.join(rootpath, 'data', 'session_cache.json'), 'wt', encoding='utf8') as f:
             json.dump(json_store, f, indent=2)
 
@@ -138,7 +148,7 @@ class SessionStore:
             if now <= v['expiry']:
                 self._store[k] = (
                     v['expiry'],
-                    VFRFunctionRoute.fromDict(v['route'],
+                    VFRFunctionRoute.from_dict(v['route'],
                                               session = global_requests_session,
                                               workfolder=os.path.join(rootpath, "data"),
                                               outfolder=os.path.join(rootpath, "output"),
@@ -156,13 +166,19 @@ _vfrroutes.load()
 
 
 async def cleanup_loop():
+    """A loop to be run as a background task which clears the expired sessions."""
     while True:
         _vfrroutes.cleanup()
         _vfrroutes.save()
         await asyncio.sleep(60)  # run every minute
 
 
-async def get_tiled_image_header(renderer: TileRenderer, area: SimpleRect, additional_data: dict = None):
+async def get_tiled_image_header(renderer: TileRenderer,
+                                 area: SimpleRect,
+                                 additional_data: dict = None):
+    """Gets the message to be sent to the frontend when tiled images should
+    be shown for a specified area of the map
+    """
     if additional_data is None:
         additional_data = {}
     _, crop, image_size, tile_range = renderer.get_tile_list_for_area(area)
@@ -186,10 +202,11 @@ async def get_tiled_image_header(renderer: TileRenderer, area: SimpleRect, addit
             },
             response_class=Response)
 async def get_tile(tileset_name: str, dpi: int, x: int, y:int):
+    """HTTP endpoint to retreive a tile of the given map in the given resolution"""
     renderer = mapmanager.get_tilerenderer(tileset_name, dpi)
     if renderer is None:
         raise HTTPException(HTTPStatus.BAD_REQUEST,
-                            f"No renderers matched ({tileset_name}, {dpi})", 
+                            f"No renderers matched ({tileset_name}, {dpi})",
                             {"X-Error": "No renderers matched"}
                            )
     image = renderer.get_tile(x, y)
@@ -198,26 +215,33 @@ async def get_tile(tileset_name: str, dpi: int, x: int, y:int):
                     headers={
                         "Cache-Control": "public, max-age=2592000, immutable", # 30 days
                         "ETag": f"tilecache-{tileset_name}-{dpi}-{x}-{y}",
-                        "Last-Modified": datetime.datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')
+                        "Last-Modified": 
+                            datetime.datetime.utcnow() \
+                                .strftime('%a, %d %b %Y %H:%M:%S GMT')
                     })
 
 
 @routes.get("/cachestatus")
 async def get_cache_status():
+    """An HTTP endpoint to check the status of the tile pregeneration."""
     count_all_tiles = 0
-    for mapname, curmap in mapmanager.maps.items():
-        for dpi, tr in curmap.tilerenderers.items():
+    for _, curmap in mapmanager.maps.items():
+        for _, tr in curmap.tilerenderers.items():
             count_all_tiles += tr.tile_count.x * tr.tile_count.y
     count_finished_tiles = 0
-    for mapname, curmap in mapmanager.maps.items():
-        for dpi, tr in curmap.tilerenderers.items():
+    for _, curmap in mapmanager.maps.items():
+        for _, tr in curmap.tilerenderers.items():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
-                    if os.path.isfile(os.path.join(tr.datafolder, tr._get_tile_id(xi, yi)+".png")):
+                    if os.path.isfile(
+                            os.path.join(tr.datafolder,
+                                         tr.get_tile_id(xi, yi)+".png")):
                         count_finished_tiles += 1
     return {"finished": count_finished_tiles,
             "total": count_all_tiles,
-            "progress": f"{count_finished_tiles/count_all_tiles*100 if count_all_tiles!=0 else 0:.2f}%"
+            "progress": 
+                f"""{count_finished_tiles/count_all_tiles*100
+                     if count_all_tiles!=0 else 0:.2f}%"""
            }
 
 
@@ -264,14 +288,17 @@ async def connect(sid, environ, auth):
 
 @sio.on("disconnect")
 async def sio_disconnect(sid):
+    """A Socket.IO disconnect hook to remove the `sid` from our
+    mapping to `session_id`
+    """
     _sid_to_session_id.pop(sid, None)
 
 # helpers to obtain the session_id
 def _get_session_id_from_room(sid: str) -> str:
-    return next(r for r in sio._sio.rooms(sid) if r != sid)
+    return next(r for r in sio._sio.rooms(sid) if r != sid) # pylint: disable=protected-access
 
 def _get_session_id_from_environ(sid: str) -> str:
-    return sio._sio.get_environ(sid).get(sockets.SESSION_COOKIE_NAME)
+    return sio._sio.get_environ(sid).get(sockets.SESSION_COOKIE_NAME) # pylint: disable=protected-access
 
 def _get_session_id_from_dict(sid: str) -> str:
     return _sid_to_session_id.get(sid, '---')
@@ -289,6 +316,11 @@ def get_session(sid: str) -> tuple[str, VFRFunctionRoute]:
 
 
 def require_session(require_route: bool=True):
+    """A decorator to easily retrieve the `session_id` in the Socket.IO
+    event handlers. While we are at it, we also retreive the Route for
+    the given session. And based on the argument, if a Route is required
+    we also error out if we don't have a Route available.
+    """
     def decorator(handler):
         async def wrapper(sid, *args):
             session_id, rte = get_session(sid)
@@ -302,12 +334,15 @@ def require_session(require_route: bool=True):
 
 
 def error_handler(handler):
+    """A general error handler decorator for the Socket.IO event handlers.
+    It sends a general error message to the frontend.
+    """
     async def wrapper(sid, *args):
         try:
             return await handler(sid, *args)
-        except Exception as error:
+        except Exception as error: # pylint: disable=broad-exception-caught
             trace = traceback.format_exc()
-            _logger.error(f"[{sid}] error in {handler.__name__}: {error}\n{trace}")
+            _logger.error("[%s] error in %s: %s\n%s", sid, handler.__name__, str(error), trace)
             await sio.emit("result",
                            {"type": "result",
                             "result": "exception",
@@ -334,10 +369,10 @@ def error_handler(handler):
 @sio.on("step")
 @require_session(False)
 @error_handler
-async def do_step(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
-    session_id, rte = get_session(sid)
+async def do_step(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg): # pylint: disable=unused-argument
+    """Handling the frontend's `step` message: we change the Route's `state`."""
     if rte:
-        step = msg.get("step", rte._state.value+1)
+        step = msg.get("step", rte.state.value+1)
         try:
             if step > 0:
                 newstate = VFRRouteState(step)
@@ -357,7 +392,12 @@ async def do_step(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], ms
 @sio.on("get-published-routes")
 @require_session(False)
 @error_handler
-async def get_published_routes(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_published_routes(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Return the following information to the frontend on request:
+        - the published Routes saved on the server
+        - whether there is a Route associated with that session_id
+        - the list of available maps on the server
+    """
     async with sockets.pool.acquire() as conn:
         rows = await conn.fetch(f"SELECT id, filename FROM {sockets.TABLE_NAME} ORDER BY filename")
     routefiles = [{'id': row['id'], 'name': row["filename"]} for row in rows]
@@ -370,7 +410,16 @@ async def get_published_routes(sid: str, session_id: str, rte: Optional[VFRFunct
 @sio.on('create')
 @require_session(False)
 @error_handler
-async def create_new_route(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
+async def create_new_route(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):  # pylint: disable=unused-argument
+    """This creates a new Route, associates it with the current `session_id`
+    and advances the frontend to the next step.
+    Args
+        msg: a dict of the following
+            "name": the name of the route
+            "dof": the Date Of Flight
+            "speed": planned speed of the flight in knots
+            "mapname": the map to use for the Route
+    """
     try:
         dv = msg.get("dof", None)
         if dv:
@@ -390,7 +439,7 @@ async def create_new_route(sid: str, session_id: str, rte: Optional[VFRFunctionR
         )
         _vfrroutes.set(session_id, rte)
         return {"type": "load-result", "result": "success"}
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         traceback.print_exc()
         return {"type": "load-result", "result": "failed", "exception": e}
 
@@ -398,12 +447,13 @@ async def create_new_route(sid: str, session_id: str, rte: Optional[VFRFunctionR
 @sio.on('sample')
 @require_session(False)
 @error_handler
-async def create_sample(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def create_sample(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Opens the sample Route in this session."""
     try:
         rte = default_route()
         _vfrroutes.set(session_id, rte)
         return {"type": "load-result", "result": "success"}
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         traceback.print_exc()
         return {"type": "load-result", "result": "failed", "exception": e}
 
@@ -411,9 +461,12 @@ async def create_sample(sid: str, session_id: str, rte: Optional[VFRFunctionRout
 @sio.on('load')
 @require_session(False)
 @error_handler
-async def load_local_route(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
+async def load_local_route(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):  # pylint: disable=unused-argument
+    """Load a Route from a .VFR file opened on the client. The contents of
+    the file should be sent in msg['data'] as a string.
+    """
     try:
-        rte = VFRFunctionRoute.fromJSON(
+        rte = VFRFunctionRoute.from_json(
             msg.get('data'),
             session=global_requests_session,
             workfolder=os.path.join(rootpath, "data"),
@@ -421,8 +474,8 @@ async def load_local_route(sid: str, session_id: str, rte: Optional[VFRFunctionR
             tracksfolder=os.path.join(rootpath, "tracks")
         )
         _vfrroutes.set(session_id, rte)
-        return {"type": "load-result", "result": "success", "step": rte._state.value}
-    except Exception as e:
+        return {"type": "load-result", "result": "success", "step": rte.state.value}
+    except Exception as e:  # pylint: disable=broad-exception-caught
         traceback.print_exc()
         return {"type": "load-result", "result": "failed", "exception": e}
 
@@ -430,19 +483,28 @@ async def load_local_route(sid: str, session_id: str, rte: Optional[VFRFunctionR
 @sio.on('load-published')
 @require_session(False)
 @error_handler
-async def load_published_route(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], published_route_id: int):
+async def load_published_route(sid: str,  # pylint: disable=unused-argument
+                               session_id: str,
+                               rte: Optional[VFRFunctionRoute],
+                               published_route_id: int):
+    """Load a published Route into this session. The Route is referenced
+    by `id` which should be sent as an argument. Returns the status of
+    the load operation to the frontend.
+    """
     try:
         async with sockets.pool.acquire() as conn:
-            row = await conn.fetchrow(f"SELECT content FROM {sockets.TABLE_NAME} WHERE id=$1", published_route_id)
-        rte = VFRFunctionRoute.fromJSON(row['content'],
+            row = await conn.fetchrow(f"""SELECT content
+                                          FROM {sockets.TABLE_NAME}
+                                          WHERE id=$1""", published_route_id)
+        rte = VFRFunctionRoute.from_json(row['content'],
                                         global_requests_session,
                                         workfolder=os.path.join(rootpath, "data"),
                                         outfolder=os.path.join(rootpath, "output"),
                                         tracksfolder=os.path.join(rootpath, "data")
                                         )
         _vfrroutes.set(session_id, rte)
-        return {"type": "load-result", "result": "success", "step": rte._state.value}
-    except Exception as e:
+        return {"type": "load-result", "result": "success", "step": rte.state.value}
+    except Exception as e:  # pylint: disable=broad-exception-caught
         traceback.print_exc()
         return {"type": "load-result", "result": "failed", "exception": e}
 
@@ -454,7 +516,9 @@ async def load_published_route(sid: str, session_id: str, rte: Optional[VFRFunct
 @sio.on('get-area-of-interest')
 @require_session(True)
 @error_handler
-async def get_area_of_interest(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_area_of_interest(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Returns the area of interest from the Route to the frontend.
+    """
     tl = rte.area_of_interest["top-left"].project_point(VFRCoordSystem.MAP_XY)
     br = rte.area_of_interest["bottom-right"].project_point(VFRCoordSystem.MAP_XY)
     low_dpi = int(os.getenv('LOW_DPI', '72'))
@@ -483,15 +547,24 @@ async def get_area_of_interest(sid: str, session_id: str, rte: Optional[VFRFunct
 @sio.on('get-low-res-map')
 @require_session(True)
 @error_handler
-async def get_low_res_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_low_res_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Returns the metadata information of the low resolution map to the frontend.
+    The response includes the tile number, size, etc. The frontend should request
+    each tile through the HTTP endpoint.
+    """
     renderer = rte.map.get_tilerenderer(int(os.getenv('LOW_DPI', '72')))
-    return await get_tiled_image_header(renderer, TileRenderer.rect_to_simplerect(renderer._crop_rect))
+    return await get_tiled_image_header(renderer,
+                                        TileRenderer.rect_to_simplerect(renderer.crop_rect))
 
 
 @sio.on('set-area-of-interest')
 @require_session(True)
 @error_handler
-async def set_area_of_interest(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
+async def set_area_of_interest(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):  # pylint: disable=unused-argument
+    """Set area of interest (either by x-y or lon-lat coordinates).
+    Returns the new area of interest. Both x-y and lon-lat coordinates
+    therefore the conversion is also sent back to the frontend.
+    """
     tl = msg.get("topleft")
     br = msg.get("bottomright")
     if 'x' in tl and 'y' in tl and 'x' in br and 'y' in br:
@@ -530,7 +603,8 @@ async def set_area_of_interest(sid: str, session_id: str, rte: Optional[VFRFunct
 @sio.on('get-waypoints')
 @require_session(True)
 @error_handler
-async def get_waypoints(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_waypoints(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Get the waypoints currently defined in the Route"""
     return {
         "type": "waypoints",
         "waypoints": [{"name": name,
@@ -538,14 +612,20 @@ async def get_waypoints(sid: str, session_id: str, rte: Optional[VFRFunctionRout
                         "y": pp.y,
                         "lon": p.lon,
                         "lat": p.lat,
-                        } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
+                        } for name, p, pp in [
+                            (name, p, p.project_point(VFRCoordSystem.MAPCROP_XY))
+                            for name, p in rte.waypoints]]
     }
 
 
 @sio.on('get-waypoints-map')
 @require_session(True)
 @error_handler
-async def get_waypoints_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_waypoints_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Returns the metadata information of the map used for waypoint editing
+    to the frontend. The response includes the tile number, size, etc. The
+    frontend should request each tile through the HTTP endpoint.
+    """
     renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
     return await get_tiled_image_header(renderer, rte.calc_basemap_clip())
 
@@ -553,7 +633,10 @@ async def get_waypoints_map(sid: str, session_id: str, rte: Optional[VFRFunction
 @sio.on('update-wps')
 @require_session(True)
 @error_handler
-async def update_waypoints(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
+async def update_waypoints(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):  # pylint: disable=unused-argument
+    """Update the Route's waypoints according to the edits in the frontend.
+    Returns the edits so that x-y -> lon-lat conversions are sent back.
+    """
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, rte.update_waypoints, msg.get("waypoints"))
     _vfrroutes.set(session_id, rte)
@@ -563,7 +646,10 @@ async def update_waypoints(sid: str, session_id: str, rte: Optional[VFRFunctionR
         "y": pp.y,
         "lon": p.lon,
         "lat": p.lat,
-    } for name, p, pp in [(name, p, p.project_point(VFRCoordSystem.MAPCROP_XY)) for name, p in rte.waypoints]]
+    } for name, p, pp in [
+        (name, p, p.project_point(VFRCoordSystem.MAPCROP_XY))
+        for name, p
+        in rte.waypoints]]
     return {
         "type": "waypoints",
         "waypoints": wps,
@@ -577,21 +663,28 @@ async def update_waypoints(sid: str, session_id: str, rte: Optional[VFRFunctionR
 @sio.on('get-legs')
 @require_session(True)
 @error_handler
-async def get_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Get the Legs currently defined in the Route.
+    Also return the transformation matrices, because we need them
+    for local drawing.
+    """
     return {
         "type": "legs",
         "legs": [{"name": leg.name,
                     "function_name": leg.function_name,
                     "function_range": leg.function_range,
-                    "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
-                    "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                    "matrix_func2cropmap": leg.matrix_func2cropmap.tolist(),
+                    "matrix_cropmap2func": leg.matrix_cropmap2func.tolist(),
                     "points": [{
                         "lon": p.lon, 
                         "lat": p.lat,
                         "x": pp.x,
                         "y": pp.y,
                         "func_x": x
-                    } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
+                    } for p, x, pp in [
+                        (p, x, p.project_point(VFRCoordSystem.MAPCROP_XY))
+                        for p, x
+                        in leg.points]],
                     }  for leg in rte.legs]
     }
 
@@ -599,7 +692,11 @@ async def get_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
 @sio.on('get-legs-map')
 @require_session(True)
 @error_handler
-async def get_legs_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_legs_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Returns the metadata information of the map used for legs editing
+    to the frontend. The response includes the tile number, size, etc. The
+    frontend should request each tile through the HTTP endpoint.
+    """
     renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
     return await get_tiled_image_header(renderer, rte.calc_basemap_clip())
 
@@ -607,7 +704,12 @@ async def get_legs_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute
 @sio.on('update-legs')
 @require_session(True)
 @error_handler
-async def update_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
+async def update_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):  # pylint: disable=unused-argument
+    """Update the Route's legs according to the edits in the frontend.
+    Returns the edits so that x-y -> lon-lat conversions are sent back.
+    Also returns the recalculated transformation matrices, because
+    we need them for local drawing.
+    """
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, rte.update_legs, msg.get("legs"))
     _vfrroutes.set(session_id, rte)
@@ -616,15 +718,18 @@ async def update_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]
         "legs": [{"name": leg.name,
                     "function_name": leg.function_name,
                     "function_range": leg.function_range,
-                    "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
-                    "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                    "matrix_func2cropmap": leg.matrix_func2cropmap.tolist(),
+                    "matrix_cropmap2func": leg.matrix_cropmap2func.tolist(),
                     "points": [{
                         "lon": p.lon,
                         "lat": p.lat,
                         "x": pp.x,
                         "y": pp.y,
                         "func_x": x
-                    } for p, x, pp in [(p, x, p.project_point(VFRCoordSystem.MAPCROP_XY)) for p, x in leg.points]],
+                    } for p, x, pp in [
+                        (p, x, p.project_point(VFRCoordSystem.MAPCROP_XY))
+                        for p, x
+                        in leg.points]],
                     } for leg in rte.legs]
     }
 
@@ -636,14 +741,18 @@ async def update_legs(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]
 @sio.on('get-annotations')
 @require_session(True)
 @error_handler
-async def get_annotations(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_annotations(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Get the Annotation bubbles currently defined in the Route.
+    Also return the transformation matrices, because we need them
+    for local drawing.
+    """
     return {
         "type": "annotations",
         "annotations": [{
                     "name": leg.name,
                     "function_name": leg.function_name,
-                    "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
-                    "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                    "matrix_func2cropmap": leg.matrix_func2cropmap.tolist(),
+                    "matrix_cropmap2func": leg.matrix_cropmap2func.tolist(),
                     "annotations": [{
                         "name": ann.name,
                         "func_x": ann.x,
@@ -656,9 +765,20 @@ async def get_annotations(sid: str, session_id: str, rte: Optional[VFRFunctionRo
 @sio.on('get-annotations-map')
 @require_session(True)
 @error_handler
-async def get_annotations_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_annotations_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Returns the metadata information of the map used for annotation bubble
+    editing to the frontend. Also the SVG converted image of the bubbles are
+    sent, therefore the client can draw them locally (it is more efficient
+    than rendering it in PNG or include in the tiles, due to it being
+    uncacheable).
+    The response includes the tile number, size, etc. The
+    frontend should request each tile through the HTTP endpoint.
+    """
     clip = rte.calc_basemap_clip()
-    svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
+    svgrenderer = SVGRenderer(clip, 'pdf',
+                              rte.HIGH_DPI,
+                              rte.HIGH_DPI,
+                              draw_func=rte.draw_annotations)
     renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
     loop = asyncio.get_running_loop()
     svg = await loop.run_in_executor(None, svgrenderer.get_svg)
@@ -672,11 +792,20 @@ async def get_annotations_map(sid: str, session_id: str, rte: Optional[VFRFuncti
 @sio.on('update-annotations')
 @require_session(True)
 @error_handler
-async def update_annotations(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
+async def update_annotations(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):  # pylint: disable=unused-argument
+    """Update the Route's annotation bubbles according to the edits
+    in the frontend (like moving of bubble offsets).
+    The response includes a new SVG drawing of the recalculated bubbles.
+    Also returns the transformation matrices, because
+    we need them for local drawing.
+    """
     rte.update_annotations(msg.get("annotations"))
     _vfrroutes.set(session_id, rte)
     clip = rte.calc_basemap_clip()
-    svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_annotations)
+    svgrenderer = SVGRenderer(clip, 'pdf',
+                              rte.HIGH_DPI,
+                              rte.HIGH_DPI,
+                              draw_func=rte.draw_annotations)
     loop = asyncio.get_running_loop()
     svg = await loop.run_in_executor(None, svgrenderer.get_svg)
     return {
@@ -685,8 +814,8 @@ async def update_annotations(sid: str, session_id: str, rte: Optional[VFRFunctio
         "annotations": [{
                     "name": leg.name,
                     "function_name": leg.function_name,
-                    "matrix_func2cropmap": leg._matrix_func2cropmap.tolist(),
-                    "matrix_cropmap2func": leg._matrix_cropmap2func.tolist(),
+                    "matrix_func2cropmap": leg.matrix_func2cropmap.tolist(),
+                    "matrix_cropmap2func": leg.matrix_cropmap2func.tolist(),
                     "annotations": [{
                         "name": ann.name,
                         "func_x": ann.x,
@@ -702,7 +831,8 @@ async def update_annotations(sid: str, session_id: str, rte: Optional[VFRFunctio
 @sio.on('get-tracks')
 @require_session(True)
 @error_handler
-async def get_tracks(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_tracks(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Get the Tracks currently defined in the Route."""
     return {
         "type": "tracks",
         "tracks": [{
@@ -716,7 +846,15 @@ async def get_tracks(sid: str, session_id: str, rte: Optional[VFRFunctionRoute])
 @sio.on('get-tracks-map')
 @require_session(True)
 @error_handler
-async def get_tracks_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_tracks_map(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Returns the metadata information of the map used for tracks
+    editing to the frontend. Also the SVG converted image of the tracks are
+    sent, therefore the client can draw them locally (it is more efficient
+    than rendering it in PNG or include in the tiles, due to it being
+    uncacheable).
+    The response includes the tile number, size, etc. The
+    frontend should request each tile through the HTTP endpoint.
+    """
     clip = rte.calc_basemap_clip()
     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
     renderer = rte.map.get_tilerenderer(int(os.getenv('HIGH_DPI', '600')))
@@ -732,8 +870,14 @@ async def get_tracks_map(sid: str, session_id: str, rte: Optional[VFRFunctionRou
 @sio.on('load-track')
 @require_session(True)
 @error_handler
-async def load_track(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
-    rte.add_track(msg.get('filename'), msg.get('color', '#0000FF'), base64.b64decode(msg.get('data')))
+async def load_track(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):  # pylint: disable=unused-argument
+    """Add a new track based on the data sent in msg['data'] and named
+    according to msg['filename].
+    Sends back a recalculated SVG with the new track included.
+    """
+    rte.add_track(msg.get('filename'),
+                  msg.get('color', '#0000FF'),
+                  base64.b64decode(msg.get('data')))
     _vfrroutes.set(session_id, rte)
     clip = rte.calc_basemap_clip()
     svgrenderer = SVGRenderer(clip, 'pdf', rte.HIGH_DPI, rte.HIGH_DPI, draw_func=rte.draw_tracks)
@@ -753,7 +897,10 @@ async def load_track(sid: str, session_id: str, rte: Optional[VFRFunctionRoute],
 @sio.on('update-tracks')
 @require_session(True)
 @error_handler
-async def update_tracks(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
+async def update_tracks(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):  # pylint: disable=unused-argument
+    """Update Tracks according to edits in fronted.
+    Sends back a recalculated SVG with the updated tracks.
+    """
     rte.update_tracks(msg.get('tracks'))
     _vfrroutes.set(session_id, rte)
     clip = rte.calc_basemap_clip()
@@ -777,7 +924,10 @@ async def update_tracks(sid: str, session_id: str, rte: Optional[VFRFunctionRout
 @sio.on('get-docx')
 @require_session(True)
 @error_handler
-async def get_docx(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_docx(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Render and send the final Word format Pilot's Log.
+    It uses real Weather forecast.
+    """
     loop = asyncio.get_running_loop()
     buf = await loop.run_in_executor(None, rte.create_doc, False)
     if buf:
@@ -791,7 +941,10 @@ async def get_docx(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
 @sio.on('get-png')
 @require_session(True)
 @error_handler
-async def get_png(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_png(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Render and send the map for the Pilot's Log.
+    It uses real Weather forecast.
+    """
     loop = asyncio.get_running_loop()
     image = await loop.run_in_executor(None, rte.draw_map, True)
     return {
@@ -804,7 +957,11 @@ async def get_png(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
 @sio.on('get-gpx')
 @require_session(True)
 @error_handler
-async def get_gpx(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_gpx(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Return the Route in a GPX file which can be imported in
+    EFBs. It uses linear approximation of the Route not to
+    overload the EFB (SkyDemon slows down due to lots of points).
+    """
     loop = asyncio.get_running_loop()
     plan = await loop.run_in_executor(None, rte.save_plan)
     return {
@@ -818,10 +975,12 @@ async def get_gpx(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
 @sio.on('get-vfr')
 @require_session(True)
 @error_handler
-async def get_vfr(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_vfr(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Return the Route serialized into JSON. Can be saved on client
+    and later loaded from there."""
     return {
         "type": "vfr",
-        "data":  rte.toJSON(),
+        "data":  rte.to_json(),
         "mime": 'application/vnd.VFRFunctionRoutes.project+json',
         "filename": f"{rte.name}.vfr"
     }
@@ -830,7 +989,8 @@ async def get_vfr(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
 @sio.on('get-route-data')
 @require_session(True)
 @error_handler
-async def get_route_data(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def get_route_data(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Returns the metadata of the Route for editing in the last step."""
     return {
         "type": "route-data",
         "name": rte.name,
@@ -842,7 +1002,8 @@ async def get_route_data(sid: str, session_id: str, rte: Optional[VFRFunctionRou
 @sio.on('set-route-data')
 @require_session(True)
 @error_handler
-async def set_route_data(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):
+async def set_route_data(sid: str, session_id: str, rte: Optional[VFRFunctionRoute], msg):  # pylint: disable=unused-argument
+    """Sets the Route's metadata and returns the new values."""
     dv = msg.get("dof", None)
     rte.name = msg.get("name", rte.name)
     rte.speed = msg.get("speed", rte.speed)
@@ -861,10 +1022,14 @@ async def set_route_data(sid: str, session_id: str, rte: Optional[VFRFunctionRou
 @sio.on('save-to-cloud')
 @require_session(True)
 @error_handler
-async def save_to_cloud(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):
+async def save_to_cloud(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """Saves the Route on the server. A Route saved like this is
+    available to all users of the app."""
     try:
         async with sockets.pool.acquire() as conn:
-            rows = await conn.fetch(f"SELECT id, filename FROM {sockets.TABLE_NAME} ORDER BY filename")
+            rows = await conn.fetch(f"""SELECT id, filename
+                                        FROM {sockets.TABLE_NAME}
+                                        ORDER BY filename""")
         if len(rows) < int(os.getenv("MAX_PUBLISHED_ROUTES", "100")):
             if rte.name not in [row["filename"] for row in rows]:
                 async with sockets.pool.acquire() as conn:
@@ -874,29 +1039,33 @@ async def save_to_cloud(sid: str, session_id: str, rte: Optional[VFRFunctionRout
                                 VALUES ($1, $2::jsonb)
                                 """,
                                 rte.name,
-                                rte.toJSON(),
+                                rte.to_json(),
                             )
                 return {"type": "save-to-cloud-result",
                         "result": "success",
                         "fname": rte.name
                     }
-            else:
-                return {"type": "save-to-cloud-result", "result": "filename-already-exists"}
-        else:
-            return {"type": "save-to-cloud-result", "result": "too-many-files"}
-    except Exception as e:
+
+            return {"type": "save-to-cloud-result", "result": "filename-already-exists"}
+
+        return {"type": "save-to-cloud-result", "result": "too-many-files"}
+
+    except Exception:  # pylint: disable=broad-exception-caught
         return {"type": "save-to-cloud-result", "result": "fail"}
 
 
 
 
 def default_route():
-    with open(os.path.join(Path(__file__).parent, 'LHFH--Lovasberény--Császár--Nyergesújfalu--LHFH.vfr'), 'rt', encoding='utf8') as f:
-        rgen = VFRFunctionRoute.fromJSON(''.join(f.readlines()),
+    """Load the sample Route from file."""
+    with open(os.path.join(Path(__file__).parent,
+                           'LHFH--Lovasberény--Császár--Nyergesújfalu--LHFH.vfr'
+                          ), 'rt', encoding='utf8') as f:
+        rgen = VFRFunctionRoute.from_json(''.join(f.readlines()),
                                          global_requests_session,
                                          workfolder=os.path.join(rootpath, "data"),
                                          outfolder=os.path.join(rootpath, "output"),
                                          tracksfolder=os.path.join(rootpath, "data")
                                         )
-    
+
     return rgen

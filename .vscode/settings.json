@@ -1,0 +1,8 @@
+{
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/pyvenv/Lib/site-packages",
+    ],
+    "pylint.path": [
+        "${workspaceFolder}/pyvenv/Scripts/pylint.exe"
+    ]
+}

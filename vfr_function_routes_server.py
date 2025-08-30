@@ -1,7 +1,7 @@
 """Script to run the main server"""
 from dotenv import load_dotenv
 load_dotenv()
-from api import app
+from api import app #pylint: disable=wrong-import-position
 
 print(app.title)
 

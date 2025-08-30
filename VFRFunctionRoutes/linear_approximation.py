@@ -1,3 +1,5 @@
+"""Helper functions to best linear approximation of an arbitrary function
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -27,8 +29,9 @@ def rdp(points, epsilon):
         left = rdp(points[:index+1], epsilon)
         right = rdp(points[index:], epsilon)
         return np.vstack((left[:-1], right))
-    else:
-        return np.array([start, end])
+
+    return np.array([start, end])
+
 
 def fit_segments(points, breakpoints):
     """Fit least-squares line segments between breakpoints.
@@ -41,8 +44,8 @@ def fit_segments(points, breakpoints):
         seg = points[mask]
 
         # least-squares line fit: y = m*x + b
-        A = np.vstack([seg[:,0], np.ones_like(seg[:,0])]).T
-        m, b = np.linalg.lstsq(A, seg[:,1], rcond=None)[0]
+        matrix_a = np.vstack([seg[:,0], np.ones_like(seg[:,0])]).T
+        m, b = np.linalg.lstsq(matrix_a, seg[:,1], rcond=None)[0]
 
         # build fitted line
         xs = seg[:,0]
@@ -59,8 +62,8 @@ def fit_segments(points, breakpoints):
 #########################
 def segment_fit_error(x, y):
     """Return slope, intercept, and squared error of best-fit line for (x,y)."""
-    A = np.vstack([x, np.ones_like(x)]).T
-    m, b = np.linalg.lstsq(A, y, rcond=None)[0]
+    matrix_a = np.vstack([x, np.ones_like(x)]).T
+    m, b = np.linalg.lstsq(matrix_a, y, rcond=None)[0]
     y_fit = m*x + b
     error = np.sum((y - y_fit)**2)
     return m, b, error
@@ -79,17 +82,17 @@ def precompute_costs(x, y):
     return costs, params
 
 
-def piecewise_linear_fit(x, y, K):
-    """Optimal piecewise linear fit with K segments (DP)."""
+def piecewise_linear_fit(x, y, num_segments):
+    """Optimal piecewise linear fit with `num_segments` segments (DP)."""
     n = len(x)
     costs, params = precompute_costs(x, y)
 
     # DP table
-    dp = np.full((K+1, n), np.inf)
-    prev = np.full((K+1, n), -1, dtype=int)
+    dp = np.full((num_segments+1, n), np.inf)
+    prev = np.full((num_segments+1, n), -1, dtype=int)
     dp[0, 0] = 0
 
-    for k in range(1, K+1):
+    for k in range(1, num_segments+1):
         for j in range(1, n):
             for i in range(j):
                 cost = dp[k-1, i] + costs[i, j]
@@ -99,7 +102,7 @@ def piecewise_linear_fit(x, y, K):
 
     # Backtrack
     segments = []
-    k, j = K, n-1
+    k, j = num_segments, n-1
     while k > 0:
         i = prev[k, j]
         m, b = params[(i, j)]
@@ -115,6 +118,7 @@ def piecewise_linear_fit(x, y, K):
 ### Example usage ###
 #####################
 def example_rdp():
+    """An example usage of the RDP algorithm"""
     # ---- Example usage ----
     f = np.sin
     x = np.linspace(0, 2*np.pi, 500)
@@ -136,13 +140,14 @@ def example_rdp():
 
 
 def example_dp():
+    """An example usage of the DP algorithm"""
     # ---- Example usage ----
     f = np.sin
     x = np.linspace(0, 2*np.pi, 200)
     y = f(x)
 
-    K = 10   # number of segments
-    segments = piecewise_linear_fit(x, y, K)
+    num_segments = 10   # number of segments
+    segments = piecewise_linear_fit(x, y, num_segments)
 
     # Build approximation
     approx_x, approx_y = [], []
@@ -154,7 +159,7 @@ def example_dp():
 
     plt.figure(figsize=(10, 5))
     plt.plot(x, y, label="Original function", alpha=0.7)
-    plt.plot(approx_x, approx_y, 'r-', label=f"{K}-segment optimal fit")
+    plt.plot(approx_x, approx_y, 'r-', label=f"{num_segments}-segment optimal fit")
     for (x0, x1, m, b) in segments:
         plt.axvline(x0, color='gray', linestyle='--', alpha=0.4)
     plt.legend()
