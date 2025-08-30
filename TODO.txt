@@ -6,8 +6,6 @@ v1.0
 - consider place-name based waypoint selection (based on a public database)
 
 v0.3
-- bugfix: add annotation point -> server exception (not in list)
-- bugfix: leg definition changes to dotted lines while changing function
 - bugfix: on server exception, frontend keeps the progress indication
 + multiple maps (from multiple countries, 1 additional country introduced)
 + bugfix: server could not start when no map was downloaded
@@ -31,6 +29,8 @@ v0.3
 + solve all linting problems
 + bugfix: tracks with same name breaks program logic + can't add twice the same file before refreshing page
 + bugfix: annotations are also refreshed when clicking a non-point
+/ bugfix: add annotation point -> server exception (not in list) - can't reproduce
++ bugfix: leg definition changes to dotted lines while changing function
 
 
 v0.2

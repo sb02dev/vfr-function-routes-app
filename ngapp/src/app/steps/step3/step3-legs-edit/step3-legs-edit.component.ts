@@ -293,7 +293,22 @@ export class Step3LegsEditComponent implements AfterContentInit {
         for (var j = 0; j < 2; j++) { // to have the selected leg drawn last
             for (var l = 0; l < this.legs.length; l++) {
                 //let func = (x: number) => x**(1/3); // fixed to linear f(x)=x
-                let func = (x: number) => this.legs[l].function_mathjs_compiled?.evaluate({ x: x });
+                let func: (x: number) => number = (x: number) => x; // defaults to the identity function
+                try {
+                    func = (x: number) => {
+                        try {
+                            const res = this.legs[l].function_mathjs_compiled?.evaluate({ x: x });
+                            if (typeof res !== 'number') {
+                                return x;
+                            }
+                            return res;
+                        } catch (err) {
+                            return x;
+                        }
+                    }
+                } catch (err) {
+                    // keep the identity
+                }
 
                 const leg = this.legs[l];
                 if ((leg.points.length > 0) && ((j == 0) != (this.leg_index == l))){
