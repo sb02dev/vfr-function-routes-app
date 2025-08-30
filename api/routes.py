@@ -260,11 +260,9 @@ async def connect(sid, environ, auth):
     if not session_id and isinstance(auth, dict):
         session_id = auth.get(sockets.SESSION_COOKIE_NAME)
 
-    new_session = False
     if not session_id:
         # fallback: generate one if handshake didn’t have it
         session_id = str(uuid.uuid4())
-        new_session = True
 
     # load the session
     rte: Optional[VFRFunctionRoute] = _vfrroutes.get(session_id)
@@ -280,9 +278,8 @@ async def connect(sid, environ, auth):
                       )
         return
 
-    # if a new session id is issued, communicate it
-    if new_session:
-        await sio.emit("set_session", {"session_id": session_id}, to=sid)
+    # save the session_id locally
+    await sio.emit("set_session", {"session_id": session_id}, to=sid)
 
     # log
     _logger.info("New connection to session %s from %s", session_id, sid)
