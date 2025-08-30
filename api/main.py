@@ -66,7 +66,7 @@ app.mount("/frontend",
           name="frontend")
 
 sockets.sio = SocketManager(app=app,
-                            cors_allowed_origins="*",#cors_origins,
+                            cors_allowed_origins=[],#cors_origins,
                             mount_location="/socket.io"
                            )
 

@@ -21,10 +21,11 @@ export class ImageEditService implements OnDestroy {
     constructor(private router: Router, private session: SessionService, private snackbar: MatSnackBar) { 
         const storedId = this.session.getStoredSessionId();
         this.socketio = io(`${environment.WS_URL}`, {
-            transports: ['websocket', 'polling'], // enable fallbacks
+            transports: ['polling', 'websocket'], // enable fallbacks
             path: "/socket.io",
-            auth: { session_id: storedId },
+            //auth: { session_id: storedId },
             withCredentials: true,
+            autoConnect: false
         });
         this.socketio.on('connect', () => {
             this.connected.next(true);
@@ -56,6 +57,11 @@ export class ImageEditService implements OnDestroy {
             this.connected.next(false);
             this.socketio.close();
         });
+        this.socketio.on('unauthorized', (data: any) => {
+            console.error("Unauthorized", data.reason);
+            this.communicating.next(false);
+            this.connected.next(false);
+        });
         this.socketio.on('set_session', (data: any) => {
             this.session.storeSessionId(data['session_id']);
         });
@@ -68,8 +74,20 @@ export class ImageEditService implements OnDestroy {
                     undefined,
                     { duration: 10000, panelClass: 'snackbar-error' }
                 );
+            } else if (data['result'] === 'no-session') {
+                const msg = `SERVER ERROR: ${data['message']}`;
+                console.error(msg);
+                this.snackbar.open(msg, undefined, { duration: 10000, panelClass: 'snackbar-error' }
+                );
+                this.router.navigateByUrl('/step0');
+            } else if (data['result'] === 'no-route') {
+                const msg = 'There is no route open on the server';
+                console.error(msg);
+                this.snackbar.open(msg, undefined, { duration: 3000, panelClass: 'snackbar-error' });
+                this.router.navigateByUrl('/step0');
             }
         });
+        this.socketio.connect();
     }
 
     async send(event_type: string, callback?: (...responses: any[]) => void, ...args: any[]) {

@@ -271,11 +271,18 @@ async def connect(sid, environ, auth):
 
     # limit connections
     if rte is None and _vfrroutes.count() >= MAX_SESSIONS:
-        raise ConnectionRefusedError("session limit reached")
+        async def disconnect(thesid: str):
+            await sio.disconnect(thesid)
+        await sio.emit("unauthorized",
+                       { "reason": "session-limit-reached"},
+                       room=sid,
+                       callback=lambda *args: asyncio.create_task(disconnect(sid))
+                      )
+        return
 
     # if a new session id is issued, communicate it
     if new_session:
-        await sio.emit("new_session", {"session_id": session_id}, to=sid)
+        await sio.emit("set_session", {"session_id": session_id}, to=sid)
 
     # log
     _logger.info("New connection to session %s from %s", session_id, sid)
@@ -294,19 +301,24 @@ async def sio_disconnect(sid):
     _sid_to_session_id.pop(sid, None)
 
 # helpers to obtain the session_id
-def _get_session_id_from_room(sid: str) -> str:
-    return next(r for r in sio._sio.rooms(sid) if r != sid) # pylint: disable=protected-access
+def _get_session_id_from_room(sid: str) -> str | None:
+    try:
+        return next(r for r in sio._sio.rooms(sid) if r != sid) # pylint: disable=protected-access
+    except (StopIteration, StopAsyncIteration):
+        return None
 
-def _get_session_id_from_environ(sid: str) -> str:
+def _get_session_id_from_environ(sid: str) -> str | None:
     return sio._sio.get_environ(sid).get(sockets.SESSION_COOKIE_NAME) # pylint: disable=protected-access
 
-def _get_session_id_from_dict(sid: str) -> str:
-    return _sid_to_session_id.get(sid, '---')
+def _get_session_id_from_dict(sid: str) -> str | None:
+    return _sid_to_session_id.get(sid, None)
 
 def get_session(sid: str) -> tuple[str, VFRFunctionRoute]:
     """Prepare the session variables for any given Socket.IO event"""
     # get the session id from somewhere
     session_id = _get_session_id_from_room(sid)
+    if session_id is None:
+        return None, None
     # increase the session expiry
     _vfrroutes.touch(session_id)
     # get the route for the session
@@ -324,6 +336,15 @@ def require_session(require_route: bool=True):
     def decorator(handler):
         async def wrapper(sid, *args):
             session_id, rte = get_session(sid)
+            if session_id is None:
+                await sio.emit("result",
+                               {"type": "result",
+                                "result": "no-session",
+                                "event": None,
+                                "exception_type": None,
+                                "message": "No active session on the server. Maybe you are over the server limit?",
+                                "traceback": None
+                                }, room=sid)
             if require_route and rte is None:
                 # send error message
                 await sio.emit("result", {"result": "no-route"}, to=sid)

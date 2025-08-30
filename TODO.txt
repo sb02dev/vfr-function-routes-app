@@ -31,6 +31,7 @@ v0.3
 + bugfix: annotations are also refreshed when clicking a non-point
 / bugfix: add annotation point -> server exception (not in list) - can't reproduce
 + bugfix: leg definition changes to dotted lines while changing function
++ bugfix: session limit handling was a mess + start connection with polling
 
 
 v0.2
