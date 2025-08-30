@@ -66,6 +66,7 @@ export class Step5AddTracksComponent implements AfterContentInit {
         let fs = this.file_selector.nativeElement;
         fs.onchange = null;
         fs.files = null;
+        fs.value = "";
         fs.onchange = async () => {
             if (fs.files && fs.files.length > 0) {
                 let fstr = '';

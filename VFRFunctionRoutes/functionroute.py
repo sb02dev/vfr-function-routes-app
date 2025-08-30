@@ -501,6 +501,12 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
             color: str
         """
         self.ensure_state(VFRRouteState.ANNOTATIONS)
+        # ensure no name clash
+        (ofname, ofext), i = os.path.splitext(fname), 0
+        while fname in (t.fname for t in self.tracks):
+            fname = f"{ofname}_{i:03d}{ofext}"
+            i += 1
+        # add the track
         self.tracks.append(VFRTrack(self, fname, color, xmlb=xmlb))
         return self
 

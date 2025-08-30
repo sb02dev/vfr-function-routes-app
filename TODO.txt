@@ -6,7 +6,6 @@ v1.0
 - consider place-name based waypoint selection (based on a public database)
 
 v0.3
-- bugfix: tracks with same name breaks program logic
 - bugfix: annotations are also refreshed when clicking a non-point
 - bugfix: add annotation point -> server exception (not in list)
 - bugfix: leg definition changes to dotted lines while changing function
@@ -31,6 +30,7 @@ v0.3
 + published routes on postgres (to not lose on redeploy)
 + review socket.io handlers for async friendlyness
 + solve all linting problems
++ bugfix: tracks with same name breaks program logic + can't add twice the same file before refreshing page
 
 
 v0.2
