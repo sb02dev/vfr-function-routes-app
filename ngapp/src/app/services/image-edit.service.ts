@@ -23,7 +23,7 @@ export class ImageEditService implements OnDestroy {
         this.socketio = io(`${environment.WS_URL}`, {
             transports: ['polling', 'websocket'], // enable fallbacks
             path: "/socket.io",
-            //auth: { session_id: storedId },
+            auth: { session_id: storedId },
             withCredentials: true,
             autoConnect: false
         });

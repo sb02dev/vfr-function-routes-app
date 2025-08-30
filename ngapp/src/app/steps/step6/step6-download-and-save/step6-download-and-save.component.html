@@ -21,6 +21,8 @@
         <a mat-raised-button (click)="downloadVFR()">Download VFR file (to load here later)</a>
         &nbsp;
         <a mat-raised-button (click)="saveToServer()">Publish route (save on server)</a>
+        &nbsp;
+        <a mat-raised-button (click)="closeRoute()">Close the route (release session)</a>
     </div>
     <form [formGroup]="form" fxLayout="column">
         <mat-label>Name of route:</mat-label>

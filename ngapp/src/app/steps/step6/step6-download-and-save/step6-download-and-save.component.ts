@@ -8,6 +8,7 @@ import { ReactiveFormsModule, FormsModule, FormGroup, FormBuilder, Validators } 
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Router } from '@angular/router';
 
 import { HeaderComponent } from '../../../components/header/header/header.component';
 import { ImageEditService } from '../../../services/image-edit.service';
@@ -40,7 +41,10 @@ export class Step6DownloadAndSaveComponent implements AfterContentInit {
 
     private pendingMeta: any = null;
 
-    constructor(private imgsrv: ImageEditService, private fb: FormBuilder, private snackbar: MatSnackBar) {
+    constructor(private imgsrv: ImageEditService,
+                private fb: FormBuilder,
+                private snackbar: MatSnackBar,
+                private router: Router) {
         this.form = this.fb.group({
             rteName: [null, Validators.required],
             speed: [90, Validators.required],
@@ -82,6 +86,7 @@ export class Step6DownloadAndSaveComponent implements AfterContentInit {
     downloadGPX() { this.imgsrv.send('get-gpx', this.gotFileAsText.bind(this)); }
     downloadPNG() { this.imgsrv.send('get-png', this.gotFileAsBinary.bind(this)); }
     saveToServer() { this.imgsrv.send('save-to-cloud', this.gotSaveToCloudResult.bind(this)); }
+    closeRoute() { this.imgsrv.send('close-route', this.gotRouteClosed.bind(this)); }
 
     gotSaveToCloudResult(result: ImageEditMessage) {
         if (result['result'] === 'success') {
@@ -105,6 +110,10 @@ export class Step6DownloadAndSaveComponent implements AfterContentInit {
     gotFileAsBinary(meta: ImageEditMessage, file: BlobPart) {
         const blob = new Blob([file], { type: meta['mime'] });
         this.downloadFile(meta['filename'], blob);
+    }
+
+    gotRouteClosed(result: ImageEditMessage) {
+        this.router.navigateByUrl('/step0');
     }
 
     private downloadFile(filename: string, blob: Blob) {

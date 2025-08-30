@@ -100,6 +100,12 @@ class SessionStore:
             return None
         return data
 
+    def delete(self, session_id: str) -> None:
+        """Delete a Route and session_id from the session store, freeing up a slot"""
+        if session_id not in self._store:
+            return
+        del self._store[session_id]
+
     def count(self) -> int:
         """Gets the number of open sessions"""
         return len(self._store.keys())
@@ -254,11 +260,13 @@ _sid_to_session_id: dict[str, str] = {}
 async def connect(sid, environ, auth):
     """Socket.IO Connect: Session management + authentication"""
     # get session_id from cookies (sent by client if it already has it)
-    cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
-    session_id = cookies.get("session_id").value if "session_id" in cookies else None
+    if isinstance(auth, dict):
+        session_id = auth.get(sockets.SESSION_COOKIE_NAME, None)
 
-    if not session_id and isinstance(auth, dict):
-        session_id = auth.get(sockets.SESSION_COOKIE_NAME)
+    if not session_id:
+        cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
+        session_id = cookies.get("session_id").value if "session_id" in cookies else None
+
 
     if not session_id:
         # fallback: generate one if handshake didn’t have it
@@ -1070,6 +1078,15 @@ async def save_to_cloud(sid: str, session_id: str, rte: Optional[VFRFunctionRout
 
     except Exception:  # pylint: disable=broad-exception-caught
         return {"type": "save-to-cloud-result", "result": "fail"}
+
+
+@sio.on('close-route')
+@require_session(True)
+@error_handler
+async def close_route(sid: str, session_id: str, rte: Optional[VFRFunctionRoute]):  # pylint: disable=unused-argument
+    """This event closes the route, thus freeing up session for other users"""
+    _vfrroutes.delete(session_id)
+    return True
 
 
 
