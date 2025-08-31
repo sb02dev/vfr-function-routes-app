@@ -127,7 +127,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
                  mapdef: MapDefinition,
                  speed: float,
                  dof: datetime.datetime,
-                 session: requests.Session = None,
+                 session: Optional[requests.Session] = None,
                  workfolder: Union[str, Path, None] = None,
                  outfolder: Union[str, Path, None] = None,
                  tracksfolder: Union[str, Path, None] = None
@@ -260,6 +260,8 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
                 # we adjust the name of the leg
                 leg.name = f"{wp_start[0]} -- {wp_end[0]}"
                 # we adjust the annotations so we have the first and last match
+                self.set_state(VFRRouteState.LEGS)
+                    # needed for the annotations but at this point we already are in that state
                 if len(leg.annotations)>0:
                     leg.annotations[0].x = leg.points[0][1]
                 else:
@@ -348,9 +350,9 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
 
     def _get_image_from_figure(self,
                                fig,
-                               size: tuple[float, float] = None,
-                               dpi: float = None
-                              ) -> bytes:
+                               size: Optional[tuple[float, float]] = None,
+                               dpi: Optional[float] = None
+                              ) -> io.BytesIO:
         """Private helper function to get a MatPlotLib Figure converted
         to a byte buffer with PNG format image data.
         """
@@ -705,17 +707,18 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         try:
             # setup clear function to draw background
             tiles = self.map.get_tilerenderer(int(os.getenv('DOC_DPI', '200')))
-            tile_list, crop, image_size, tile_range = \
-                tiles.get_tile_list_for_area(self.calc_basemap_clip())
-            def custom_background(renderer):
-                arr = np.asarray(renderer.buffer_rgba())
-                for p in tile_list:
-                    tile = np.asarray(tiles.get_tile(p.x, p.y, return_format='image'))
-                    # we need to shift the images, other cropping not needed (its outside anyway)
-                    x = int((p.x - tile_range[0])*tiles.tile_size[0] - crop.p0.x)
-                    y = int((p.y - tile_range[2])*tiles.tile_size[1] - crop.p0.y)
-                    paste_img(arr, tile, x, y)
-            backend_agg.RendererAgg.clear = custom_background
+            if tiles is not None
+                tile_list, crop, image_size, tile_range = \
+                    tiles.get_tile_list_for_area(self.calc_basemap_clip())
+                def custom_background(renderer):
+                    arr = np.asarray(renderer.buffer_rgba())
+                    for p in tile_list:
+                        tile = np.asarray(tiles.get_tile(p.x, p.y, return_format='image'))
+                        # we need to shift the images, other cropping not needed (its outside anyway)
+                        x = int((p.x - tile_range[0])*tiles.tile_size[0] - crop.p0.x)
+                        y = int((p.y - tile_range[2])*tiles.tile_size[1] - crop.p0.y)
+                        paste_img(arr, tile, x, y)
+                backend_agg.RendererAgg.clear = custom_background # type: ignore
 
             # initialize map
             from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas  # pylint: disable=import-outside-toplevel
@@ -732,8 +735,8 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
                 t.draw(ax)
 
             # render the overlay
-            fig.patch.set_alpha(0.0)      # transparent background instead of white
-            ax.patch.set_alpha(0.0)       # same for axes
+            fig.patch.set_alpha(0.0)      # transparent background instead of white # type: ignore
+            ax.patch.set_alpha(0.0)       # same for axes # type: ignore
             fig.set_dpi(self.DOC_DPI)
             fig.set_size_inches((c/self.DOC_DPI for c in image_size))
             ax.set_xlim(0, image_size.x/self.DOC_DPI*self.HIGH_DPI)
