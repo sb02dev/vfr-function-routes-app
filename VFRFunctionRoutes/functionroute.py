@@ -707,7 +707,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         try:
             # setup clear function to draw background
             tiles = self.map.get_tilerenderer(int(os.getenv('DOC_DPI', '200')))
-            if tiles is not None
+            if tiles is not None:
                 tile_list, crop, image_size, tile_range = \
                     tiles.get_tile_list_for_area(self.calc_basemap_clip())
                 def custom_background(renderer):
