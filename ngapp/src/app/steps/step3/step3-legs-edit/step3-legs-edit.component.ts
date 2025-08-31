@@ -60,7 +60,7 @@ export class Step3LegsEditComponent implements AfterContentInit {
             return {
                 name: leg.name,
                 function_latex: leg.function_name,
-                function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name)).compile(),
+                function_mathjs_compiled: this.mathedit.getMathJS(this.mathedit.getAST(leg.function_name))?.compile(),
                 function_range: leg.function_range,
                 matrix_func2cropmap: leg.matrix_func2cropmap,
                 matrix_cropmap2func: leg.matrix_cropmap2func,
@@ -103,7 +103,7 @@ export class Step3LegsEditComponent implements AfterContentInit {
 
     latexChange($event: { latex: string; ast: any; mathjs: any }) {
         // redraw with the new curve (temporarily)
-        const compiled = $event.mathjs.compile();
+        const compiled = $event.mathjs ? $event.mathjs.compile() : null;
         this.legs[this.leg_index].function_latex = $event.latex;
         this.legs[this.leg_index].function_mathjs_compiled = compiled;
         this.mapedit.drawOverlayTransformed();

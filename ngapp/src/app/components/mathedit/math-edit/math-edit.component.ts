@@ -42,9 +42,7 @@ export class MathEditComponent implements AfterViewInit {
     onInput(event: any) {
         const latex = this.getLatex();
         const ast = this.getAST(latex);
-        if (!ast) return;
-        const mathjs = this.getMathJS(ast);
-        if (!mathjs) return;
+        const mathjs = (ast)?this.getMathJS(ast):null;
         this.latexChange.emit({
             latex: latex,
             ast: ast,
@@ -73,6 +71,7 @@ export class MathEditComponent implements AfterViewInit {
         try {
             mathjs = mathjsonToMathjs(ast);
         } catch (e) {
+            console.error(e);
             mathjs = null;
         }
         return mathjs;
@@ -122,6 +121,9 @@ function applyFn(fn: string, args: MathNode[]): MathNode {
         case 'Negate': return new math.OperatorNode('-', 'unaryMinus', args);
         case 'Root':
             args[1] = new math.OperatorNode('/', 'divide', [new math.ConstantNode(1), args[1]]);
+            return new math.OperatorNode('^', 'pow', args);
+        case 'Sqrt':
+            args[1] = new math.OperatorNode('/', 'divide', [new math.ConstantNode(1), new math.ConstantNode(2)]);
             return new math.OperatorNode('^', 'pow', args);
         case 'Sin': return new math.FunctionNode('sin', args);
         case 'Cos': return new math.FunctionNode('cos', args);
