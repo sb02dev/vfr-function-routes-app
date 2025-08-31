@@ -67,7 +67,8 @@ app.mount("/frontend",
 
 sockets.sio = SocketManager(app=app,
                             cors_allowed_origins=[],#cors_origins,
-                            mount_location="/socket.io"
+                            mount_location="/socket.io",
+                            max_http_buffer_size=10_000_000
                            )
 
 from .routes import routes, cleanup_loop, pregenerate_tiles #pylint: disable=wrong-import-position

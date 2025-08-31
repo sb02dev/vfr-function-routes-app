@@ -4,6 +4,7 @@ v1.0
 - journey log created, content revised
 - consider tracks from various sources (SkyDemon, ForeFlight, GeoTracker, Garmin5)
 - consider place-name based waypoint selection (based on a public database)
+- non-closed routes
 - some edit messages go to the same session_id's (realtime showing of changes if app open in two windows)
 
 v0.3
