@@ -4,9 +4,10 @@ Tile rendering capabilities
 import io
 import math
 import os
-from typing import Callable, Iterator, NamedTuple, Optional, Literal, Union
+from typing import Callable, Iterator, NamedTuple, Optional, Literal
 import time
 import matplotlib
+
 matplotlib.use("Agg")
 # pylint: disable=wrong-import-position
 from matplotlib import pyplot as plt
@@ -14,6 +15,7 @@ import PIL
 import pymupdf
 
 from .projutils import PointXY
+from .remote_cache import IRemoteCache
 # pylint: enable=wrong-import-position
 
 
@@ -42,6 +44,7 @@ class TileRenderer:
                  page_num: int,
                  pdf_margins: SimpleRect,
                  dpi: float,
+                 remote_cache: Optional[IRemoteCache] = None,
                  tile_size: PointXY = PointXY(512, 512),
                  ):
         # save parameters
@@ -52,7 +55,7 @@ class TileRenderer:
         self.pdf_margins: SimpleRect = pdf_margins
         self.dpi: float = dpi
         self.tile_size: PointXY = tile_size
-        self._fig = None
+        self._remote_cache = remote_cache
 
         # open pdf
         self._pdf_document: pymupdf.Document = pymupdf.open(
@@ -138,24 +141,41 @@ class TileRenderer:
         return ordered_tile_list, cropping, image_size, (tile_x0, tile_x1, tile_y0, tile_y1)
 
 
-    def get_tile(self, x: int, y: int,  # pylint: disable=too-many-return-statements
-                 return_format: Literal['buf', 'image', 'none'] = 'buf'
-                ) -> Union[bytes, PIL.Image, None]: # type: ignore
+    def get_tile(self,
+                 x: int, y: int
+                ) -> PIL.Image: # type: ignore
         """
-        Get the tile at the xth row yth column as a PNG bytes array
+        Get the tile at the xth row yth column as a PIL Image
         """
-        # check cache
         tile_id = self.get_tile_id(x, y)
         tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
+        tilecache_remote = f"tiles/{tile_id}.png"
+
+        # check local cache
         if os.path.isfile(tilecache_fname):
-            if return_format=='none':
-                return None
-            if return_format=='image':
+            img = PIL.Image.open(tilecache_fname)  # type: ignore
+            return img if img.mode=='RGBA' else img.convert('RGBA')
+
+        # check remote cache
+        if self._remote_cache is not None:
+            if self._remote_cache.file_exists(tilecache_remote):
+                self._remote_cache.download_file(tilecache_remote, tilecache_fname)
                 img = PIL.Image.open(tilecache_fname)  # type: ignore
                 return img if img.mode=='RGBA' else img.convert('RGBA')
-            with open(tilecache_fname, "rb") as f:
-                return f.read()
 
+        # render and get the new one from local cache
+        self.render_tile(x, y)
+        img = PIL.Image.open(tilecache_fname)  # type: ignore
+        return img if img.mode=='RGBA' else img.convert('RGBA')
+
+
+    def render_tile(self,
+                    x: int, y: int
+                   ):
+        """Render the image and write it to caches"""
+        tile_id = self.get_tile_id(x, y)
+        tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
+        tilecache_remote = f"tiles/{tile_id}.png"
 
         # calculate the clip coordinates
         x_pixels = x * self.tile_size[0]
@@ -169,56 +189,37 @@ class TileRenderer:
                 self._crop_rect.y0 + (y_pixels + self.tile_size.y - 1)/self._scale)
         )
 
+        # render pdf into pixmap and get PNG
         pixmap: pymupdf.Pixmap = self._page.get_pixmap(clip=clip, dpi=self.dpi)  # type: ignore
+        buf = pixmap.tobytes("png")
 
-        if not self._fig:
-            # only background: just get the image
-            buf = pixmap.tobytes("png")
-            with open(tilecache_fname, "wb") as f:
-                f.write(buf)
-            if return_format=='none':
-                return None
-            if return_format=='buf':
-                return buf
-            bufio = io.BytesIO(buf)
-            img = PIL.Image.open(bufio)  # type: ignore
-            return img if img.mode=='RGBA' else img.convert("RGBA")
-
-        # get the image as a Pillow Image object
-        bg_img: PIL.Image = PIL.Image.open(  # type: ignore
-            io.BytesIO(pixmap.tobytes("png"))).convert("RGBA")
-
-        # render a tile of the overlay figure
-        fig = self._fig
-        self._fig.set_size_inches((c/self.dpi for c in [bg_img.width, bg_img.height]))
-        ax = fig.get_axes()[0]
-        ax.set_xlim(x*self.tile_size.x,
-                    min(self.image_size.x-1, (x+1)*self.tile_size.x-1))
-        ax.set_ylim(min(self.image_size.y-1, (y+1)*self.tile_size.y-1),
-                    y*self.tile_size.y)
-        buf = io.BytesIO()
-        fig.savefig(buf, format='png',
-                    bbox_inches="tight", pad_inches=0,
-                    dpi=self.dpi, transparent=True)
-        buf.seek(0)
-        overlay_img = PIL.Image.open(buf).convert("RGBA")  # type: ignore
-
-        # composite the two images
-        final_img = PIL.Image.alpha_composite(  # type: ignore
-            bg_img, overlay_img).convert("RGB")
-        buf = io.BytesIO()
-        final_img.save(buf, 'png')
-        buf.seek(0)
+        # put tile to local cache
         with open(tilecache_fname, "wb") as f:
-            f.write(buf.getvalue())
-        if return_format=='none':
-            return None
-        if return_format == 'image':
-            return final_img
+            f.write(buf)
 
-        # return as jpg buffer
-        buf.seek(0)
-        return buf.getvalue()
+        # put tile to remote cache
+        if self._remote_cache is not None:
+            self._remote_cache.upload_file(tilecache_fname, tilecache_remote)
+
+    def check_cached(self,
+                     x: int, y: int
+                    ) -> bool:
+        """Return true if found a cached version"""
+        tile_id = self.get_tile_id(x, y)
+        tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
+        tilecache_remote = f"tiles/{tile_id}.png"
+
+        # check local cache
+        if os.path.isfile(tilecache_fname):
+            return True
+
+        # check remote cache
+        if self._remote_cache is not None:
+            if self._remote_cache.file_exists(tilecache_remote):
+                return True
+
+        return False
+
 
 
     def get_tile_order(self,

@@ -715,7 +715,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
                 def custom_background(renderer):
                     arr = np.asarray(renderer.buffer_rgba())
                     for p in tile_list:
-                        tile = np.asarray(tiles.get_tile(p.x, p.y, return_format='image'))
+                        tile = np.asarray(tiles.get_tile(p.x, p.y))
                         # we need to shift the images, cropping not needed (its outside anyway)
                         x = int((p.x - tile_range[0])*tiles.tile_size[0] - crop.p0.x)
                         y = int((p.y - tile_range[2])*tiles.tile_size[1] - crop.p0.y)

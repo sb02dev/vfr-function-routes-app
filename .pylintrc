@@ -3,7 +3,7 @@ unsafe-load-any-extension = y
 
 [DESIGN]
 # Maximum number of lines in a module
-max-module-lines=1100
+max-module-lines=1200
 
 # Maximum number of attributes for a class (R0902)
 max-attributes=15

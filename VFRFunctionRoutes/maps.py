@@ -20,6 +20,7 @@ import numpy as np
 
 from .projutils import PointLonLat, PointXY
 from .rendering import SimpleRect, TileRenderer
+from .remote_cache import IRemoteCache
 # pylint: enable=wrong-import-position
 
 
@@ -39,7 +40,8 @@ class MapDefinition:
                  points: dict[PointLonLat, PointXY],
                  dpis: list[int],
                  datadir: str,
-                 request_session: requests.Session):
+                 request_session: requests.Session,
+                 remote_cache: Optional[IRemoteCache] = None):
         self.name = name
         self.url = url
         self.page_num = page_num
@@ -49,13 +51,15 @@ class MapDefinition:
         self.points = points
         self.datafolder = datadir
         self.request_session = request_session
+        self.remote_cache = remote_cache
         self.download_map()
         self.tilerenderers = {dpi: TileRenderer(self.name,
                                                 self.datafolder,
                                                 self.name+'.pdf',
                                                 self.page_num,
                                                 self.margins,
-                                                dpi
+                                                dpi,
+                                                remote_cache=self.remote_cache
                                                 ) for dpi in dpis}
 
     def download_map(self):
@@ -73,7 +77,12 @@ class MapDefinition:
 
 
     @classmethod
-    def from_dict(cls, dct: dict, dpis: list[int], datadir: str, request_session: requests.Session):
+    def from_dict(cls,
+                  dct: dict,
+                  dpis: list[int],
+                  datadir: str,
+                  request_session: requests.Session,
+                  remote_cache: Optional[IRemoteCache] = None):
         """A factory method to be able to load the object from file."""
         return MapDefinition(dct["name"],
                              dct["url"],
@@ -93,7 +102,8 @@ class MapDefinition:
                               for p in dct["projectionpoints"]},
                              dpis,
                              datadir,
-                             request_session
+                             request_session,
+                             remote_cache=remote_cache
         )
 
 
@@ -102,13 +112,17 @@ class MapManager:
     A Manager class for the maps available in the app (defined in a json file in maps/ folder)
     """
     _instance: Optional['MapManager'] = None
-    def __init__(self, dpis: list[int], request_session: requests.Session):
+    def __init__(self,
+                 dpis: list[int],
+                 request_session: requests.Session,
+                 remote_cache: Optional[IRemoteCache] = None):
         self.dpis = dpis
         self.request_session = request_session
         # get folder paths
         self.rootdir = os.path.dirname(os.path.dirname(__file__))
         self.datadir = os.path.join(self.rootdir, "data")
         self.mapsdir = os.path.join(self.rootdir, "maps")
+        self.remote_cache = remote_cache
         # get list of maps
         maps = [self.read_map_config(os.path.join(self.mapsdir, n),
                                      self.dpis,
@@ -131,10 +145,17 @@ class MapManager:
         return None
 
 
-    def read_map_config(self, fname: str, dpis: list[int], datadir: str) -> MapDefinition:
+    def read_map_config(self,
+                        fname: str,
+                        dpis: list[int],
+                        datadir: str) -> MapDefinition:
         """Load the definition of a map from disk"""
         with open(fname, "rt", encoding="utf8") as f:
-            return MapDefinition.from_dict(json.load(f), dpis, datadir, self.request_session)
+            return MapDefinition.from_dict(json.load(f),
+                                           dpis,
+                                           datadir,
+                                           self.request_session,
+                                           remote_cache=self.remote_cache)
 
 
     def download_maps(self):
@@ -270,7 +291,9 @@ class MapManager:
         pdf_document = pymupdf.open(pdf_path)
         page = pdf_document[0]
         clip = pymupdf.Rect(area.p0.x, area.p0.y, area.p1.x, area.p1.y)
-        pdfimg = PIL.Image.open(io.BytesIO(page.get_pixmap(clip=clip, dpi=600).tobytes("png")))  # type: ignore
+        pdfimg = PIL.Image.open(  # type: ignore
+            io.BytesIO(page.get_pixmap(clip=clip,  # type: ignore
+                                       dpi=600).tobytes("png")))
         # set up plot
         matplotlib.use("TkAgg")
         fig, ax = plt.subplots()

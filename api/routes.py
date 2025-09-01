@@ -30,6 +30,7 @@ from VFRFunctionRoutes import (
 )
 from . import sockets
 from .sockets import sio
+from .remote_cache import S3Cache
 # pylint: enable=wrong-import-position
 
 
@@ -49,10 +50,12 @@ routes = APIRouter()
 # set up maps
 global_requests_session = requests.Session()
 
+remote_cache = S3Cache()
 mapmanager = MapManager([int(os.getenv("LOW_DPI", "72")),
                          int(os.getenv("DOC_DPI", "200")),
                          int(os.getenv("HIGH_DPI", "600"))
-                        ], global_requests_session)
+                        ], global_requests_session,
+                        remote_cache=remote_cache)
 
 
 
@@ -68,7 +71,8 @@ def pregenerate_tiles():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
                     try:
-                        tr.get_tile(xi, yi, return_format='none')
+                        if not tr.check_cached(xi, yi):
+                            tr.render_tile(xi, yi)
                         count_finished_tiles += 1
                     except Exception:  # pylint: disable=broad-exception-caught
                         _logger.error(traceback.format_exc())
@@ -181,7 +185,7 @@ async def cleanup_loop():
 
 async def get_tiled_image_header(renderer: TileRenderer,
                                  area: SimpleRect,
-                                 additional_data: dict = None):
+                                 additional_data: Optional[dict] = None):
     """Gets the message to be sent to the frontend when tiled images should
     be shown for a specified area of the map
     """
@@ -347,7 +351,8 @@ def require_session(require_route: bool=True):
                                 "result": "no-session",
                                 "event": None,
                                 "exception_type": None,
-                                "message": "No active session on the server. Maybe you are over the server limit?",
+                                "message": "No active session on the server. " + \
+                                           "Maybe you are over the server limit?",
                                 "traceback": None
                                 }, room=sid)
             if require_route and rte is None:

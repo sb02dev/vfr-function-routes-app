@@ -6,6 +6,7 @@ from typing import Optional, Union
 import asyncpg
 from fastapi import Request
 from fastapi_socketio import SocketManager
+
 sio: Union[SocketManager, None] = None
 pool: Optional[asyncpg.Pool] = None
 
