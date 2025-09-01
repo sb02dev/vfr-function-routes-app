@@ -35,6 +35,9 @@ proc = subprocess.Popen( # pylint: disable=consider-using-with
 # Example: foo.py:10:5: E0602: Undefined variable 'bar' (undefined-variable)
 pattern = re.compile(r"^(.*?):(\d+)-(\d*):(\d+)-(\d*): ([A-Z])(\d+): (.*) \((.*)\)$")
 
+if proc.stdout is None:
+    sys.exit(1)
+
 for line in proc.stdout:
     line = line.rstrip()
     m = pattern.match(line)

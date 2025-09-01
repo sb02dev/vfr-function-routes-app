@@ -35,6 +35,10 @@ v0.3
 + bugfix: session limit handling was a mess + start connection with polling
 / bugfix: on server exception, frontend keeps the progress indication - can't reproduce
 + close route button on step 6
++ bugfix: waypoint update state fix for annotations
++ bugfix: added square root as known function + latex conversion error handling fixes
++ bugfix: increase socket.io frame limit
++ solved linting issues came up since last review
 
 
 v0.2

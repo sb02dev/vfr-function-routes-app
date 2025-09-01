@@ -551,8 +551,8 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         #print(self._proj(16,48.5))
         #print(self._proj(17,47.5))
         # calculate transformations for FULL_WORLD_XY<->MAP_XY
-        p = [self._proj(ll.lon, ll.lat)
-             for ll in self.map.points.keys()] # convert to fullworld map coord
+        p = [PointXY(x, y) for x, y in [self._proj(ll.lon, ll.lat)
+             for ll in self.map.points.keys()]] # convert to fullworld map coord
         pp = [PointXY(pxy.x/72*self.LOW_DPI, pxy.y/72*self.LOW_DPI)
               for pxy in self.map.points.values()]
                 # must scale it to LOW_DPI from default pdf metric of 72
@@ -573,10 +573,10 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
              (p.maxy-p.miny)*self.HIGH_DPI/self.LOW_DPI),
         ]  # also scale it up!
         p = [
-            (p.minx, p.miny),
-            (p.minx, p.maxy),
-            (p.maxx, p.miny),
-            (p.maxx, p.maxy),
+            PointXY(p.minx, p.miny),
+            PointXY(p.minx, p.maxy),
+            PointXY(p.maxx, p.miny),
+            PointXY(p.maxx, p.maxy),
         ]
         self._matrix_map2cropmap = _calculate_2d_transformation_matrix(p, pp)
         self._matrix_cropmap2map = np.linalg.inv(self._matrix_map2cropmap)
@@ -704,6 +704,8 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         from matplotlib.backends import backend_agg # pylint: disable=import-outside-toplevel
         orig_clear = backend_agg.RendererAgg.clear
 
+        image_size = PointXY(800, 600)
+
         try:
             # setup clear function to draw background
             tiles = self.map.get_tilerenderer(int(os.getenv('DOC_DPI', '200')))
@@ -714,7 +716,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
                     arr = np.asarray(renderer.buffer_rgba())
                     for p in tile_list:
                         tile = np.asarray(tiles.get_tile(p.x, p.y, return_format='image'))
-                        # we need to shift the images, other cropping not needed (its outside anyway)
+                        # we need to shift the images, cropping not needed (its outside anyway)
                         x = int((p.x - tile_range[0])*tiles.tile_size[0] - crop.p0.x)
                         y = int((p.y - tile_range[2])*tiles.tile_size[1] - crop.p0.y)
                         paste_img(arr, tile, x, y)
@@ -738,12 +740,12 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
             fig.patch.set_alpha(0.0)      # transparent background instead of white # type: ignore
             ax.patch.set_alpha(0.0)       # same for axes # type: ignore
             fig.set_dpi(self.DOC_DPI)
-            fig.set_size_inches((c/self.DOC_DPI for c in image_size))
+            fig.set_size_inches(image_size.x/self.DOC_DPI,  image_size.y/self.DOC_DPI)
             ax.set_xlim(0, image_size.x/self.DOC_DPI*self.HIGH_DPI)
             ax.set_ylim(image_size.y/self.DOC_DPI*self.HIGH_DPI, 0)
             canvas.draw()
             img_buf = canvas.buffer_rgba()
-            img = PIL.Image.frombuffer("RGBA",
+            img = PIL.Image.frombuffer("RGBA", # type: ignore
                                        (int(image_size.x), int(image_size.y)),
                                        img_buf,
                                        "raw",
@@ -815,7 +817,8 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         if not self.use_realtime_data:
             old_rtd, self.use_realtime_data, set_rtd = self.use_realtime_data, True, True
         image = self.draw_map()
-        imgname = os.path.join(self.outfolder, self.name+'.png')
+        imgname = os.path.join(self.outfolder if self.outfolder is not None
+                               else '', self.name+'.png')
         with open(imgname, "wb") as f:
             f.write(image)
 
@@ -847,7 +850,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
             # leg table header
             tab = doc.add_table(rows=1, cols=8)
             tab.autofit = True
-            tab.allow_autofit = True
+            tab.allow_autofit = True  # type: ignore
             tab.style = "Colorful Shading Accent 1"
             for i, hdr in enumerate(["Name",
                                      "Hdg",
@@ -879,7 +882,8 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         if set_rtd:
             self.use_realtime_data = old_rtd
         if save:
-            docname = os.path.join(self.outfolder, self.name+'.docx')
+            docname = os.path.join(self.outfolder if self.outfolder is not None
+                                   else '', self.name+'.docx')
             doc.save(docname)
             return None
 
@@ -945,10 +949,10 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         (otherwise SkyDemon really slows down).
         """
         self.ensure_state(VFRRouteState.FINALIZED)
-        gpx = gpxpy.gpx.GPX()
+        gpx = gpxpy.gpx.GPX()  # type: ignore
         gpx.name = "Elmebeteg VFR útvonal"
         gpx.time = datetime.datetime.now()
-        rte = gpxpy.gpx.GPXRoute(name="Elmebeteg VFR útvonal")
+        rte = gpxpy.gpx.GPXRoute(name="Elmebeteg VFR útvonal")  # type: ignore
         for leg in self.legs:
             x = np.linspace(min(x for p, x in leg.points),
                             max(x for p, x in leg.points),
@@ -960,7 +964,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
                              VFRCoordSystem.FUNCTION, self, leg)
                     for x, y in breakpoints]
             ps = [p.project_point(VFRCoordSystem.LONLAT) for p in psrc]
-            pt = [gpxpy.gpx.GPXRoutePoint(p.lat,
+            pt = [gpxpy.gpx.GPXRoutePoint(p.lat,  # type: ignore
                                           p.lon,
                                           name=leg.name if i==0 else None)
                   for i, p in enumerate(ps)]
@@ -1019,7 +1023,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
 
     @classmethod
     def from_json(cls, jsonstring: str,
-                 session: requests.Session = None,
+                 session: Optional[requests.Session] = None,
                  workfolder: Union[str, Path, None] = None,
                  outfolder: Union[str, Path, None] = None,
                  tracksfolder: Union[str, Path, None] = None):
@@ -1031,14 +1035,16 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
 
     @classmethod
     def from_dict(cls, jsonrte: dict,
-                 session: requests.Session = None,
+                 session: Optional[requests.Session] = None,
                  workfolder: Union[str, Path, None] = None,
                  outfolder: Union[str, Path, None] = None,
                  tracksfolder: Union[str, Path, None] = None):
         """Deserializes the object from a dictionary."""
+        if MapManager.instance() is None:
+            raise ValueError('There is no MapManager initialized')
         # initiate with basic info
         rte = VFRFunctionRoute(jsonrte['name'],
-                               MapManager.instance().maps.get(jsonrte['mapname']),
+                               MapManager.instance().maps.get(jsonrte['mapname']), # type: ignore
                                jsonrte['speed'],
                                datetime.datetime.fromisoformat(jsonrte['dof']),
                                session, workfolder, outfolder, tracksfolder)

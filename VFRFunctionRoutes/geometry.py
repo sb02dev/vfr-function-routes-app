@@ -25,7 +25,7 @@ matplotlib.use("Agg")
 import matplotlib.axes
 
 # gpx read and create
-from lxml import etree # pylint: disable=no-name-in-module
+from lxml import etree # pylint: disable=no-name-in-module # type: ignore
 
 # LaTeX evaluation related imports
 from sympy.utilities.lambdify import lambdify
@@ -35,6 +35,7 @@ import sympy.abc
 from .projutils import (
     PointLonLat,
     ExtentLonLat,
+    PointXY,
     _calculate_2d_transformation_matrix,
     _apply_transformation_matrix,
     _rotate_point,
@@ -86,7 +87,7 @@ class VFRPoint:
     """
     def __init__(self,
                  x: float, y: float,
-                 coord_system: Optional[VFRCoordSystem] = VFRCoordSystem.LONLAT,
+                 coord_system: VFRCoordSystem = VFRCoordSystem.LONLAT,
                  route: Optional["VFRFunctionRoute"] = None,
                  leg: Optional["VFRLeg"] = None):
         """
@@ -153,38 +154,62 @@ class VFRPoint:
         curx, cury, cursys = self.x, self.y, self.coord_system
         if self.coord_system.value > to_system.value:
             if cursys == VFRCoordSystem.LONLAT and cursys.value > to_system.value:
+                if self.route is None:
+                    raise ValueError(
+                        'Cannot convert from LONLAT: no Route is specified')
                 (curx, cury), cursys = self.route.proj(curx, cury), VFRCoordSystem.FULL_WORLD_XY
             if cursys == VFRCoordSystem.FULL_WORLD_XY and cursys.value > to_system.value:
+                if self.route is None:
+                    raise ValueError(
+                        'Cannot convert from FULL_WORLD_XY: no Route is specified')
                 (curx, cury), cursys = \
                     _apply_transformation_matrix((curx, cury), self.route.matrix_fullmap2map), \
                     VFRCoordSystem.MAP_XY
             if cursys == VFRCoordSystem.MAP_XY and cursys.value > to_system.value:
+                if self.route is None:
+                    raise ValueError(
+                        'Cannot convert from MAP_XY: no Route is specified')
                 (curx, cury), cursys = \
                     _apply_transformation_matrix((curx, cury), self.route.matrix_map2cropmap), \
                     VFRCoordSystem.MAPCROP_XY
             if cursys == VFRCoordSystem.MAPCROP_XY and cursys.value > to_system.value:
+                if self.leg is None:
+                    raise ValueError(
+                        'Cannot convert from MAPCROP_XY: no Leg is specified')
                 (curx, cury), cursys = \
                     _apply_transformation_matrix((curx, cury), self.leg.matrix_cropmap2func), \
                     VFRCoordSystem.FUNCTION
-            return VFRPoint(curx, cury, cursys, self.route, self)
+            return VFRPoint(curx, cury, cursys, self.route, self.leg)
 
         if cursys == VFRCoordSystem.FUNCTION and cursys.value < to_system.value:
+            if self.leg is None:
+                raise ValueError(
+                    'Cannot convert from FUNCTION: no Route is specified')
             (curx, cury), cursys = \
                 _apply_transformation_matrix((curx, cury), self.leg.matrix_func2cropmap), \
                 VFRCoordSystem.MAPCROP_XY
         if cursys == VFRCoordSystem.MAPCROP_XY and cursys.value < to_system.value:
+            if self.route is None:
+                raise ValueError(
+                    'Cannot convert from MAPCROP_XY: no Route is specified')
             (curx, cury), cursys = \
                 _apply_transformation_matrix((curx, cury), self.route.matrix_cropmap2map), \
                 VFRCoordSystem.MAP_XY
         if cursys == VFRCoordSystem.MAP_XY and cursys.value < to_system.value:
+            if self.route is None:
+                raise ValueError(
+                    'Cannot convert from MAP_XY: no Route is specified')
             (curx, cury), cursys = \
                 _apply_transformation_matrix((curx, cury), self.route.matrix_map2fullmap), \
                 VFRCoordSystem.FULL_WORLD_XY
         if cursys == VFRCoordSystem.FULL_WORLD_XY and cursys.value < to_system.value:
+            if self.route is None:
+                raise ValueError(
+                    'Cannot convert from FULL_WORLD_XY: no Route is specified')
             (curx, cury), cursys = \
                 self.route.proj(curx, cury, inverse=True), \
                 VFRCoordSystem.LONLAT
-        return VFRPoint(curx, cury, cursys, self.route, self)
+        return VFRPoint(curx, cury, cursys, self.route, self.leg)
 
 
 
@@ -212,7 +237,7 @@ class VFRAnnotation:
         self._seglens = None
         self._segtime = None
         self._times_withwind = None
-        self._weather = None
+        self._weather: Optional[dict] = None
         self._headings = None
         self._declination = None
 
@@ -411,10 +436,16 @@ class VFRAnnotation:
 
 
     @property
-    def wind(self):
+    def wind(self) -> dict[str, float]:
         """Based on the weather forecast returns the wind forecast at this
         annotation point at the time of flight."""
         self.get_weather()
+        if self._weather is None:
+            return {
+                "speed": 0,
+                "deg": 0,
+                "gust": 0
+            }
         weather_ts = int(self._leg.route.dof.timestamp())
         latest = sorted((wfx
                          for wfx in self._weather['list']
@@ -466,8 +497,9 @@ class VFRAnnotation:
                       VFRCoordSystem.FUNCTION, self._leg.route, self._leg) \
                       .project_point(VFRCoordSystem.MAPCROP_XY)
         seglen = self.seglen
-        segtime = self.segtime
+        segtime = self.segtime if self.segtime is not None else 0
         segtime_wind = sum(self.times_withwind)
+        segtime_wind = segtime_wind if segtime_wind is not None else 0
         seghdgs = self.headings
         wind_corrs = self.wind_corrections(headings=seghdgs)
         wind_corr = wind_corrs[-1] if wind_corrs else None
@@ -633,9 +665,9 @@ class VFRLeg:
         constraint points. Gives a best approximation.
         """
         self.calc_function()
-        sp = [(x, self.function(x)) for (p, x) in self.points]
+        sp = [PointXY(x, self.function(x)) for (p, x) in self.points]
         dpp = [p.project_point(VFRCoordSystem.MAPCROP_XY) for p, x in self.points]
-        dp = [(p.x, p.y) for p in dpp]
+        dp = [PointXY(p.x, p.y) for p in dpp]
         if len(sp) < 3:
             sp.append(_rotate_point(sp[0], sp[1], -90))
             dp.append(_rotate_point(dp[0], dp[1], 90))
@@ -646,7 +678,7 @@ class VFRLeg:
             pass # keep the old matrix
 
 
-    def ann_start_end(self, ann: VFRAnnotation) -> float:
+    def ann_start_end(self, ann: VFRAnnotation) -> tuple[float, float]:
         """Returns the function-x value of the given and the previous
         annotation. If this is the first annotation point, it gives an
         x value adjusted from current annotation's in the correct direction
@@ -673,7 +705,7 @@ class VFRLeg:
         }
 
     @classmethod
-    def from_dict(cls, value, route: Union['VFRFunctionRoute', None]):
+    def from_dict(cls, value, route: 'VFRFunctionRoute'):
         """Initialize the Leg from a serializable dictionary."""
         return VFRLeg(route,
                       value['name'],
@@ -711,7 +743,7 @@ class VFRTrack:
             self.points=self.read_gpx(fname=fname, xmlb=xmlb)
 
     def read_gpx(self,
-                 fname: Union[str, Path] = None,
+                 fname: str | Path | None = None,
                  xmlb: Optional[bytes] = None
                 ) -> list[VFRPoint]:
         """Reads flown points from a GPX file / GPX string"""

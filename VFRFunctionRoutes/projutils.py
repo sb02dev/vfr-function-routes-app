@@ -1,6 +1,6 @@
 """Helpers for projections
 """
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 import math
 import numpy as np
 
@@ -34,7 +34,7 @@ class ExtentXY(NamedTuple):
     maxx: float
     maxy: float
 
-def _rotate_point(point, center, angle_degrees):
+def _rotate_point(point: PointXY, center: PointXY, angle_degrees: float) -> PointXY:
     """
     Rotate a point around another point in a 2D coordinate system.
 
@@ -58,14 +58,14 @@ def _rotate_point(point, center, angle_degrees):
     rotated_y = (x - cx) * math.sin(angle_radians) + \
         (y - cy) * math.cos(angle_radians) + cy
 
-    rotated_point = (rotated_x, rotated_y)
+    rotated_point = PointXY(rotated_x, rotated_y)
 
     return rotated_point
 
 
 def _calculate_2d_transformation_matrix(
-        source_points: list[tuple[float, float]],
-        destination_points: list[tuple[float, float]]):
+        source_points: list[PointXY],
+        destination_points: list[PointXY]):
     """
     Calculate a 2D transformation matrix given two sets of corresponding
     points in source and destination coordinate systems.
@@ -121,7 +121,10 @@ def _apply_transformation_matrix(point, transformation_matrix):
 
 
 def _get_extent_from_points(points: list[PointLonLat]) -> ExtentLonLat:
-    min_lat, max_lat, min_lon, max_lon = None, None, None, None
+    if len(points)==0:
+        raise ValueError("Can't get extent from zero points")
+    min_lat, max_lat, min_lon, max_lon = \
+        90, -90, 180, -180 # something which will surely change
     for p in points:
         min_lat = min(min_lat, p.lat) if min_lat else p.lat
         max_lat = max(max_lat, p.lat) if max_lat else p.lat
@@ -132,8 +135,9 @@ def _get_extent_from_points(points: list[PointLonLat]) -> ExtentLonLat:
 
 def _get_extent_from_extents(extents: list[ExtentLonLat]) -> ExtentLonLat:
     if len(extents) == 0:
-        return ExtentLonLat(None, None, None, None)
-    min_lat, max_lat, min_lon, max_lon = None, None, None, None
+        raise ValueError("Can't get extent from zero extents")
+    min_lat, max_lat, min_lon, max_lon = \
+        90, -90, 180, -180 # something which will surely change
     for ex in extents:
         min_lat = min(n for n in [min_lat, ex.minlat, ex.maxlat] if n is not None)
         max_lat = max(n for n in [max_lat, ex.minlat, ex.maxlat] if n is not None)

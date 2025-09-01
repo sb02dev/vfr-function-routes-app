@@ -15,9 +15,18 @@ sess = requests.Session()
 
 rootpath = os.path.dirname(os.path.abspath(__file__))
 
+mapmanager = MapManager([int(os.getenv("LOW_DPI", "72")),
+                         int(os.getenv("DOC_DPI", "200")),
+                         int(os.getenv("HIGH_DPI", "600"))
+                        ], sess)
+
+mapdef = mapmanager.maps.get("HUNGARY", None)
+if mapdef is None:
+    raise ValueError("HUNGARY map not found")
+
 rgen = VFRFunctionRoute(
     "LHFH--Lovasberény--Császár--Nyergesújfalu--LHFH",
-    MapManager.instance().maps.get("HUNGARY", None),
+    mapdef,
     100,
     dof=datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(days=2),
     session=sess,

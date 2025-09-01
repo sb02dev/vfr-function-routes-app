@@ -87,7 +87,7 @@ async def assign_session_id(request: Request, call_next):
             sockets.SESSION_COOKIE_NAME,
             session_id,
             httponly=True,
-            samesite="Lax",  # Or "Strict" / "None"
+            samesite="lax",  # Or "Strict" / "None"
             secure=False     # Set to True in production with HTTPS
         )
     return response

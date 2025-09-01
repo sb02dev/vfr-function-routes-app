@@ -69,8 +69,8 @@ class TileRenderer:
         )
         self._scale = 1 / 72 * self.dpi
         self.image_size: PointXYInt = PointXYInt(
-            (self._crop_rect.x1 - self._crop_rect.x0) * self._scale,
-            (self._crop_rect.y1 - self._crop_rect.y0) * self._scale)
+            int((self._crop_rect.x1 - self._crop_rect.x0) * self._scale),
+            int((self._crop_rect.y1 - self._crop_rect.y0) * self._scale))
         self.tile_count: PointXYInt  = PointXYInt(
             math.ceil(self.image_size.x / self.tile_size.x),
             math.ceil(self.image_size.y / self.tile_size.y))
@@ -78,7 +78,6 @@ class TileRenderer:
 
     def __del__(self):
         self._pdf_document.close()
-        self._pdf_document = None
 
 
     @property
@@ -88,7 +87,7 @@ class TileRenderer:
 
 
     def get_tile_list_for_area(self, crop_rect: SimpleRect) -> tuple[
-            list[PointXYInt], SimpleRect, PointXY, tuple[float, float, float, float]
+            list[PointXYInt], SimpleRect, PointXYInt, tuple[float, float, float, float]
         ]:
         """
         Get a list of tiles needed for a given area along with the neccessary cropping (in pixels).
@@ -125,23 +124,23 @@ class TileRenderer:
             PointXY(max(0, tileright - crop_rect.p1.x),
                     max(0, tilebottom - crop_rect.p1.y)))
 
-        cropping: SimpleRect = SimpleRect(PointXYInt(crop_pdf.p0.x * self._scale,
-                                                     crop_pdf.p0.y * self._scale),
-                                          PointXYInt(crop_pdf.p1.x * self._scale,
-                                                     crop_pdf.p1.y * self._scale))
+        cropping: SimpleRect = SimpleRect(PointXY(int(crop_pdf.p0.x * self._scale),
+                                                  int(crop_pdf.p0.y * self._scale)),
+                                          PointXY(int(crop_pdf.p1.x * self._scale),
+                                                  int(crop_pdf.p1.y * self._scale)))
 
         # calculate the cropped image size
-        image_size: PointXYInt = PointXYInt((crop_rect.p1.x - crop_rect.p0.x) * self._scale,
-                                            (crop_rect.p1.y - crop_rect.p0.y) * self._scale)
+        image_size: PointXYInt = PointXYInt(int((crop_rect.p1.x - crop_rect.p0.x) * self._scale),
+                                            int((crop_rect.p1.y - crop_rect.p0.y) * self._scale))
 
 
         # put it together in the return value
-        return ordered_tile_list, cropping, image_size, [tile_x0, tile_x1, tile_y0, tile_y1]
+        return ordered_tile_list, cropping, image_size, (tile_x0, tile_x1, tile_y0, tile_y1)
 
 
     def get_tile(self, x: int, y: int,  # pylint: disable=too-many-return-statements
                  return_format: Literal['buf', 'image', 'none'] = 'buf'
-                ) -> Union[bytes, PIL.Image, None]:
+                ) -> Union[bytes, PIL.Image, None]: # type: ignore
         """
         Get the tile at the xth row yth column as a PNG bytes array
         """
@@ -152,7 +151,7 @@ class TileRenderer:
             if return_format=='none':
                 return None
             if return_format=='image':
-                img = PIL.Image.open(tilecache_fname)
+                img = PIL.Image.open(tilecache_fname)  # type: ignore
                 return img if img.mode=='RGBA' else img.convert('RGBA')
             with open(tilecache_fname, "rb") as f:
                 return f.read()
@@ -170,7 +169,7 @@ class TileRenderer:
                 self._crop_rect.y0 + (y_pixels + self.tile_size.y - 1)/self._scale)
         )
 
-        pixmap: pymupdf.Pixmap = self._page.get_pixmap(clip=clip, dpi=self.dpi)
+        pixmap: pymupdf.Pixmap = self._page.get_pixmap(clip=clip, dpi=self.dpi)  # type: ignore
 
         if not self._fig:
             # only background: just get the image
@@ -182,11 +181,12 @@ class TileRenderer:
             if return_format=='buf':
                 return buf
             bufio = io.BytesIO(buf)
-            img = PIL.Image.open(bufio)
+            img = PIL.Image.open(bufio)  # type: ignore
             return img if img.mode=='RGBA' else img.convert("RGBA")
 
         # get the image as a Pillow Image object
-        bg_img: PIL.Image = PIL.Image.open(io.BytesIO(pixmap.tobytes("png"))).convert("RGBA")
+        bg_img: PIL.Image = PIL.Image.open(  # type: ignore
+            io.BytesIO(pixmap.tobytes("png"))).convert("RGBA")
 
         # render a tile of the overlay figure
         fig = self._fig
@@ -201,10 +201,11 @@ class TileRenderer:
                     bbox_inches="tight", pad_inches=0,
                     dpi=self.dpi, transparent=True)
         buf.seek(0)
-        overlay_img = PIL.Image.open(buf).convert("RGBA")
+        overlay_img = PIL.Image.open(buf).convert("RGBA")  # type: ignore
 
         # composite the two images
-        final_img = PIL.Image.alpha_composite(bg_img, overlay_img).convert("RGB")
+        final_img = PIL.Image.alpha_composite(  # type: ignore
+            bg_img, overlay_img).convert("RGB")
         buf = io.BytesIO()
         final_img.save(buf, 'png')
         buf.seek(0)
@@ -220,8 +221,10 @@ class TileRenderer:
         return buf.getvalue()
 
 
-    def get_tile_order(self, in_tiles = Optional[list[PointXYInt]],
-                       center_x: float = None, center_y: float = None
+    def get_tile_order(self,
+                       in_tiles: Optional[list[PointXYInt]] = None,
+                       center_x: Optional[float] = None,
+                       center_y: Optional[float] = None
                       ) -> Iterator[PointXYInt]:
         """
         Get a list of tile coordinates ordered by priority (closer to center)

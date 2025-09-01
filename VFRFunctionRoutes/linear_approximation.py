@@ -8,13 +8,13 @@ import matplotlib.pyplot as plt
 ### RDP Implementation ###
 ##########################
 def perpendicular_distance(point, start, end):
-    """Compute perpendicular distance of a point to a line segment (start–end)."""
+    """Compute perpendicular distance of a point to a line segment (start-end)."""
     if np.all(start == end):
         return np.linalg.norm(point - start)
     return np.abs(np.cross(end - start, start - point)) / np.linalg.norm(end - start)
 
 def rdp(points, epsilon):
-    """Ramer–Douglas–Peucker algorithm.
+    """Ramer-Douglas-Peucker algorithm.
     points: Nx2 numpy array of [x, y] points
     epsilon: max allowed error (tolerance)
     """

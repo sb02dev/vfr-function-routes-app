@@ -3,8 +3,9 @@ Map managing utilities
 """
 import os
 import io
-from typing import Union
+from typing import Optional, Union
 import json
+from matplotlib.markers import MarkerStyle
 import requests
 
 # pdf and imaging related packages
@@ -100,6 +101,7 @@ class MapManager:
     """
     A Manager class for the maps available in the app (defined in a json file in maps/ folder)
     """
+    _instance: Optional['MapManager'] = None
     def __init__(self, dpis: list[int], request_session: requests.Session):
         self.dpis = dpis
         self.request_session = request_session
@@ -117,7 +119,7 @@ class MapManager:
         ]
         self.maps = {map.name: map for map in maps}
         # save the first instance
-        if not hasattr(self.__class__, "_instance"):
+        if not hasattr(self.__class__, "_instance") or self.__class__._instance is None:
             self.__class__._instance = self
 
 
@@ -138,10 +140,10 @@ class MapManager:
     def download_maps(self):
         """Download all maps"""
         for _, curmap in self.maps.items():
-            curmap.download_map(self.request_session)
+            curmap.download_map()
 
 
-    def get_tilerenderer(self, mapname: str, dpi: int) -> TileRenderer:
+    def get_tilerenderer(self, mapname: str, dpi: int) -> Optional[TileRenderer]:
         """Get TileRenderer based on the name of the map and the resolution"""
         curmap = self.maps.get(mapname, None)
         if curmap is None:
@@ -161,7 +163,7 @@ class MapManager:
         pdf_document = pymupdf.open(pdf_path)
         page = pdf_document[0]
         print("Page rect: ", page.rect)
-        pdfimg = PIL.Image.open(io.BytesIO(page.get_pixmap().tobytes("png")))
+        pdfimg = PIL.Image.open(io.BytesIO(page.get_pixmap().tobytes("png")))  # type: ignore
         # set up plot
         matplotlib.use("TkAgg")
         fig, ax = plt.subplots()
@@ -176,15 +178,15 @@ class MapManager:
             PointXY(area.p0.x, area.p1.y)
         ]
         _ = ax.scatter([p[0] for p in fullmap_points],
-                       [p[1] for p in fullmap_points], c="red", marker="X")
+                       [p[1] for p in fullmap_points], c="red", marker=MarkerStyle("X"))
         sc = ax.scatter([p.x for p in points], [p.y for p in points], s=100, zorder=3, picker=True)
         rect_line, = ax.plot([p.x for p in points] + [points[0].x],
                              [p.y for p in points] + [points[0].y],
                              "b-",
                              lw=2)
         dragging_idx = None
-        ax.set_xlim(xlim)
-        ax.set_ylim(ylim)
+        ax.set_xlim(*xlim)
+        ax.set_ylim(*ylim)
         cont = True
         # set up interaction
         def on_press(event):
@@ -194,7 +196,7 @@ class MapManager:
             if event.inaxes != ax:
                 return
             # Skip if toolbar is in zoom or pan mode
-            if plt.get_current_fig_manager().toolbar.mode != "":
+            if plt.get_current_fig_manager().toolbar.mode != "":  # type: ignore
                 return
             # Find nearest corner (if within threshold)
             if event.button == 1:
@@ -268,7 +270,7 @@ class MapManager:
         pdf_document = pymupdf.open(pdf_path)
         page = pdf_document[0]
         clip = pymupdf.Rect(area.p0.x, area.p0.y, area.p1.x, area.p1.y)
-        pdfimg = PIL.Image.open(io.BytesIO(page.get_pixmap(clip=clip, dpi=600).tobytes("png")))
+        pdfimg = PIL.Image.open(io.BytesIO(page.get_pixmap(clip=clip, dpi=600).tobytes("png")))  # type: ignore
         # set up plot
         matplotlib.use("TkAgg")
         fig, ax = plt.subplots()
@@ -276,9 +278,9 @@ class MapManager:
         xlim = ax.get_xlim()
         ylim = ax.get_ylim()
         pts_artist = ax.scatter([p[0] for p in points],
-                                [p[1] for p in points], c="red", marker="X")
-        ax.set_xlim(xlim)
-        ax.set_ylim(ylim)
+                                [p[1] for p in points], c="red", marker=MarkerStyle("X"))
+        ax.set_xlim(*xlim)
+        ax.set_ylim(*ylim)
         cont = True
         # set up interaction
         def on_click(event):
@@ -287,7 +289,7 @@ class MapManager:
             if event.inaxes != ax:
                 return
             # Skip if toolbar is in zoom or pan mode
-            if plt.get_current_fig_manager().toolbar.mode != "":
+            if plt.get_current_fig_manager().toolbar.mode != "":  # type: ignore
                 return
             # add or remove point
             if event.button is MouseButton.LEFT:

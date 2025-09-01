@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 from latex2mathml.converter import convert as latex2mml
-from lxml import etree # pylint: disable=no-name-in-module
+from lxml import etree # pylint: disable=no-name-in-module # type: ignore
 
 _filespath = Path(__file__).parent
 
