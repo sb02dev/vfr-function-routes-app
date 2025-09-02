@@ -249,7 +249,7 @@ async def get_cache_status():
         for _, tr in curmap.tilerenderers.items():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
-                    cache_status = tr.check_cached(xi, yi, True)
+                    cache_status = tr.check_cached(xi, yi)
                     if cache_status == 'local':
                         count_local_tiles += 1
                     elif cache_status == 'remote':

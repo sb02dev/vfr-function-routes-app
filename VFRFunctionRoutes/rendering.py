@@ -205,8 +205,7 @@ class TileRenderer:
 
 
     def check_cached(self,
-                     x: int, y: int,
-                     local_only: bool = False
+                     x: int, y: int
                     ) -> Literal['none', 'local', 'remote']:
         """Return true if found a cached version"""
         tilecache_fname, tilecache_remote = self.get_tile_fnames(x, y)
@@ -216,7 +215,7 @@ class TileRenderer:
             return 'local'
 
         # check remote cache
-        if self._remote_cache is not None and not local_only:
+        if self._remote_cache is not None:
             if self._remote_cache.file_exists(tilecache_remote):
                 return 'remote'
 
