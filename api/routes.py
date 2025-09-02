@@ -243,17 +243,22 @@ async def get_cache_status():
     for _, curmap in mapmanager.maps.items():
         for _, tr in curmap.tilerenderers.items():
             count_all_tiles += tr.tile_count.x * tr.tile_count.y
-    count_finished_tiles = 0
+    count_local_tiles = 0
+    count_remote_tiles = 0
     for _, curmap in mapmanager.maps.items():
         for _, tr in curmap.tilerenderers.items():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
-                    if tr.check_cached(xi, yi, True):
-                        count_finished_tiles += 1
-    return {"finished": count_finished_tiles,
+                    cache_status = tr.check_cached(xi, yi, True)
+                    if cache_status == 'local':
+                        count_local_tiles += 1
+                    elif cache_status == 'remote':
+                        count_remote_tiles += 1
+    return {"local": count_local_tiles,
+            "remote": count_remote_tiles,
             "total": count_all_tiles,
             "progress": 
-                f"""{count_finished_tiles/count_all_tiles*100
+                f"""{(count_local_tiles + count_remote_tiles)/count_all_tiles*100
                      if count_all_tiles!=0 else 0:.2f}%"""
            }
 
