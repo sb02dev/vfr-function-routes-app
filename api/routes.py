@@ -248,7 +248,7 @@ async def get_cache_status():
         for _, tr in curmap.tilerenderers.items():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
-                    if tr.check_cached(xi, yi):
+                    if tr.check_cached(xi, yi, True):
                         count_finished_tiles += 1
     return {"finished": count_finished_tiles,
             "total": count_all_tiles,
