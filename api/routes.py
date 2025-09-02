@@ -224,7 +224,7 @@ async def get_tile(tileset_name: str, dpi: int, x: int, y:int):
                             f"No renderers matched ({tileset_name}, {dpi})",
                             {"X-Error": "No renderers matched"}
                            )
-    image = renderer.get_tile(x, y)
+    image = renderer.get_tile(x, y)[0]
     return Response(content=image,
                     media_type="image/png",
                     headers={
@@ -248,7 +248,7 @@ async def get_cache_status():
         for _, tr in curmap.tilerenderers.items():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
-                    if tr.check_cached(xi, yi, True):
+                    if tr.check_cached(xi, yi):
                         count_finished_tiles += 1
     return {"finished": count_finished_tiles,
             "total": count_all_tiles,

@@ -15,6 +15,8 @@ class S3Cache(IRemoteCache):
     """A remote cache implementation with boto3"""
 
     def __init__(self):
+        self.known_files = set()
+        self._known_files_inited = False
         self.s3 = boto3.client(
             "s3",
             endpoint_url=ENDPOINT,
@@ -22,19 +24,28 @@ class S3Cache(IRemoteCache):
             aws_secret_access_key=APP_KEY,
         )
 
+    def known_files_init(self):
+        """warm up the filename cache, but only once"""
+        if self._known_files_inited:
+            return
+        paginator = self.s3.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=BUCKET, Prefix="tiles/"):
+            for obj in page.get("Contents", []):
+                self.known_files.add(obj["Key"])
+        self._known_files_inited = True
+
 
     def file_exists(self, remote_name: str) -> bool:
         """file exists check"""
-        try:
-            self.s3.head_object(Bucket=BUCKET, Key=remote_name)
-            return True
-        except self.s3.exceptions.ClientError:
-            return False
+        self.known_files_init()
+        return remote_name in self.known_files
 
 
     def upload_file(self, local_path: str, remote_name: str):
         """file upload"""
+        self.known_files_init()
         self.s3.upload_file(local_path, BUCKET, remote_name)
+        self.known_files.add(remote_name)
 
 
     def download_file(self, remote_name: str, local_path: str):

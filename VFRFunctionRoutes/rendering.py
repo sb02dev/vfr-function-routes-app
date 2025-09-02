@@ -143,39 +143,41 @@ class TileRenderer:
 
     def get_tile(self,
                  x: int, y: int
-                ) -> PIL.Image: # type: ignore
+                ) -> tuple[bytes, PIL.Image]: # type: ignore
         """
         Get the tile at the xth row yth column as a PIL Image
         """
-        tile_id = self.get_tile_id(x, y)
-        tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
-        tilecache_remote = f"tiles/{tile_id}.png"
+        tilecache_fname, tilecache_remote = self.get_tile_fnames(x, y)
 
         # check local cache
         if os.path.isfile(tilecache_fname):
-            img = PIL.Image.open(tilecache_fname)  # type: ignore
-            return img if img.mode=='RGBA' else img.convert('RGBA')
+            with open(tilecache_fname, "rb") as f:
+                png_bytes = f.read()
+            img = PIL.Image.open(io.BytesIO(png_bytes))  # type: ignore
+            return png_bytes, img if img.mode=='RGBA' else img.convert('RGBA')
 
         # check remote cache
         if self._remote_cache is not None:
             if self._remote_cache.file_exists(tilecache_remote):
                 self._remote_cache.download_file(tilecache_remote, tilecache_fname)
-                img = PIL.Image.open(tilecache_fname)  # type: ignore
-                return img if img.mode=='RGBA' else img.convert('RGBA')
+                with open(tilecache_fname, "rb") as f:
+                    png_bytes = f.read()
+                img = PIL.Image.open(io.BytesIO(png_bytes))  # type: ignore
+                return png_bytes, img if img.mode=='RGBA' else img.convert('RGBA')
 
         # render and get the new one from local cache
         self.render_tile(x, y)
-        img = PIL.Image.open(tilecache_fname)  # type: ignore
-        return img if img.mode=='RGBA' else img.convert('RGBA')
+        with open(tilecache_fname, "rb") as f:
+            png_bytes = f.read()
+        img = PIL.Image.open(io.BytesIO(png_bytes))  # type: ignore
+        return png_bytes, img if img.mode=='RGBA' else img.convert('RGBA')
 
 
     def render_tile(self,
                     x: int, y: int
                    ):
         """Render the image and write it to caches"""
-        tile_id = self.get_tile_id(x, y)
-        tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
-        tilecache_remote = f"tiles/{tile_id}.png"
+        tilecache_fname, tilecache_remote = self.get_tile_fnames(x, y)
 
         # calculate the clip coordinates
         x_pixels = x * self.tile_size[0]
@@ -201,28 +203,25 @@ class TileRenderer:
         if self._remote_cache is not None:
             self._remote_cache.upload_file(tilecache_fname, tilecache_remote)
 
+
     def check_cached(self,
-                     x: int, y: int,
-                     local_only: bool = False
+                     x: int, y: int
                     ) -> bool:
         """Return true if found a cached version"""
-        tile_id = self.get_tile_id(x, y)
-        tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
-        tilecache_remote = f"tiles/{tile_id}.png"
+        tilecache_fname, tilecache_remote = self.get_tile_fnames(x, y)
 
         # check local cache
         if os.path.isfile(tilecache_fname):
             return True
 
         # check remote cache
-        if self._remote_cache is not None and not local_only:
+        if self._remote_cache is not None:
             if self._remote_cache.file_exists(tilecache_remote):
                 print(f"downloading {tilecache_remote}")
                 self._remote_cache.download_file(tilecache_remote, tilecache_fname)
                 return True
 
         return False
-
 
 
     def get_tile_order(self,
@@ -263,6 +262,13 @@ class TileRenderer:
     def get_tile_id(self, x: int, y: int) -> str:
         """Return a tile id (for the cache naming)"""
         return f"tilecache_{self.tileset_name}_{self.dpi}DPI_x{x}_y{y}"
+
+    def get_tile_fnames(self, x: int, y: int) -> tuple[str, str]:
+        """Return local and remote filenames"""
+        tile_id = self.get_tile_id(x, y)
+        tilecache_fname = os.path.join(self.datafolder, tile_id+".png")
+        tilecache_remote = f"tiles/{tile_id}.png"
+        return tilecache_fname, tilecache_remote
 
     @staticmethod
     def rect_to_simplerect(rect: pymupdf.Rect) -> SimpleRect:
