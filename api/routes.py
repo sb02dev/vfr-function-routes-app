@@ -75,7 +75,7 @@ def pregenerate_tiles():
             for xi in range(tr.tile_count.x):
                 for yi in range(tr.tile_count.y):
                     try:
-                        if not tr.check_cached(xi, yi):
+                        if tr.check_cached(xi, yi) == 'none':
                             print(f"rendering {mapname}/{dpi}/{xi}-{yi}...")
                             tr.render_tile(xi, yi)
                         count_finished_tiles += 1
