@@ -4,3 +4,4 @@ from .geometry import VFRPoint, VFRRouteState, VFRCoordSystem
 from .rendering import TileRenderer, SVGRenderer, SimpleRect
 from .maps import MapManager, MapDefinition
 from .projutils import PointXY, PointLonLat
+from .navaids import NavAidDatabase

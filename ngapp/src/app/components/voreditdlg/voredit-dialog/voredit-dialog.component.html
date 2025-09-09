@@ -1,0 +1,46 @@
+<h2 mat-dialog-title>Edit VOR/DME information</h2>
+<mat-dialog-content>
+    <div>
+        <mat-form-field>
+            <mat-label>VOR identifier</mat-label>
+            <input #vorinp matInput title="vorid" type="text"
+                   [(ngModel)]="vor"
+                   [matAutocomplete]="auto">
+            <mat-autocomplete #auto="matAutocomplete">
+                <mat-option *ngFor="let option of filteredOptions$ | async" [value]="option">
+                    {{ option }}
+                </mat-option>
+            </mat-autocomplete>
+        </mat-form-field>
+    </div>
+
+    <div>
+        <mat-button-toggle-group [value]="mode" (change)="onModeChange($event.value)">
+            <mat-button-toggle value="station">Use VOR station</mat-button-toggle>
+            <mat-button-toggle value="arc_point">Use radial/DME from VOR station</mat-button-toggle>
+        </mat-button-toggle-group>
+    </div>
+
+    <div *ngIf="mode === 'arc_point'">
+        <mat-form-field>
+            <mat-label>Radial</mat-label>
+            <input matInput title="radial" type="number" [(ngModel)]="radial" min="0" max="359" step="1">
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>DME</mat-label>
+            <input matInput title="dme" type="number" [(ngModel)]="dme" min="0" step="0.1">
+        </mat-form-field>
+
+        <mat-form-field>
+            <mat-label>Magnetic adjustment</mat-label>
+            <input matInput title="magnetic_adj" type="number" [(ngModel)]="magn" min="0" max="359" step="0.1">
+        </mat-form-field>
+    </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-button (click)="close(false)">Cancel</button>
+    <button mat-raised-button color="primary" (click)="close(true)">Save</button>
+</mat-dialog-actions>

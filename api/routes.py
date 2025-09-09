@@ -28,7 +28,7 @@ load_dotenv()
 from VFRFunctionRoutes import (
     VFRFunctionRoute, VFRRouteState, VFRCoordSystem,
     MapManager, MapDefinition, TileRenderer, SVGRenderer,
-    SimpleRect
+    SimpleRect, NavAidDatabase
 )
 from . import sockets
 from .remote_cache import S3Cache
@@ -704,6 +704,22 @@ async def update_waypoints(sid: str, session_id: str, rte: VFRFunctionRoute, msg
         "type": "waypoints",
         "waypoints": wps,
     }
+
+
+@sio.on('get-vor-stations')
+@error_handler
+async def get_vor_stations(sid: str, search: str):  # pylint: disable=unused-argument
+    """Search the navaid database for the given search string"""
+    navaids = NavAidDatabase(os.path.join(rootpath, 'data'))
+    return navaids.lookup_navaids(search)
+
+
+@sio.on('get-vor-location')
+@error_handler
+async def get_vor_location(sid: str, vor_lookup: str):  # pylint: disable=unused-argument
+    """Get a location from a VOR name or a VOR/Radial/DME/magnetic_adj string"""
+    navaids = NavAidDatabase(os.path.join(rootpath, 'data'))
+    return navaids.get_location(vor_lookup)
 
 
 ################################################################################

@@ -4,12 +4,10 @@ v1.0
 - journey log created, content revised
 - consider tracks from various sources (SkyDemon, ForeFlight, GeoTracker, Garmin5)
 - consider place-name based waypoint selection (based on a public database)
-- non-closed routes
 - some edit messages go to the same session_id's (realtime showing of changes if app open in two windows)
 
 v0.3
-- add vor/radial/dme format as waypoints
-- set dme arc (function + x-values) easily
+- non-closed routes
 + multiple maps (from multiple countries, 1 additional country introduced)
 + bugfix: server could not start when no map was downloaded
 + limit tile download to 3 simultaneous
@@ -42,6 +40,8 @@ v0.3
 + bugfix: increase socket.io frame limit
 + solved linting issues came up since last review
 + object storage for map tiles and pdfs to avoid regeneration on container sleep
++ add vor/radial/dme format as waypoints
++ set dme arc x-values
 
 
 v0.2

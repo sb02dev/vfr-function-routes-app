@@ -16,6 +16,7 @@ import { MathEditComponent } from "../../../components/mathedit/math-edit/math-e
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
 import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon-lat-edit-dialog/lon-lat-edit-dialog.component';
 import { ImageEditMessage } from '../../../models/image-edit-msg';
+import { DMEArcFuncXCalcDialogComponent } from '../../../components/voreditdlg/dmearc-func-xcalc-dialog/dmearc-func-xcalc-dialog.component';
 
 @Component({
     selector: 'app-step3-legs-edit',
@@ -154,16 +155,34 @@ export class Step3LegsEditComponent implements AfterContentInit {
         this.matheditrange.setLatex(rng);
     }
 
+    rangeFromDME() {
+        const dialogRef = this.dialog.open(DMEArcFuncXCalcDialogComponent, {
+            data: {radial1: 90, radial2: 114}
+        })
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result.save) {
+                const leg = this.legs[this.leg_index];
+                leg.points[0].func_x = result.xmin;
+                leg.points[leg.points.length-1].func_x = result.xmax;
+                this.updateLegs(true);
+            }
+        });
+    }
+
+
     editLonLatDialog(index: number, legpoint: LegPoint) {
         const dialogRef = this.dialog.open(LonLatEditDialogComponent, {
             data: {"lon": legpoint.lon, "lat": legpoint.lat}
         });
 
         dialogRef.afterClosed().subscribe(result => {
-            legpoint.lon = result.lon;
-            legpoint.lat = result.lat;
-            legpoint.lonlat_valid = false;
-            this.updateLegs(true);
+            if (result.save) {
+                legpoint.lon = result.lon;
+                legpoint.lat = result.lat;
+                legpoint.lonlat_valid = false;
+                this.updateLegs(true);
+            }
         });
     }
 

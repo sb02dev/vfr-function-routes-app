@@ -19,7 +19,11 @@
                 <mat-card-title fxLayout="row">
                     <span fxLayoutAlign="start center">Waypoints</span>
                     <a mat-icon-button (click)="addPointAtLonLat()" matTooltip="Add point by coordinates" matTooltipShowDelay="500" fxLayoutAlign="end center">
-                        <mat-icon aria-hidden="false" aria-label="Add point" fontIcon="add"></mat-icon>
+                        <mat-icon aria-hidden="false" aria-label="Add point coordinates" fontIcon="add"></mat-icon>
+                    </a>
+                    <a mat-icon-button (click)="addVORPoint()" matTooltip="Add point by VOR/DME" matTooltipShowDelay="500"
+                        fxLayoutAlign="end center">
+                        <mat-icon aria-hidden="false" aria-label="Add point VOR" fontIcon="location_on"></mat-icon>
                     </a>
                 </mat-card-title>
             </mat-card-header>

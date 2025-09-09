@@ -1,0 +1,33 @@
+<h2 mat-dialog-title>Edit VOR/DME information</h2>
+<mat-dialog-content>
+
+    <mat-form-field>
+        <mat-label>Radial 1</mat-label>
+        <input matInput title="radial1" type="number" [(ngModel)]="radial1" min="0" max="359" step="1">
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>Radial 2</mat-label>
+        <input matInput title="radial2" type="number" [(ngModel)]="radial2" min="0" step="0.1">
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>X-Min</mat-label>
+        <input matInput title="x-min" type="number"
+               [value]="-math.cos((math.abs(radial1-radial2)/2+90)*math.PI/180)"
+               readonly="true">
+    </mat-form-field>
+
+    <mat-form-field>
+        <mat-label>X-Max</mat-label>
+        <input matInput title="x-max" type="number"
+               [value]="math.cos((math.abs(radial1-radial2)/2+90)*math.PI/180)"
+               readonly="true">
+    </mat-form-field>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+    <button mat-button (click)="close(false)">Cancel</button>
+    <button mat-raised-button color="primary" (click)="close(true)">Save</button>
+</mat-dialog-actions>

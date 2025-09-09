@@ -15,6 +15,7 @@ import { HeaderComponent } from "../../../components/header/header/header.compon
 import { MapEditComponent } from "../../../components/mapedit/map-edit/map-edit.component";
 import { LonLatEditDialogComponent } from '../../../components/lonlateditdlg/lon-lat-edit-dialog/lon-lat-edit-dialog.component';
 import { ImageEditMessage } from '../../../models/image-edit-msg';
+import { VOREditDialogComponent } from '../../../components/voreditdlg/voredit-dialog/voredit-dialog.component';
 
 @Component({
     selector: 'app-step2-waypoints-edit',
@@ -147,7 +148,10 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
 
     addPointAtLonLat() {
         const dialogRef = this.dialog.open(LonLatEditDialogComponent, {
-            data: { "lon": this.waypoints[0].lon, "lat": this.waypoints[0].lat }
+            data: {
+                "lon": this.waypoints.length > 0 ? this.waypoints[0].lon : 18,
+                "lat": this.waypoints.length > 0 ? this.waypoints[0].lat : 47
+            }
         });
 
         dialogRef.afterClosed().subscribe(result => {
@@ -163,6 +167,32 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
                 this.updateWaypoints(true);
             }
         });
+    }
+
+    addVORPoint() {
+        const dialogRef = this.dialog.open(VOREditDialogComponent, {
+            data: { "vor": "GYR", "radial": 90, "dme": 14.4, "magn": 5, "mode": 'arc_point' }
+        })
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result.save) {
+                let vor_lookup = result.vor;
+                if (result.mode == 'arc_point') {
+                    vor_lookup += `/${result.radial}/${result.dme}/${result.magn}`
+                }
+                this.imgsrv.send('get-vor-location', (lon: number, lat: number) => {
+                    this.waypoints.push({
+                        name: '???',
+                        x: 0,
+                        y: 0,
+                        lon: lon,
+                        lat: lat,
+                        lonlat_valid: false
+                    });
+                    this.updateWaypoints(true);
+                }, vor_lookup);
+            }
+        })
     }
 
     movePointTo(event: { i: number, x: number, y: number, callback: () => void }) {
