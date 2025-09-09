@@ -146,6 +146,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         self.tracks: list[VFRTrack] = []
         self._session = session if session else requests.Session()
         self.waypoints: list[tuple[str, VFRPoint]] = []
+        self.is_closed = True
         self.area_of_interest = {
             'top-left': VFRPoint(
                 self.map.area["top-left"].lon,
@@ -243,7 +244,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         """
         Converts waypoints to legs considering the already existing ones
         """
-        for i, wp_start in enumerate(self.waypoints):
+        for i, wp_start in enumerate(self.waypoints if self.is_closed else self.waypoints[:-1]):
             wp_end = self.waypoints[i+1 if i+1<len(self.waypoints) else 0]
                 # circle around (last point is the same as first)
             if len(self.legs)>i: # we have a leg at that position
@@ -406,7 +407,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         self.waypoints.append((name, point.project_point(VFRCoordSystem.LONLAT)))
 
 
-    def update_waypoints(self, wps: list[dict]):
+    def update_waypoints(self, wps: list[dict], is_closed: bool):
         """Update the waypoints based on the data received from the frontend."""
         # calculate new waypoints
         self.waypoints = [(
@@ -420,6 +421,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
                          wp["lat"],
                          VFRCoordSystem.LONLAT, self)
         ) for wp in wps]
+        self.is_closed = is_closed
 
 
     def update_legs(self, legs: list[dict]):
@@ -999,7 +1001,8 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         }}
         # step 2: waypoints
         #if self._state.value>=VFRRouteState.WAYPOINTS.value:
-        jsonrte['step2'] = { 'waypoints': [(wp[0], wp[1].to_dict()) for wp in self.waypoints] }
+        jsonrte['step2'] = { 'waypoints': [(wp[0], wp[1].to_dict()) for wp in self.waypoints],
+                             'is_closed': self.is_closed }
         # step 3: legs
         #if self._state.value>=VFRRouteState.LEGS.value:
         jsonrte['step3'] = { 'legs': [leg.to_dict() for leg in self.legs] }
@@ -1064,6 +1067,7 @@ class VFRFunctionRoute:  # pylint: disable=too-many-instance-attributes,disable=
         #if state.value>=VFRRouteState.WAYPOINTS.value:
         rte.waypoints = [(name, VFRPoint.from_dict(p, rte))
                          for name, p in jsonrte['step2']['waypoints']]
+        rte.is_closed = jsonrte['step2'].get('is_closed', True)
         #rte.set_state(VFRRouteState.WAYPOINTS)
         # step 3: legs
         #if state.value>=VFRRouteState.LEGS.value:

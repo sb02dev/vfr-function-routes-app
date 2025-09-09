@@ -28,6 +28,10 @@
                 </mat-card-title>
             </mat-card-header>
 
+            <div>
+                <mat-checkbox [(ngModel)]="closedRoute" title="Show estimated bubbles">Closed route</mat-checkbox>
+            </div>
+
             <div class="mat-elevation-z8"
                  [class.table-container-landscape]="map.isLandscape$ | async"
                  [class.table-container-portrait]="!(map.isLandscape$ | async)"

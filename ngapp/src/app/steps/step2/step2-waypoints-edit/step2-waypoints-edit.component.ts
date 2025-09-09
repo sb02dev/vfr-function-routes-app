@@ -6,6 +6,8 @@ import { FlexLayoutModule } from '@ngbracket/ngx-layout';
 import { MatTableModule } from '@angular/material/table';
 import { MatCardModule } from "@angular/material/card";
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 
@@ -25,7 +27,9 @@ import { VOREditDialogComponent } from '../../../components/voreditdlg/voredit-d
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
+        MatCheckboxModule,
     FlexLayoutModule,
+        FormsModule,
     MatTableModule,
     HeaderComponent,
     MapEditComponent,
@@ -39,6 +43,15 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
     @ViewChild(MapEditComponent) mapedit!: MapEditComponent;
 
     waypoints: Waypoint[] = [];
+    private _closedRoute: boolean = true;
+    set closedRoute(value: boolean) {
+        this._closedRoute = value;
+        this.mapedit.drawOverlayTransformed();
+        this.updateWaypoints(false);
+    }
+    get closedRoute() {
+        return this._closedRoute;
+    }
 
     constructor(public router: Router, private imgsrv: ImageEditService, private dialog: MatDialog) {
     }
@@ -60,6 +73,7 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
                 lonlat_valid: true,
             }
         });
+        this._closedRoute = result['isclosed'];
         this.mapedit.drawOverlayTransformed();
     }
 
@@ -110,6 +124,7 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
                         y: wp.y,
                     }
                 }),
+                isclosed: this.closedRoute,
             });
         } else {
             this.imgsrv.send('update-wps', this.gotWaypoints.bind(this), {
@@ -120,6 +135,7 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
                         lat: wp.lat,
                     }
                 }),
+                isclosed: this.closedRoute,
             });
         }
     }
@@ -221,7 +237,9 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
                 const [x, y] = this.mapedit.getImage2CanvasCoords(this.waypoints[i].x, this.waypoints[i].y);
                 ctx.lineTo(x, y);
             }
+            if (this.closedRoute) {
             ctx.closePath();
+            }
             ctx.lineWidth = 6;
             ctx.strokeStyle = "red";
             ctx.stroke();

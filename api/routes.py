@@ -669,7 +669,8 @@ async def get_waypoints(sid: str, session_id: str, rte: VFRFunctionRoute):  # py
                         "lat": p.lat,
                         } for name, p, pp in [
                             (name, p, p.project_point(VFRCoordSystem.MAPCROP_XY))
-                            for name, p in rte.waypoints]]
+                            for name, p in rte.waypoints]],
+        "isclosed": rte.is_closed,
     }
 
 
@@ -694,7 +695,7 @@ async def update_waypoints(sid: str, session_id: str, rte: VFRFunctionRoute, msg
     Returns the edits so that x-y -> lon-lat conversions are sent back.
     """
     loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, rte.update_waypoints, msg.get("waypoints"))
+    await loop.run_in_executor(None, rte.update_waypoints, msg.get("waypoints"), msg.get("isclosed", True))
     _vfrroutes.set(session_id, rte)
     wps = [{
         "name": name,
@@ -709,6 +710,7 @@ async def update_waypoints(sid: str, session_id: str, rte: VFRFunctionRoute, msg
     return {
         "type": "waypoints",
         "waypoints": wps,
+        "isclosed": rte.is_closed,
     }
 
 
