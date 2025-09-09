@@ -33,30 +33,54 @@ export class VOREditDialogComponent implements AfterViewInit {
     radial: number = 0;
     dme: number = 0;
     magn: number = 0;
+    airport: string = '';
     mode: string = 'arc_point';
 
     @ViewChild('vorinp') vorinp!: ElementRef<HTMLInputElement>;
-    filteredOptions$!: Observable<string[]>;
+    filteredNavaids$!: Observable<string[]>;
+    @ViewChild('airportinp') airportinp!: ElementRef<HTMLInputElement>;
+    filteredAirports$!: Observable<string[]>;
+
 
     constructor(
         private imgsrv: ImageEditService,
         private dialogRef: MatDialogRef<VOREditDialogComponent>,
-        @Inject(MAT_DIALOG_DATA) public data: { vor: string; radial: number, dme: number, magn: number, mode: 'station' | 'arc_point' }
+        @Inject(MAT_DIALOG_DATA) public data: {
+            vor: string;
+            radial: number,
+            dme: number,
+            magn: number,
+            airport: string;
+            mode: 'station' | 'arc_point' | 'airport'
+        }
     ) {
-        this.vor = data.vor;
-        this.radial = data.radial;
-        this.dme = data.dme
-        this.magn = data.magn;
         this.mode = data.mode ? data.mode : 'station';
+        if (this.mode == 'airport') {
+            this.airport = data.airport;   
+        } else {
+            this.vor = data.vor;
+            this.radial = data.radial;
+            this.dme = data.dme
+            this.magn = data.magn;
+        }
     }
 
     ngAfterViewInit() {
-        this.filteredOptions$ = fromEvent<InputEvent>(this.vorinp.nativeElement, 'input').pipe(
-            map(event => (event.target as HTMLInputElement).value),
-            debounceTime(300),                // wait for user to stop typing
-            distinctUntilChanged(),
-            switchMap(value => this.onQueryVORStations(value)) // call server
-        );
+        if (this.mode !== 'airport') {
+            this.filteredNavaids$ = fromEvent<InputEvent>(this.vorinp.nativeElement, 'input').pipe(
+                map(event => (event.target as HTMLInputElement).value),
+                debounceTime(300),                // wait for user to stop typing
+                distinctUntilChanged(),
+                switchMap(value => this.onQueryVORStations(value)) // call server
+            );
+        } else {
+            this.filteredAirports$ = fromEvent<InputEvent>(this.airportinp.nativeElement, 'input').pipe(
+                map(event => (event.target as HTMLInputElement).value),
+                debounceTime(300),                // wait for user to stop typing
+                distinctUntilChanged(),
+                switchMap(value => this.onQueryAirports(value)) // call server
+            );
+        }
     }
     
     close(save: boolean) {
@@ -65,6 +89,7 @@ export class VOREditDialogComponent implements AfterViewInit {
             radial: this.radial,
             dme: this.dme,
             magn: this.magn,
+            airport: this.airport,
             mode: this.mode,
             save: save
         });
@@ -78,6 +103,15 @@ export class VOREditDialogComponent implements AfterViewInit {
         return new Observable(observer => {
             this.imgsrv.send('get-vor-stations', (stations: string[]) => {
                 observer.next(stations);
+                observer.complete(); // complete after delivering results
+            }, query);
+        });
+    }
+
+    onQueryAirports(query: string): Observable<string[]> {
+        return new Observable(observer => {
+            this.imgsrv.send('get-airports', (airports: string[]) => {
+                observer.next(airports);
                 observer.complete(); // complete after delivering results
             }, query);
         });

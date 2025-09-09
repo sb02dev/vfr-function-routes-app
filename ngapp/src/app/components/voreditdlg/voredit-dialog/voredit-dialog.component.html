@@ -1,20 +1,32 @@
 <h2 mat-dialog-title>Edit VOR/DME information</h2>
 <mat-dialog-content>
-    <div>
+    <div *ngIf="mode === 'airport'">
         <mat-form-field>
-            <mat-label>VOR identifier</mat-label>
-            <input #vorinp matInput title="vorid" type="text"
-                   [(ngModel)]="vor"
-                   [matAutocomplete]="auto">
-            <mat-autocomplete #auto="matAutocomplete">
-                <mat-option *ngFor="let option of filteredOptions$ | async" [value]="option">
+            <mat-label>Airport identifier</mat-label>
+            <input #airportinp matInput title="airportid" type="text"
+                   [(ngModel)]="airport"
+                   [matAutocomplete]="airportauto">
+            <mat-autocomplete #airportauto="matAutocomplete">
+                <mat-option *ngFor="let option of filteredAirports$ | async" [value]="option">
                     {{ option }}
                 </mat-option>
             </mat-autocomplete>
         </mat-form-field>
     </div>
 
-    <div>
+    <div *ngIf="mode !== 'airport'">
+        <mat-form-field>
+            <mat-label>VOR identifier</mat-label>
+            <input #vorinp matInput title="vorid" type="text" [(ngModel)]="vor" [matAutocomplete]="auto">
+            <mat-autocomplete #auto="matAutocomplete">
+                <mat-option *ngFor="let option of filteredNavaids$ | async" [value]="option">
+                    {{ option }}
+                </mat-option>
+            </mat-autocomplete>
+        </mat-form-field>
+    </div>
+
+    <div *ngIf="mode !== 'airport'">
         <mat-button-toggle-group [value]="mode" (change)="onModeChange($event.value)">
             <mat-button-toggle value="station">Use VOR station</mat-button-toggle>
             <mat-button-toggle value="arc_point">Use radial/DME from VOR station</mat-button-toggle>

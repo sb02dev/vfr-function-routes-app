@@ -61,6 +61,8 @@ mapmanager = MapManager([int(os.getenv("LOW_DPI", "72")),
                         ], global_requests_session,
                         remote_cache=remote_cache)
 
+navaids = NavAidDatabase(os.path.join(rootpath, 'data'))
+
 
 
 def pregenerate_tiles():
@@ -718,7 +720,6 @@ async def update_waypoints(sid: str, session_id: str, rte: VFRFunctionRoute, msg
 @error_handler
 async def get_vor_stations(sid: str, search: str):  # pylint: disable=unused-argument
     """Search the navaid database for the given search string"""
-    navaids = NavAidDatabase(os.path.join(rootpath, 'data'))
     return navaids.lookup_navaids(search)
 
 
@@ -726,8 +727,22 @@ async def get_vor_stations(sid: str, search: str):  # pylint: disable=unused-arg
 @error_handler
 async def get_vor_location(sid: str, vor_lookup: str):  # pylint: disable=unused-argument
     """Get a location from a VOR name or a VOR/Radial/DME/magnetic_adj string"""
-    navaids = NavAidDatabase(os.path.join(rootpath, 'data'))
-    return navaids.get_location(vor_lookup)
+    return navaids.get_vor_location(vor_lookup)
+
+
+@sio.on('get-airports')
+@error_handler
+async def get_airports(sid: str, search: str):  # pylint: disable=unused-argument
+    """Search the airport database for the given search string"""
+    return navaids.lookup_airports(search)
+
+
+@sio.on('get-airport-location')
+@error_handler
+async def get_airport_location(sid: str, airport_lookup: str):  # pylint: disable=unused-argument
+    """Get a location from a VOR name or a VOR/Radial/DME/magnetic_adj string"""
+    return navaids.get_airport_location(airport_lookup)
+
 
 
 ################################################################################

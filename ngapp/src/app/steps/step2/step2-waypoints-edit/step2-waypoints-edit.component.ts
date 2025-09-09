@@ -23,18 +23,18 @@ import { VOREditDialogComponent } from '../../../components/voreditdlg/voredit-d
     selector: 'app-step2-waypoints-edit',
     standalone: true,
     imports: [
-    CommonModule,
-    MatButtonModule,
-    MatIconModule,
-    MatTooltipModule,
+        CommonModule,
+        MatButtonModule,
+        MatIconModule,
+        MatTooltipModule,
         MatCheckboxModule,
-    FlexLayoutModule,
+        FlexLayoutModule,
         FormsModule,
-    MatTableModule,
-    HeaderComponent,
-    MapEditComponent,
-    MatCardModule,
-],
+        MatTableModule,
+        HeaderComponent,
+        MapEditComponent,
+        MatCardModule,
+    ],
     templateUrl: './step2-waypoints-edit.component.html',
     styleUrl: './step2-waypoints-edit.component.css'
 })
@@ -193,12 +193,14 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
         dialogRef.afterClosed().subscribe(result => {
             if (result.save) {
                 let vor_lookup = result.vor;
+                let vor_name = result.vor;
                 if (result.mode == 'arc_point') {
-                    vor_lookup += `/${result.radial}/${result.dme}/${result.magn}`
+                    vor_lookup += `/${result.radial}/${result.dme}/${result.magn}`;
+                    vor_name += `/${result.radial}/${result.dme}`;
                 }
                 this.imgsrv.send('get-vor-location', (lon: number, lat: number) => {
                     this.waypoints.push({
-                        name: '???',
+                        name: vor_name,
                         x: 0,
                         y: 0,
                         lon: lon,
@@ -207,6 +209,28 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
                     });
                     this.updateWaypoints(true);
                 }, vor_lookup);
+            }
+        })
+    }
+
+    addAirportPoint() {
+        const dialogRef = this.dialog.open(VOREditDialogComponent, {
+            data: { airport: "LHPR", mode: 'airport' }
+        })
+
+        dialogRef.afterClosed().subscribe(result => {
+            if (result.save) {
+                this.imgsrv.send('get-airport-location', (lon: number, lat: number) => {
+                    this.waypoints.push({
+                        name: result.airport,
+                        x: 0,
+                        y: 0,
+                        lon: lon,
+                        lat: lat,
+                        lonlat_valid: false
+                    });
+                    this.updateWaypoints(true);
+                }, result.airport);
             }
         })
     }
@@ -238,7 +262,7 @@ export class Step2WaypointsEditComponent implements AfterContentInit {
                 ctx.lineTo(x, y);
             }
             if (this.closedRoute) {
-            ctx.closePath();
+                ctx.closePath();
             }
             ctx.lineWidth = 6;
             ctx.strokeStyle = "red";

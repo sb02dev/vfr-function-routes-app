@@ -20,6 +20,19 @@ class NavAidDatabase:
         for ds_name in ['navaids', 'airports']:
             self.download_dataset(ds_name)
         self.df_navaids = pd.read_csv(os.path.join(self.workdir, 'navaids.csv'))
+        self.df_airports = pd.read_csv(os.path.join(self.workdir, 'airports.csv'))
+
+
+    def lookup_airports(self, search: str) -> list[str]:
+        """Search for airports in the database based on the search string"""
+        airport_def = self.df_airports[
+            ((self.df_airports['ident'].str.match('.*'+search+'.*')) |
+             (self.df_airports['name'].str.match('.*'+search+'.*'))) &
+            (self.df_airports['type'].isin(
+                ['heliport','large_airport','medium_airport','small_airport']
+            )
+            )]
+        return list(airport_def['ident'])
 
 
     def lookup_navaids(self, search: str) -> list[str]:
@@ -33,7 +46,23 @@ class NavAidDatabase:
         return list(vor_station_def['ident'])
 
 
-    def get_location(self, vor_lookup: str):
+    def get_airport_location(self, airport_lookup: str):
+        """Get a location from an airport identifier"""
+        airport_def = self.df_airports[
+            (self.df_airports['ident'] == airport_lookup) &
+            (self.df_airports['type'].isin(
+                ['heliport', 'large_airport', 'medium_airport', 'small_airport']
+            ))]
+        if len(airport_def.index) != 1:
+            raise ValueError(
+                "There are none/multiple VOR stations with that name")
+        airport_def = airport_def.iloc[0]
+        airport = PointLonLat(airport_def["longitude_deg"],
+                                    airport_def["latitude_deg"])
+        return airport
+
+
+    def get_vor_location(self, vor_lookup: str):
         """Get a location from a VOR name or a VOR/Radial/DME/magnetic_adj string"""
         if '/' not in vor_lookup:
             vor_station_def = self.df_navaids[
