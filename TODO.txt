@@ -42,6 +42,7 @@ v0.3
 + object storage for map tiles and pdfs to avoid regeneration on container sleep
 + add vor/radial/dme format as waypoints
 + set dme arc x-values
++ default/loaded route's date modified on load if earlier than now
 
 
 v0.2

@@ -520,6 +520,9 @@ async def load_local_route(sid: str, session_id: str, rte: Optional[VFRFunctionR
             outfolder=os.path.join(rootpath, "output"),
             tracksfolder=os.path.join(rootpath, "tracks")
         )
+        if rte.dof < datetime.datetime.now(datetime.timezone.utc):
+            rte.dof = datetime.datetime.now(datetime.timezone.utc) + \
+                      datetime.timedelta(days=2)
         _vfrroutes.set(session_id, rte)
         return {"type": "load-result", "result": "success", "step": rte.state.value}
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -550,6 +553,9 @@ async def load_published_route(sid: str,  # pylint: disable=unused-argument
                                         outfolder=os.path.join(rootpath, "output"),
                                         tracksfolder=os.path.join(rootpath, "data")
                                         )
+        if rte.dof < datetime.datetime.now(datetime.timezone.utc):
+            rte.dof = datetime.datetime.now(datetime.timezone.utc) + \
+                      datetime.timedelta(days=2)
         _vfrroutes.set(session_id, rte)
         return {"type": "load-result", "result": "success", "step": rte.state.value}
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -1146,5 +1152,7 @@ def default_route():
                                          outfolder=os.path.join(rootpath, "output"),
                                          tracksfolder=os.path.join(rootpath, "data")
                                         )
-
+    if rgen.dof < datetime.datetime.now(datetime.timezone.utc):
+        rgen.dof = datetime.datetime.now(datetime.timezone.utc) + \
+                   datetime.timedelta(days=2)
     return rgen
