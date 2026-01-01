@@ -56,6 +56,7 @@ class TileRenderer:
         self.dpi: float = dpi
         self.tile_size: PointXY = tile_size
         self._remote_cache = remote_cache
+        self.local_cache = os.getenv("USE_LOCAL_CACHE", "False").lower() in ["true", "yes", "on", "1"]
 
         # open pdf
         self._pdf_document: pymupdf.Document = pymupdf.open(
@@ -165,12 +166,24 @@ class TileRenderer:
                 img = PIL.Image.open(io.BytesIO(png_bytes))  # type: ignore
                 return png_bytes, img if img.mode=='RGBA' else img.convert('RGBA')
 
-        # render and get the new one from local cache
+        # render
         self.render_tile(x, y)
-        with open(tilecache_fname, "rb") as f:
-            png_bytes = f.read()
-        img = PIL.Image.open(io.BytesIO(png_bytes))  # type: ignore
-        return png_bytes, img if img.mode=='RGBA' else img.convert('RGBA')
+
+        # check local cache again
+        if os.path.isfile(tilecache_fname):
+            with open(tilecache_fname, "rb") as f:
+                png_bytes = f.read()
+            img = PIL.Image.open(io.BytesIO(png_bytes))  # type: ignore
+            return png_bytes, img if img.mode=='RGBA' else img.convert('RGBA')
+
+        # check remote cache again
+        if self._remote_cache is not None:
+            if self._remote_cache.file_exists(tilecache_remote):
+                self._remote_cache.download_file(tilecache_remote, tilecache_fname)
+                with open(tilecache_fname, "rb") as f:
+                    png_bytes = f.read()
+                img = PIL.Image.open(io.BytesIO(png_bytes))  # type: ignore
+                return png_bytes, img if img.mode=='RGBA' else img.convert('RGBA')
 
 
     def render_tile(self,
@@ -195,9 +208,10 @@ class TileRenderer:
         pixmap: pymupdf.Pixmap = self._page.get_pixmap(clip=clip, dpi=self.dpi)  # type: ignore
         buf = pixmap.tobytes("png")
 
-        # put tile to local cache
-        with open(tilecache_fname, "wb") as f:
-            f.write(buf)
+        # put tile to local cache if enabled
+        if self.local_cache:
+            with open(tilecache_fname, "wb") as f:
+                f.write(buf)
 
         # put tile to remote cache
         if self._remote_cache is not None:

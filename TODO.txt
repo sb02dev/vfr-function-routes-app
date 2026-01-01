@@ -44,6 +44,7 @@ v0.3
 + default/loaded route's date modified on load if earlier than now
 + non-closed routes
 + can add airports by name
++ can disable server side local caching
 
 
 v0.2
